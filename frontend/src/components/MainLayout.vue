@@ -10,26 +10,34 @@
 
       <nav class="sidebar-nav">
         <ul>
-          <li :class="{ active: $route.path === '/dashboard' }" @click="router.push('/dashboard')">
+          <li :class="{ active: $route.path === '/admin/dashboard' }" @click="router.push('/admin/dashboard')">
             <span class="icon">📊</span> Dashboard
           </li>
-          <li :class="{ active: $route.path === '/cursos' }" @click="router.push('/cursos')">
-            <span class="icon">📚</span> Meus Cursos
+          <li :class="{ active: $route.path === '/admin/cursos' }" @click="router.push('/admin/cursos')">
+            <span class="icon">📚</span> Cursos
           </li>
-          <li :class="{ active: $route.path === '/usuarios' }" @click="router.push('/usuarios')">
+          <li :class="{ active: $route.path === '/admin/profissionais' }" @click="router.push('/admin/profissionais')">
+            <span class="icon">🤟</span> Profissionais
+          </li>
+          <li :class="{ active: $route.path === '/admin/usuarios' }" @click="router.push('/admin/usuarios')">
             <span class="icon">👥</span> Alunos
           </li>
-          <li :class="{ active: $route.path === '/financeiro' }" @click="router.push('/financeiro')">
+          
+          <li :class="{ active: $route.path === '/admin/b2b' }" @click="router.push('/admin/b2b')">
+            <span class="icon">🏢</span> Clientes B2B
+          </li>
+
+          <li :class="{ active: $route.path === '/admin/financeiro' }" @click="router.push('/admin/financeiro')">
             <span class="icon">💰</span> Financeiro
           </li>
-          <li :class="{ active: $route.path === '/materiais' }" @click="router.push('/materiais')">
+          <li :class="{ active: $route.path === '/admin/materiais' }" @click="router.push('/admin/materiais')">
             <span class="icon">📂</span> Apostilas
           </li>
         </ul>
       </nav>
 
       <div class="sidebar-footer">
-        <button @click="logout" class="btn-logout">Sair</button>
+        <button @click="logout" class="btn-logout">Sair do Sistema</button>
       </div>
     </aside>
 
@@ -40,7 +48,10 @@
           <p>{{ pageDescription }}</p>
         </div>
         <div class="user-profile">
-          <span>Professor Admin</span>
+          <div class="user-text">
+            <span class="name">Professor Admin</span>
+            <span class="role">Administrador</span>
+          </div>
           <div class="avatar">AD</div>
         </div>
       </header>
@@ -55,56 +66,52 @@
 <script setup>
 import { useRouter } from 'vue-router';
 const router = useRouter();
-
 defineProps(['pageTitle', 'pageDescription']);
 
 const logout = () => {
   localStorage.removeItem('token');
-  router.push('/');
+  localStorage.removeItem('userRole');
+  router.push('/aluno/login');
 };
 </script>
 
 <style scoped>
-:root {
-  --primary: #8e44ad;
-  --bg-light: #f8f9fd;
-  --sidebar-w: 260px;
-}
+.app-container { display: flex; min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', sans-serif; }
 
-.app-container { display: flex; min-height: 100vh; background-color: #f8f9fd; font-family: 'Inter', sans-serif; }
-
-/* Sidebar Estilo Hospitalar/Clean */
 .sidebar { 
   width: 260px; background: white; display: flex; flex-direction: column;
-  padding: 30px 20px; border-right: 1px solid #edf2f7; position: fixed; height: 100vh;
+  padding: 30px 20px; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh;
 }
-.logo-box { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; padding: 0 10px; }
-.logo-icon { font-size: 1.5rem; background: #f3e8ff; padding: 5px; border-radius: 8px; }
-.logo-box h3 { font-size: 1.2rem; color: #2d3748; }
-.logo-box span { color: #8e44ad; }
+.logo-box { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding: 0 10px; }
+.logo-icon { font-size: 1.5rem; background: #eff6ff; padding: 6px; border-radius: 10px; }
+.logo-box h3 { font-size: 1.25rem; color: #1e293b; font-weight: 800; }
+.logo-box span { color: #1e40af; } /* Azul da Logo */
 
 .sidebar-nav ul { list-style: none; padding: 0; }
 .sidebar-nav li { 
-  padding: 12px 15px; margin-bottom: 8px; cursor: pointer; border-radius: 12px;
-  transition: 0.2s; color: #718096; display: flex; align-items: center; gap: 12px; font-weight: 500;
+  padding: 12px 16px; margin-bottom: 6px; cursor: pointer; border-radius: 12px;
+  transition: 0.2s; color: #64748b; display: flex; align-items: center; gap: 12px; font-weight: 500;
 }
-.sidebar-nav li:hover { background: #f7fafc; color: #8e44ad; }
-.sidebar-nav li.active { background: #f3e8ff; color: #8e44ad; }
+.sidebar-nav li:hover { background: #f1f5f9; color: #1e40af; }
+.sidebar-nav li.active { background: #1e40af; color: white; box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2); }
 
 .btn-logout { 
-  margin-top: auto; width: 100%; padding: 12px; border: none; 
-  background: #fff5f5; color: #e53e3e; border-radius: 12px; cursor: pointer; font-weight: bold;
+  margin-top: auto; width: 100%; padding: 12px; border: 1px solid #fee2e2; 
+  background: #fff; color: #ef4444; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s;
 }
+.btn-logout:hover { background: #fef2f2; }
 
-/* Área Principal */
-.main-content { flex: 1; margin-left: 260px; padding: 40px; }
+.main-content { flex: 1; margin-left: 260px; padding: 40px 60px; }
 .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-.header-info h1 { font-size: 1.8rem; color: #1a202c; }
-.header-info p { color: #a0aec0; margin-top: 4px; }
+.header-info h1 { font-size: 1.875rem; color: #0f172a; font-weight: 700; }
+.header-info p { color: #64748b; margin-top: 4px; }
 
 .user-profile { display: flex; align-items: center; gap: 12px; }
-.avatar { width: 40px; height: 40px; background: #8e44ad; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.user-text { display: flex; flex-direction: column; text-align: right; }
+.user-text .name { font-weight: 600; color: #1e293b; font-size: 0.9rem; }
+.user-text .role { font-size: 0.75rem; color: #94a3b8; }
+.avatar { width: 42px; height: 42px; background: #1e40af; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-.page-body { animation: fadeIn 0.3s ease-in; }
+.page-body { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>

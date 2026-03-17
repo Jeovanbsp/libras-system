@@ -1,38 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const Curso = require('../models/Curso');
+const cursoController = require('../controllers/cursoController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-// GET: Listar todos
-router.get('/', async (req, res) => {
-  const cursos = await Curso.find().sort({ dataCriacao: -1 });
-  res.json(cursos);
-});
+// ==========================================
+// ROTAS DO ALUNO
+// ==========================================
 
-// POST: Criar
-router.post('/', async (req, res) => {
-  const novoCurso = new Curso(req.body);
-  await novoCurso.save();
-  res.status(201).json(novoCurso);
-});
+// Lista apenas os cursos que o aluno logado possui
+router.get('/meus-cursos', authMiddleware, cursoController.meusCursos);
 
-// PUT: Editar curso existente
-router.put('/:id', async (req, res) => {
-  try {
-    const cursoAtualizado = await Curso.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(cursoAtualizado);
-  } catch (err) {
-    res.status(500).json({ error: "Erro ao editar curso" });
-  }
-});
+// Realiza a matrícula/compra de um curso específico
+router.post('/:id/matricular', authMiddleware, cursoController.matricularAluno);
 
-// DELETE: Apagar curso
-router.delete('/:id', async (req, res) => {
-  try {
-    await Curso.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Curso removido" });
-  } catch (err) {
-    res.status(500).json({ error: "Erro ao remover curso" });
-  }
-});
+// BUSCA DETALHES DE UM CURSO (Essencial para carregar a Sala de Aula)
+router.get('/:id', authMiddleware, cursoController.buscarCursoPorId);
+
+// ==========================================
+// ROTAS GERAIS E ADMIN
+// ==========================================
+
+// Listar todos os cursos (para o catálogo/loja)
+router.get('/', cursoController.listarCursos);
+
+// Criar novo curso
+router.post('/', cursoController.criarCurso);
+
+// Editar curso existente
+router.put('/:id', cursoController.editarCurso);
+
+// Remover curso
+router.delete('/:id', cursoController.removerCurso);
 
 module.exports = router;

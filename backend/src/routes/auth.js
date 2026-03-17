@@ -1,41 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const authController = require('../controllers/authController');
 
-const generateToken = (id) => {
-  // Use uma string simples se não tiver .env configurado
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', { expiresIn: '30d' });
-};
+// Rota de Login (Delegada para o controller)
+router.post('/login', authController.login);
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+// --- NOVAS ROTAS DE REDEFINIÇÃO DE SENHA ---
 
-  try {
-    const user = await User.findOne({ email });
+// 1. Rota para solicitar o link (Esqueci a Senha)
+// POST: /api/auth/forgot-password
+router.post('/forgot-password', authController.forgotPassword);
 
-    if (user) {
-      // Compara a senha direta (123) OU a criptografada (matchPassword)
-      const isMatch = (user.password === password) || 
-                      (user.matchPassword && await user.matchPassword(password));
-
-      if (isMatch) {
-        return res.json({
-          _id: user._id,
-          nome: user.nome,
-          email: user.email,
-          role: user.role, // "admin" ou "aluno"
-          token: generateToken(user._id),
-        });
-      }
-    }
-    
-    res.status(401).json({ message: 'Credenciais inválidas' });
-
-  } catch (error) {
-    console.error("Erro no login:", error);
-    res.status(500).json({ message: 'Erro no servidor' });
-  }
-});
+// 2. Rota para salvar a nova senha usando o token
+// POST: /api/auth/reset-password/:token
+router.post('/reset-password/:token', authController.resetPassword);
 
 module.exports = router;
