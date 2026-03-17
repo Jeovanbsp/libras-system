@@ -19,7 +19,7 @@
 
           <div class="form-group">
             <label>Senha de Acesso</label>
-            <input v-model="form.senha" type="password" placeholder="Mínimo 6 caracteres" required />
+            <input v-model="form.password" type="password" placeholder="Mínimo 6 caracteres" required />
           </div>
 
           <div class="form-group">
@@ -65,7 +65,9 @@ import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const usuarios = ref([]);
-const form = ref({ nome: '', email: '', senha: '', role: 'aluno' });
+
+// AJUSTE TÉCNICO: Alterado de 'senha' para 'password'
+const form = ref({ nome: '', email: '', password: '', role: 'aluno' });
 
 const carregarUsuarios = async () => {
   try {
@@ -78,11 +80,15 @@ const carregarUsuarios = async () => {
 
 const salvarUsuario = async () => {
   try {
+    // Agora o form.value já contém a chave 'password' que o backend exige
     await api.post('/auth/register', form.value);
-    form.value = { nome: '', email: '', senha: '', role: 'aluno' };
+    
+    // Limpa o formulário com a chave correta
+    form.value = { nome: '', email: '', password: '', role: 'aluno' };
+    alert('Usuário cadastrado com sucesso!');
     carregarUsuarios();
   } catch (error) {
-    alert('Erro ao cadastrar: ' + (error.response?.data?.message || 'Verifique os dados'));
+    alert('Erro ao cadastrar: ' + (error.response?.data?.msg || 'Verifique os dados'));
   }
 };
 

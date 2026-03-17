@@ -1,16 +1,39 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto'); // Módulo nativo para gerar tokens seguros
+const crypto = require('crypto');
 
-// LOGIN ORIGINAL
+exports.register = async (req, res) => {
+    const { nome, email, password, role } = req.body;
+    try {
+        let userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ msg: "Utilizador já existe" });
+
+        // Encriptar a senha manualmente
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = new User({
+            nome,
+            email,
+            password: hashedPassword,
+            role: role || 'aluno'
+        });
+
+        await newUser.save();
+        res.status(201).json({ msg: "Utilizador criado com sucesso!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: "Usuário não encontrado" });
+        if (!user) return res.status(400).json({ msg: "Utilizador não encontrado" });
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await user.matchPassword(password);
         if (!isMatch) return res.status(400).json({ msg: "Senha incorreta" });
 
         const token = jwt.sign(
@@ -28,61 +51,41 @@ exports.login = async (req, res) => {
     }
 };
 
-// 1. SOLICITAR REDEFINIÇÃO (Esqueci a Senha)
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: "E-mail não cadastrado." });
 
-        // Gerar token aleatório de 20 caracteres
         const token = crypto.randomBytes(20).toString('hex');
-
-        // Definir validade (1 hora a partir de agora)
         user.resetPasswordToken = token;
         user.resetPasswordExpires = Date.now() + 3600000; 
-
         await user.save();
-
-        // LOG PARA TESTE (No futuro, aqui enviamos o e-mail via Nodemailer)
-        console.log(`\n--- RECUPERAÇÃO DE SENHA ---`);
-        console.log(`Usuário: ${user.nome}`);
         console.log(`Link: http://localhost:5173/reset-password/${token}`);
-        console.log(`---------------------------\n`);
-
-        res.json({ message: "Se o e-mail existir, um link de recuperação foi enviado." });
+        res.json({ message: "Verifique o console do servidor." });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao processar solicitação." });
+        res.status(500).json({ error: "Erro ao processar." });
     }
 };
 
-// 2. RESETAR SENHA REALMENTE
 exports.resetPassword = async (req, res) => {
     const { password } = req.body;
     const { token } = req.params;
-
     try {
-        // Busca usuário que tenha o token E que o token não tenha expirado ($gt = maior que agora)
         const user = await User.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() }
         });
+        if (!user) return res.status(400).json({ message: "Token inválido/expirado." });
 
-        if (!user) {
-            return res.status(400).json({ message: "O link de recuperação é inválido ou expirou." });
-        }
-
-        // Atualiza a senha (o middleware no User.js vai criptografar automaticamente)
-        user.password = password;
-        
-        // Limpa os campos de recuperação
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
 
         await user.save();
-
-        res.json({ message: "Senha atualizada com sucesso! Você já pode fazer login." });
+        res.json({ message: "Senha atualizada!" });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao redefinir senha." });
+        res.status(500).json({ error: "Erro ao resetar." });
     }
 };
