@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const cors = require('cors'); // Recomendo voltar a usar o pacote cors por segurança e padrão
 const connectDB = require('./config/db');
 
 // ==========================================
@@ -23,27 +24,24 @@ const app = express();
 connectDB();
 
 // ==========================================
-// CONFIGURAÇÃO DE CORS (VERSÃO FINAL VERCEL)
+// CONFIGURAÇÃO DE CORS (OTIMIZADA PARA VERCEL)
 // ==========================================
-// Removida a biblioteca 'cors' externa para usar apenas o middleware manual
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://librasalvador.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // Resposta rápida e obrigatória para o Preflight (requisição OPTIONS do navegador)
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+app.use(cors({
+  // Permite o seu domínio específico e também localhost para testes
+  origin: ['https://librasalvador.vercel.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true
+}));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ==========================================
 // SERVIR ARQUIVOS ESTÁTICOS
 // ==========================================
+// Nota: Em ambientes Serverless (Vercel), uploads locais não persistem. 
+// O ideal é usar Cloudinary ou AWS S3 no futuro.
 app.use('/uploads/materiais', express.static(path.join(__dirname, 'uploads/materiais')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -72,8 +70,12 @@ app.get('/api/stats', async (req, res) => {
     const Financeiro = require('./models/Financeiro');
     const ClienteB2B = require('./models/ClienteB2B');
 
-    const totalAlunos = await User.countDocuments({ role: 'aluno' });
-    const totalCursos = await Curso.countDocuments();
+    // Executa as contagens em paralelo para melhor performance
+    const [totalAlunos, totalCursos, transacoes] = await Promise.all([
+      User.countDocuments({ role: 'aluno' }),
+      Curso.countDocuments(),
+      Financeiro.find({ tipo: 'Entrada' })
+    ]);
     
     let totalB2B = 0;
     try {
@@ -82,7 +84,6 @@ app.get('/api/stats', async (req, res) => {
       console.log("Model B2B ainda não carregado.");
     }
 
-    const transacoes = await Financeiro.find({ tipo: 'Entrada' });
     const somaVendas = transacoes.reduce((acc, curr) => acc + curr.valor, 0);
 
     res.json({
@@ -102,7 +103,7 @@ app.get('/api/stats', async (req, res) => {
 // ==========================================
 module.exports = app;
 
-// Inicialização para rodar localmente (Vercel ignora isto)
+// Inicialização para rodar localmente
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
