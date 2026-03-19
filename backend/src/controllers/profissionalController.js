@@ -1,5 +1,6 @@
 const Profissional = require('../models/Profissional');
 
+// Cadastrar novo profissional (Já aceita whatsapp e observacoes via req.body)
 exports.criarProfissional = async (req, res) => {
   try {
     const novoProfissional = await Profissional.create(req.body);
@@ -9,19 +10,20 @@ exports.criarProfissional = async (req, res) => {
   }
 };
 
+// Listar todos os profissionais
 exports.listarProfissionais = async (req, res) => {
   try {
-    // Permite filtrar por especialidade via query string: /profissionais?especialidade=Saúde
     const { especialidade } = req.query;
     const filtro = especialidade ? { especialidades: especialidade } : {};
     
-    const profissionais = await Profissional.find(filtro);
+    const profissionais = await Profissional.find(filtro).sort({ dataCadastro: -1 });
     res.status(200).json(profissionais);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// Buscar um profissional por ID
 exports.buscarPorId = async (req, res) => {
   try {
     const profissional = await Profissional.findById(req.params.id);
@@ -29,5 +31,24 @@ exports.buscarPorId = async (req, res) => {
     res.status(200).json(profissional);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// --- NOVA FUNÇÃO: EXCLUIR PROFISSIONAL ---
+exports.excluirProfissional = async (req, res) => {
+  try {
+    const profissional = await Profissional.findById(req.params.id);
+
+    if (!profissional) {
+      return res.status(404).json({ message: "Profissional não encontrado" });
+    }
+
+    // Removendo do MongoDB
+    await profissional.deleteOne();
+    
+    res.status(200).json({ message: "Profissional removido com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao deletar profissional:", error.message);
+    res.status(500).json({ message: "Erro interno ao tentar excluir o profissional" });
   }
 };

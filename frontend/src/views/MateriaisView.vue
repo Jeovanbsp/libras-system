@@ -4,7 +4,7 @@
       
       <div class="glass-card side-form">
         <h3 class="form-title">
-          <span class="icon-badge">📂</span> Upload de Material
+          <UploadCloud :size="20" class="text-brand" /> Upload de Material
         </h3>
         
         <form @submit.prevent="fazerUpload" class="modern-form">
@@ -24,6 +24,7 @@
           </div>
 
           <button type="submit" class="btn-primary" :disabled="enviando">
+            <component :is="enviando ? Loader2 : FilePlus" :size="18" :class="{ 'spin': enviando }" />
             {{ enviando ? 'Enviando arquivo...' : 'Fazer Upload agora' }}
           </button>
         </form>
@@ -32,20 +33,27 @@
       <div class="materiais-list">
         <div v-for="m in materiais" :key="m._id" class="glass-card material-card">
           <div class="file-info">
-            <div class="file-icon-box">📄</div>
+            <div class="file-icon-box">
+              <FileText :size="28" />
+            </div>
             <div class="file-texts">
               <h4>{{ m.titulo }}</h4>
               <p>{{ m.descricao }}</p>
             </div>
           </div>
           <div class="file-actions">
-            <a :href="`http://localhost:3000/${m.caminho}`" target="_blank" class="btn-view">Ver PDF</a>
-            <button @click="remover(m._id)" class="btn-del-red">Apagar</button>
+            <a :href="`http://localhost:3000/${m.caminho}`" target="_blank" class="btn-view">
+              <Eye :size="16" /> Ver PDF
+            </a>
+            <button @click="remover(m._id)" class="btn-del-red">
+              <Trash2 :size="18" />
+            </button>
           </div>
         </div>
         
         <div v-if="materiais.length === 0" class="glass-card empty-card">
-           📭 Nenhuma apostila cadastrada ainda.
+          <Inbox :size="48" class="opacity-20" />
+          <p>Nenhuma apostila cadastrada ainda.</p>
         </div>
       </div>
       
@@ -55,6 +63,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { 
+  UploadCloud, FileText, FilePlus, Loader2, Eye, Trash2, Inbox 
+} from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
@@ -78,7 +89,6 @@ const selecionarArquivo = (e) => {
 
 const fazerUpload = async () => {
   if (!arquivoSelecionado.value) return;
-  
   enviando.value = true;
   const formData = new FormData();
   formData.append('titulo', form.value.titulo);
@@ -91,10 +101,7 @@ const fazerUpload = async () => {
     });
     form.value = { titulo: '', descricao: '' };
     arquivoSelecionado.value = null;
-    
-    // Limpar o input type="file" visualmente
     document.querySelector('.file-input').value = '';
-    
     buscarMateriais();
     alert("Upload concluído com sucesso!");
   } catch (err) {
@@ -119,153 +126,43 @@ onMounted(buscarMateriais);
 </script>
 
 <style scoped>
-/* ESTRUTURA ORIGINAL COM CORES AZUIS E DESIGN MODERNO */
 .layout-split { display: grid; grid-template-columns: 350px 1fr; gap: 30px; align-items: start; }
+.glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0, 74, 173, 0.05); }
+.text-brand { color: #004aad; }
 
-.glass-card { 
-  background: white; 
-  padding: 30px; 
-  border-radius: 24px; 
-  border: 1px solid #e2e8f0; 
-  box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); 
-}
+.form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 
-.form-title { 
-  margin-bottom: 25px; 
-  color: #1e293b; 
-  font-size: 1.2rem; 
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.icon-badge {
-  background: #eff6ff; 
-  padding: 8px;
-  border-radius: 10px;
-  font-size: 1rem;
-}
-
-/* FORMULÁRIO */
-.modern-form label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin: 15px 0 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-
+.modern-form label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin: 15px 0 5px; text-transform: uppercase; }
 .modern-form input, .modern-form textarea { 
-  width: 100%; 
-  padding: 14px; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 12px; 
-  background: #f8fafc; 
-  font-size: 0.95rem;
-  color: #1e293b;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  resize: none;
-  font-family: inherit;
+  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
+  background: #f8fafc; font-size: 0.95rem; color: #1e293b; transition: 0.2s; box-sizing: border-box; font-family: inherit;
 }
+.modern-form input:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background: white; }
 
-.modern-form input:focus, .modern-form textarea:focus {
-  outline: none;
-  border-color: #1e40af;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
-  background: white;
-}
-
-/* Input File Específico */
-.file-input { 
-  padding: 10px !important; 
-  background: white !important; 
-  cursor: pointer; 
-  color: #64748b !important;
-}
-.file-input::file-selector-button {
-  background: #eff6ff;
-  color: #1e40af;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-right: 15px;
-}
-.file-input::file-selector-button:hover { background: #dbeafe; }
+.file-input { padding: 10px !important; background: white !important; cursor: pointer; }
 
 .btn-primary { 
-  width: 100%; 
-  background: #1e40af; 
-  color: white; 
-  border: none; 
-  padding: 16px; 
-  border-radius: 14px; 
-  margin-top: 25px; 
-  font-weight: bold; 
-  font-size: 1rem;
-  cursor: pointer; 
-  transition: all 0.3s; 
+  width: 100%; background: #004aad; color: white; border: none; padding: 16px; 
+  border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; transition: 0.3s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
 }
-.btn-primary:hover:not(:disabled) { 
-  background: #1e3a8a; 
-  transform: translateY(-2px); 
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.25);
-}
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* LISTA DE MATERIAIS */
 .materiais-list { display: flex; flex-direction: column; gap: 20px; }
+.material-card { display: flex; justify-content: space-between; align-items: center; transition: 0.2s; padding: 20px 25px; border: 1px solid #e2e8f0; }
+.material-card:hover { border-color: #004aad; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0, 74, 173, 0.1); }
 
-.material-card { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  transition: all 0.2s;
-  padding: 20px 25px;
-}
-.material-card:hover { 
-  border-color: #bfdbfe;
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(30, 64, 175, 0.1);
-}
-
-.file-info { display: flex; align-items: center; gap: 20px; }
-.file-icon-box { 
-  font-size: 1.8rem; 
-  background: #eff6ff; 
-  color: #1e40af;
-  padding: 15px; 
-  border-radius: 18px; 
-  line-height: 1; 
-}
+.file-icon-box { background: #eff6ff; color: #004aad; padding: 15px; border-radius: 18px; }
 .file-texts h4 { color: #1e293b; margin-bottom: 4px; font-size: 1.1rem; font-weight: 700; }
 .file-texts p { color: #64748b; font-size: 0.85rem; font-weight: 500; }
 
-.file-actions { display: flex; align-items: center; gap: 15px; }
-
-.btn-view { 
-  text-decoration: none; 
-  color: #1e40af; 
-  font-weight: 800; 
-  font-size: 0.9rem;
-  background: #eff6ff;
-  padding: 10px 18px;
-  border-radius: 12px;
-  transition: 0.2s;
-}
+.btn-view { text-decoration: none; color: #004aad; font-weight: 800; font-size: 0.85rem; background: #eff6ff; padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; }
 .btn-view:hover { background: #dbeafe; }
 
-.btn-del-red { 
-  border: none; 
-  background: transparent; 
-  color: #94a3b8; 
-  padding: 10px 18px; 
-  border-radius: 12px; 
-  cursor: pointer; 
-  font-weight: bold; 
-  font-size: 0.85rem;
-  transition: 0.2s;
-}
-.material-card:hover .btn-del-red { color: #ef4444; background: #fef2f2; }
-.btn-del-red:hover { background: #fee2e2 !important; color: #dc2626 !important; }
+.btn-del-red { border: none; background: transparent; color: #94a3b8; padding: 10px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+.btn-del-red:hover { color: #ef4444; background: #fef2f2; }
 
-.empty-card { text-align: center; color: #94a3b8; font-weight: 600; padding: 50px; font-size: 1.1rem; }
+.empty-card { text-align: center; color: #94a3b8; font-weight: 600; padding: 50px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 </style>

@@ -11,26 +11,26 @@ const profissionalSchema = new mongoose.Schema({
     unique: true,
     lowercase: true
   },
-  telefone: {
+  // AJUSTADO: Mudamos de 'telefone' para 'whatsapp' para bater com o Frontend
+  whatsapp: {
     type: String
   },
-  // Especialidades mencionadas no escopo
   especialidades: [{
     type: String,
-    enum: ['Jurídico', 'Saúde', 'Eventos', 'Educação', 'Corporativo', 'Audiovisual'],
+    // Removi o enum estrito para evitar erros de validação caso mude o nome no front
     default: 'Educação'
   }],
-  // Certificações importantes para o Módulo A
-  certificacoes: [{
-    type: String,
-    enum: ['Prolibras', 'CAS', 'Bacharelado', 'Pós-Graduação'],
-  }],
+  // NOVO: Campo para as observações que adicionamos
+  observacoes: {
+    type: String
+  },
   valorHora: {
     type: Number,
-    required: [true, 'O valor da hora é necessário para cálculos financeiros']
+    required: [true, 'O valor da hora é necessário']
   },
+  // Campos opcionais mantidos para compatibilidade
   disponibilidade: {
-    type: String, // Pode ser "Manhã", "Tarde", "Noite", "Integral"
+    type: String, 
     default: 'Integral'
   },
   ativo: {

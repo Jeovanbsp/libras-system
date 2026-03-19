@@ -19,18 +19,22 @@ const clienteB2bSchema = new mongoose.Schema({
     required: [true, 'O e-mail de contacto é obrigatório'],
     lowercase: true
   },
-  telefone: {
+  // AJUSTADO: De 'telefone' para 'whatsapp' para sincronizar com o Frontend
+  whatsapp: {
     type: String
   },
   // Para sabermos que tipo de serviço esta empresa costuma pedir
   servicosInteresse: [{
-    type: String,
-    enum: ['Eventos Presenciais', 'Eventos Virtuais', 'Tradução Audiovisual', 'Legendagem', 'Consultoria'],
+    type: String
+    // Removido o enum para evitar erros de validação estritos
   }],
+  // NOVO: Campo para observações do contrato ou empresa
+  observacoes: {
+    type: String
+  },
   status: {
     type: String,
-    enum: ['Ativo', 'Inativo', 'Prospeto'],
-    default: 'Ativo'
+    default: 'Prospeto'
   },
   dataCadastro: {
     type: Date,

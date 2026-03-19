@@ -2,31 +2,32 @@
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="logo-box">
-          <span class="logo-icon">🤟</span>
-          <h3>Libras<span>System</span></h3>
+        <div class="logo-container-sidebar">
+          <img src="@/assets/logo.png" alt="Libras System" class="sidebar-logo" />
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <ul>
           <li :class="{ active: $route.path === '/aluno/dashboard' }" @click="router.push('/aluno/dashboard')">
-            <span class="icon">🏠</span> Meu Painel
+            <LayoutDashboard :size="20" class="nav-icon" /> Meu Painel
           </li>
           <li :class="{ active: $route.path === '/aluno/cursos' }" @click="router.push('/aluno/cursos')">
-            <span class="icon">📖</span> Meus Cursos
+            <BookOpen :size="20" class="nav-icon" /> Meus Cursos
           </li>
           <li :class="{ active: $route.path === '/aluno/loja' }" @click="router.push('/aluno/loja')">
-            <span class="icon">🛒</span> Catálogo de Cursos
+            <ShoppingBag :size="20" class="nav-icon" /> Catálogo de Cursos
           </li>
           <li :class="{ active: $route.path === '/aluno/materiais' }" @click="router.push('/aluno/materiais')">
-            <span class="icon">📂</span> Materiais e PDFs
+            <FileText :size="20" class="nav-icon" /> Materiais e PDFs
           </li>
         </ul>
       </nav>
 
       <div class="sidebar-footer">
-        <button @click="logout" class="btn-logout">Sair da Conta</button>
+        <button @click="logout" class="btn-logout">
+          <LogOut :size="18" style="margin-right: 8px" /> Sair da Conta
+        </button>
       </div>
     </aside>
 
@@ -54,6 +55,15 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+// Importação dos ícones Lucide
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  ShoppingBag, 
+  FileText, 
+  LogOut 
+} from 'lucide-vue-next';
+
 const router = useRouter();
 defineProps(['pageTitle', 'pageDescription']);
 
@@ -65,29 +75,54 @@ const logout = () => {
 </script>
 
 <style scoped>
-/* MESMA IDENTIDADE VISUAL DO ADMIN, APLICADA AO ALUNO */
 .app-container { display: flex; min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', sans-serif; }
 
 .sidebar { 
   width: 260px; background: white; display: flex; flex-direction: column;
   padding: 30px 20px; border-right: 1px solid #e2e8f0; position: fixed; height: 100vh;
 }
-.logo-box { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding: 0 10px; }
-.logo-icon { font-size: 1.5rem; background: #eff6ff; color: #1e40af; padding: 6px; border-radius: 10px; }
-.logo-box h3 { font-size: 1.25rem; color: #1e293b; font-weight: 800; }
-.logo-box span { color: #1e40af; } 
+
+.logo-container-sidebar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.sidebar-logo {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+}
 
 .sidebar-nav ul { list-style: none; padding: 0; }
 .sidebar-nav li { 
   padding: 12px 16px; margin-bottom: 6px; cursor: pointer; border-radius: 12px;
-  transition: 0.2s; color: #64748b; display: flex; align-items: center; gap: 12px; font-weight: 500;
+  transition: 0.2s; color: #64748b; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem;
 }
-.sidebar-nav li:hover { background: #f1f5f9; color: #1e40af; }
-.sidebar-nav li.active { background: #1e40af; color: white; box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2); }
+
+/* Estilo para ícones Lucide inativos */
+.nav-icon {
+  color: #94a3b8;
+  transition: 0.2s;
+}
+
+.sidebar-nav li:hover { background: #f1f5f9; color: #004aad; }
+.sidebar-nav li:hover .nav-icon { color: #004aad; }
+
+.sidebar-nav li.active { 
+  background: #004aad; 
+  color: white; 
+  box-shadow: 0 4px 12px rgba(0, 74, 173, 0.2); 
+}
+.sidebar-nav li.active .nav-icon { color: white; }
 
 .btn-logout { 
   margin-top: auto; width: 100%; padding: 12px; border: 1px solid #fee2e2; 
-  background: #fff; color: #ef4444; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s;
+  background: #fff; color: #ef4444; border-radius: 12px; cursor: pointer; font-weight: bold; 
+  transition: 0.2s; display: flex; align-items: center; justify-content: center;
 }
 .btn-logout:hover { background: #fef2f2; }
 
@@ -100,7 +135,7 @@ const logout = () => {
 .user-text { display: flex; flex-direction: column; text-align: right; }
 .user-text .name { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
 .user-text .role { font-size: 0.8rem; color: #64748b; font-weight: 500; }
-.avatar { width: 45px; height: 45px; background: #1e40af; color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; }
+.avatar { width: 45px; height: 45px; background: #004aad; color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; }
 
 .page-body { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

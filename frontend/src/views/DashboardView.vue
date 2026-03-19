@@ -1,6 +1,7 @@
 <template>
-  <MainLayout pageTitle="Painel de Controle" pageDescription="Visão geral e métricas do sistema LibrasSystem.">
+  <MainLayout pageTitle="Painel de Controle" pageDescription="Visão geral e métricas estratégicas do sistema LibrasSystem.">
     <div class="stats-grid">
+      
       <div class="glass-card clickable" @click="router.push('/admin/usuarios')">
         <div class="card-header">
           <span class="tag">ESTATÍSTICA</span>
@@ -8,7 +9,8 @@
         </div>
         <div class="card-value">{{ stats.alunos }}</div>
         <div class="card-footer">
-          Visualizar lista completa <span class="arrow">&rarr;</span>
+          <span>Visualizar lista completa</span>
+          <ArrowRight :size="18" class="arrow" />
         </div>
       </div>
 
@@ -19,7 +21,8 @@
         </div>
         <div class="card-value">{{ stats.cursos }}</div>
         <div class="card-footer">
-          Gerenciar catálogo <span class="arrow">&rarr;</span>
+          <span>Gerenciar catálogo</span>
+          <ArrowRight :size="18" class="arrow" />
         </div>
       </div>
 
@@ -30,9 +33,11 @@
         </div>
         <div class="card-value">R$ {{ stats.vendas }}</div>
         <div class="card-footer">
-          Ver relatório financeiro <span class="arrow">&rarr;</span>
+          <span>Ver relatório financeiro</span>
+          <ArrowRight :size="18" class="arrow" />
         </div>
       </div>
+
     </div>
   </MainLayout>
 </template>
@@ -40,6 +45,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { ArrowRight } from 'lucide-vue-next'; // Ícone profissional
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
@@ -51,25 +57,19 @@ onMounted(async () => {
     const res = await api.get('/stats');
     stats.value = res.data;
   } catch (err) { 
-    console.error(err); 
+    console.error("Erro ao carregar estatísticas:", err); 
   }
 });
 </script>
 
 <style scoped>
-/* ESTRUTURA GRID */
-.stats-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-  gap: 30px; 
-}
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 
-/* CARTÕES PADRÃO (NOVA IDENTIDADE) */
 .glass-card {
   background: white; 
   padding: 35px 30px; 
   border-radius: 24px;
-  box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); /* Sombra azulada bem suave */
+  box-shadow: 0 10px 25px rgba(0, 74, 173, 0.05); 
   border: 1px solid #e2e8f0;
   transition: all 0.3s ease; 
   position: relative;
@@ -79,12 +79,11 @@ onMounted(async () => {
 
 .glass-card.clickable:hover { 
   transform: translateY(-6px); 
-  box-shadow: 0 20px 40px rgba(30, 64, 175, 0.12); /* Sombra mais evidente no hover */
+  box-shadow: 0 20px 40px rgba(0, 74, 173, 0.12);
   border-color: #bfdbfe; 
   cursor: pointer; 
 }
 
-/* BADGES (TAGS) */
 .tag { 
   font-size: 0.75rem; 
   font-weight: 800; 
@@ -99,41 +98,21 @@ onMounted(async () => {
 .tag.success { color: #059669; background: #ecfdf5; }
 .tag.gold { color: #d97706; background: #fffbeb; }
 
-/* TEXTOS E VALORES */
-.card-header h3 { 
-  font-size: 1.1rem; 
-  color: #1e293b; 
-  font-weight: 700; 
-  margin: 0; 
-}
+.card-header h3 { font-size: 1.1rem; color: #1e293b; font-weight: 700; margin: 0; }
+.card-value { font-size: 3rem; font-weight: 900; color: #0f172a; margin: 20px 0; letter-spacing: -1px; }
 
-.card-value { 
-  font-size: 3rem; 
-  font-weight: 900; 
-  color: #0f172a; 
-  margin: 20px 0; 
-  letter-spacing: -1px; 
-}
-
-/* RODAPÉ DO CARD E ANIMAÇÃO DA SETA */
 .card-footer { 
   font-size: 0.9rem; 
-  color: #1e40af; /* Azul da Marca */
+  color: #004aad; 
   font-weight: 700; 
   border-top: 1px solid #f1f5f9; 
   padding-top: 20px; 
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-top: auto;
 }
 
-.arrow {
-  margin-left: 8px;
-  transition: transform 0.3s ease;
-}
-
-.glass-card.clickable:hover .arrow {
-  transform: translateX(6px); /* A seta empurra levemente para a direita no hover */
-  color: #1e3a8a;
-}
+.arrow { transition: transform 0.3s ease; }
+.glass-card.clickable:hover .arrow { transform: translateX(6px); color: #003a8c; }
 </style>

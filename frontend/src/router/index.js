@@ -87,6 +87,13 @@ const routes = [
     component: () => import('../views/UsuariosView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
+  // NOVA ROTA: LIBERAÇÃO DE CURSOS PAGOS
+  {
+    path: '/admin/liberar-acesso',
+    name: 'LiberarAcesso',
+    component: () => import('../views/LiberarCursoView.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
   {
     path: '/admin/b2b',
     name: 'ClientesB2B',
@@ -123,16 +130,12 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
-  // 1. Se a rota exige autenticação e não há token, vai para o login
   if (to.meta.requiresAuth && !token) {
     next('/aluno/login');
   } 
-  // 2. Se a rota exige um cargo (role) específico e o usuário não o possui
   else if (to.meta.role && to.meta.role !== userRole) {
-    // Redireciona conforme o cargo atual
     userRole === 'admin' ? next('/admin/dashboard') : next('/aluno/dashboard');
   } 
-  // 3. Caso contrário, permite o acesso
   else {
     next();
   }

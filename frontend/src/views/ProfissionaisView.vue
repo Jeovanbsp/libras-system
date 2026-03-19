@@ -4,17 +4,23 @@
       
       <div class="glass-card side-form">
         <h3 class="form-title">
-          <span class="icon-badge">🤟</span> Novo Profissional
+          <UserPlus :size="20" class="text-brand" /> Novo Profissional
         </h3>
-        <form @submit.prevent="cadastrar" class="modern-form">
+        <form @submit.prevent="cadastrar" class="modern-form scrollable-form">
           <div class="form-group">
             <label>Nome Completo</label>
             <input v-model="form.nome" placeholder="Ex: João da Silva" required />
           </div>
 
-          <div class="form-group">
-            <label>E-mail de Contato</label>
-            <input v-model="form.email" type="email" placeholder="joao@email.com" required />
+          <div class="form-row">
+            <div class="form-group-col">
+              <label>E-mail de Contato</label>
+              <input v-model="form.email" type="email" placeholder="joao@email.com" required />
+            </div>
+            <div class="form-group-col">
+              <label>WhatsApp (Opcional)</label>
+              <input v-model="form.whatsapp" placeholder="(71) 90000-0000" />
+            </div>
           </div>
 
           <div class="form-group">
@@ -25,40 +31,58 @@
           <div class="form-group">
             <label>Especialidades de Atuação</label>
             <div class="checkbox-grid">
-              <label v-for="esp in listaEspecialidades" :key="esp" class="checkbox-label">
-                <input type="checkbox" :value="esp" v-model="form.especialidades" />
-                {{ esp }}
+              <label v-for="esp in listaEspecialidades" :key="esp" class="checkbox-label-card">
+                <input type="checkbox" :value="esp" v-model="form.especialidades" class="custom-checkbox" />
+                <span class="checkbox-text">{{ esp }}</span>
               </label>
             </div>
           </div>
 
-          <button type="submit" class="btn-primary">Cadastrar Especialista</button>
+          <div class="form-group">
+            <label>Observações Adicionais (Opcional)</label>
+            <textarea v-model="form.observacoes" placeholder="Ex: Possui certificação Prolibras..." rows="3"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">
+            <Save :size="18" /> Cadastrar Especialista
+          </button>
         </form>
       </div>
 
       <div class="glass-card list-box">
         <h3 class="form-title">
-          <span class="icon-badge">📋</span> Especialistas Cadastrados
+          <Users :size="20" class="text-brand" /> Especialistas Cadastrados
         </h3>
         <div class="pro-list">
           <div v-for="pro in profissionais" :key="pro._id" class="pro-item">
             <div class="item-main">
-              <strong>{{ pro.nome }}</strong>
-              <span class="item-email">{{ pro.email }}</span>
+              <div class="header-name">
+                <strong>{{ pro.nome }}</strong>
+                <div class="contact-links">
+                  <span class="info-tag"><Mail :size="12" /> {{ pro.email }}</span>
+                  <a v-if="pro.whatsapp" :href="`https://wa.me/55${pro.whatsapp.replace(/\D/g,'')}`" target="_blank" class="info-tag whatsapp-link">
+                    <MessageCircle :size="12" /> WhatsApp
+                  </a>
+                </div>
+              </div>
               <div class="tags-container">
-                <span v-for="esp in pro.especialidades" :key="esp" class="tag-badge">
-                  {{ esp }}
-                </span>
+                <span v-for="esp in pro.especialidades" :key="esp" class="tag-badge">{{ esp }}</span>
+              </div>
+              <div v-if="pro.observacoes" class="obs-box">
+                <Info :size="12" /> <span>{{ pro.observacoes }}</span>
               </div>
             </div>
             <div class="item-actions">
               <span class="price-tag">R$ {{ pro.valorHora.toFixed(2) }}/h</span>
-              <button @click="remover(pro._id)" class="btn-del-mini" title="Excluir">🗑️</button>
+              <button @click="remover(pro._id)" class="btn-del-mini" title="Excluir Profissional">
+                <Trash2 :size="18" />
+              </button>
             </div>
           </div>
           
           <div v-if="profissionais.length === 0" class="empty-msg">
-            Nenhum profissional cadastrado.
+            <Inbox :size="40" class="opacity-20" />
+            <p>Nenhum profissional cadastrado.</p>
           </div>
         </div>
       </div>
@@ -69,17 +93,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { UserPlus, Users, Mail, Save, Trash2, Inbox, MessageCircle, Info } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const profissionais = ref([]);
 const listaEspecialidades = ['Jurídico', 'Saúde', 'Eventos', 'Educação', 'Corporativo', 'Audiovisual'];
-const form = ref({
-  nome: '',
-  email: '',
-  valorHora: null,
-  especialidades: []
-});
+const form = ref({ nome: '', email: '', whatsapp: '', valorHora: null, especialidades: [], observacoes: '' });
 
 const carregar = async () => {
   try {
@@ -93,20 +113,23 @@ const carregar = async () => {
 const cadastrar = async () => {
   try {
     await api.post('/profissionais', form.value);
-    form.value = { nome: '', email: '', valorHora: null, especialidades: [] };
+    form.value = { nome: '', email: '', whatsapp: '', valorHora: null, especialidades: [], observacoes: '' };
     carregar();
   } catch (error) {
     alert('Erro ao cadastrar: ' + (error.response?.data?.message || 'Verifique os dados.'));
   }
 };
 
+// FUNÇÃO DE REMOVER CORRIGIDA E CONECTADA
 const remover = async (id) => {
-  if (confirm("Deseja realmente apagar este profissional permanentemente?")) {
+  if (confirm("Deseja realmente apagar este profissional permanentemente do sistema?")) {
     try {
       await api.delete(`/profissionais/${id}`);
-      carregar();
+      carregar(); // Recarrega a lista após excluir
+      alert("Profissional removido com sucesso.");
     } catch (error) {
-      alert("Erro ao excluir. Verifique se existe a rota DELETE no backend.");
+      console.error("Erro ao excluir:", error);
+      alert("Erro ao excluir o profissional. Verifique a conexão.");
     }
   }
 };
@@ -115,58 +138,23 @@ onMounted(carregar);
 </script>
 
 <style scoped>
-/* ESTRUTURA ORIGINAL COM CORES AZUIS E DESIGN MODERNO */
-.layout-split { display: grid; grid-template-columns: 350px 1fr; gap: 30px; align-items: start; }
+.layout-split { display: grid; grid-template-columns: 380px 1fr; gap: 30px; align-items: start; }
+.glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
+.text-brand { color: #004aad; }
 
-.glass-card { 
-  background: white; 
-  padding: 30px; 
-  border-radius: 24px; 
-  border: 1px solid #e2e8f0; 
-  box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); 
+.form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+
+.modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 8px; text-transform: uppercase; }
+.modern-form input, .modern-form textarea { 
+  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
+  background: #f8fafc; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; font-family: inherit;
 }
+.modern-form input:focus, .modern-form textarea:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background: white; }
 
-.form-title { 
-  margin-bottom: 25px; 
-  color: #1e293b; 
-  font-size: 1.2rem; 
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.form-row { display: flex; gap: 15px; width: 100%; align-items: flex-end; margin-bottom: 15px; }
+.form-group-col { flex: 1; display: flex; flex-direction: column; }
 
-.icon-badge {
-  background: #eff6ff; 
-  padding: 8px;
-  border-radius: 10px;
-  font-size: 1rem;
-}
-
-/* FORMULÁRIO */
-.modern-form label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin: 15px 0 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-.modern-form input { 
-  width: 100%; 
-  padding: 14px; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 12px; 
-  background: #f8fafc; 
-  font-size: 0.95rem;
-  color: #1e293b;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-}
-
-.modern-form input:focus {
-  outline: none;
-  border-color: #1e40af;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
-  background: white;
-}
-
-/* CHECKBOXES PERSONALIZADOS */
+/* CSS CORRIGIDO PARA AS CAIXINHAS DE ESPECIALIDADE */
 .checkbox-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -174,64 +162,69 @@ onMounted(carregar);
   margin-top: 10px;
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem !important;
+/* Novo nome de classe para garantir a aplicação dos estilos */
+.checkbox-label-card {
+  display: flex !important;
+  flex-direction: row !important; /* Força ícone à esquerda */
+  align-items: center !important; /* Alinha verticalmente */
+  gap: 10px !important; /* Espaço entre quadradinho e texto */
+  cursor: pointer;
+  padding: 12px 15px;
+  background: #f8fafc;
+  border-radius: 12px;
+  transition: 0.2s ease;
+  border: 1px solid transparent;
+  margin: 0 !important; /* Tira margens indesejadas */
+}
+
+.checkbox-label-card:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+/* Estilo do texto dentro da caixinha */
+.checkbox-text {
+  font-size: 0.9rem !important;
   color: #1e293b !important;
   font-weight: 600 !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
-  margin: 0 !important;
-  cursor: pointer;
 }
 
-.checkbox-label input {
-  width: 18px;
-  height: 18px;
-  accent-color: #1e40af;
+/* Estilo do quadradinho azul */
+.custom-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #004aad; /* Azul da marca */
   cursor: pointer;
-  padding: 0;
+  flex-shrink: 0; /* Impede o quadradinho de espremer */
+  margin: 0 !important; /* Tira margens do input */
 }
+/* FIM DA CORREÇÃO DAS ESPECIALIDADES */
 
-/* BOTÃO PRINCIPAL */
 .btn-primary { 
-  width: 100%; 
-  background: #1e40af; 
-  color: white; 
-  border: none; 
-  padding: 16px; 
-  border-radius: 14px; 
-  margin-top: 25px; 
-  font-weight: bold; 
-  font-size: 1rem;
-  cursor: pointer; 
-  transition: all 0.3s; 
+  width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; 
+  margin-top: 25px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
 }
-.btn-primary:hover { 
-  background: #1e3a8a; 
-  transform: translateY(-2px); 
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.25);
-}
+.btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
 
-/* LISTA DE PROFISSIONAIS */
-.pro-list { display: flex; flex-direction: column; }
-.pro-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
-.pro-item:hover { background: #f8fafc; border-radius: 12px; padding: 20px 10px; margin: 0 -10px; }
+/* LISTAGEM */
+.pro-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 22px 0; border-bottom: 1px solid #f1f5f9; }
+.header-name { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.contact-links { display: flex; gap: 12px; }
+.info-tag { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: #64748b; font-weight: 500; }
+.whatsapp-link { color: #059669; text-decoration: none; transition: 0.2s; }
+.whatsapp-link:hover { color: #047857; text-decoration: underline; }
 
-.item-main strong { display: block; color: #1e293b; font-size: 1.05rem; margin-bottom: 4px; }
-.item-email { font-size: 0.85rem; color: #64748b; font-weight: 500; display: block; margin-bottom: 8px; }
+.tag-badge { background: #eff6ff; color: #004aad; font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; margin-top: 5px; display: inline-block; }
+.obs-box { margin-top: 12px; background: #fffbeb; border-left: 3px solid #f59e0b; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; color: #92400e; display: flex; align-items: flex-start; gap: 6px;}
 
-.tags-container { display: flex; flex-wrap: wrap; gap: 6px; }
-.tag-badge { background: #f1f5f9; color: #475569; font-size: 0.65rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.price-tag { font-weight: 800; font-size: 0.9rem; color: #004aad; background: #eff6ff; padding: 8px 12px; border-radius: 8px; }
+.btn-del-mini { background: transparent; border: none; padding: 8px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
+.btn-del-mini:hover { background: #fee2e2; color: #ef4444; }
 
-.item-actions { display: flex; align-items: center; gap: 15px; }
-.price-tag { font-weight: 800; font-size: 0.95rem; color: #1e40af; background: #eff6ff; padding: 8px 12px; border-radius: 8px; }
-
-.btn-del-mini { background: transparent; border: none; padding: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; opacity: 0.5; filter: grayscale(1); }
-.pro-item:hover .btn-del-mini { opacity: 1; filter: grayscale(0); }
-.btn-del-mini:hover { background: #fee2e2; }
-
-.empty-msg { text-align: center; padding: 40px; color: #94a3b8; font-weight: 500; }
+.empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.scrollable-form { max-height: 80vh; overflow-y: auto; padding-right: 10px; }
+.scrollable-form::-webkit-scrollbar { width: 5px; }
+.scrollable-form::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 </style>

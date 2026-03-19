@@ -15,11 +15,14 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Curso' 
   }],
+  // NOVO CAMPO PARA O PROGRESSO
+  aulasConcluidas: [{ 
+    type: mongoose.Schema.Types.ObjectId 
+  }],
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, { timestamps: true });
 
-// Método para comparar senhas no login
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
