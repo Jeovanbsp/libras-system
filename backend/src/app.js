@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const cors = require('cors'); // Recomendo voltar a usar o pacote cors por segurança e padrão
+const cors = require('cors');
 const connectDB = require('./config/db');
 
 // ==========================================
@@ -19,31 +19,34 @@ const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 
 // ==========================================
+// CONFIGURAÇÃO DE CORS (IMPORTANTE: ANTES DAS ROTAS)
+// ==========================================
+app.use(cors({
+  origin: ["https://librasalvador.vercel.app", "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true
+}));
+
+// Resposta automática para o browser em requisições de teste (Preflight)
+app.options('*', cors());
+
+// ==========================================
+// MIDDLEWARES DE PARSING
+// ==========================================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ==========================================
 // CONEXÃO COM BANCO DE DATOS
 // ==========================================
 connectDB();
 
 // ==========================================
-// CONFIGURAÇÃO DE CORS (OTIMIZADA PARA VERCEL)
-// ==========================================
-app.use(cors({
-  // Permite o seu domínio específico e também localhost para testes
-  origin: ['https://librasalvador.vercel.app', 'http://localhost:5173'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ==========================================
 // SERVIR ARQUIVOS ESTÁTICOS
 // ==========================================
-// Nota: Em ambientes Serverless (Vercel), uploads locais não persistem. 
-// O ideal é usar Cloudinary ou AWS S3 no futuro.
-app.use('/uploads/materiais', express.static(path.join(__dirname, 'uploads/materiais')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/materiais', express.static(path.join(__dirname, '../uploads/materiais')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ==========================================
 // REGISTRO DE ROTAS DA API
@@ -57,7 +60,7 @@ app.use('/api/profissionais', profissionalRoutes);
 app.use('/api/b2b', clienteB2bRoutes);
 app.use('/api/admin', adminRoutes); 
 
-// Rota base para teste de vida da API
+// Rota base para teste
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
 
 // ==========================================
@@ -70,7 +73,6 @@ app.get('/api/stats', async (req, res) => {
     const Financeiro = require('./models/Financeiro');
     const ClienteB2B = require('./models/ClienteB2B');
 
-    // Executa as contagens em paralelo para melhor performance
     const [totalAlunos, totalCursos, transacoes] = await Promise.all([
       User.countDocuments({ role: 'aluno' }),
       Curso.countDocuments(),
@@ -84,7 +86,7 @@ app.get('/api/stats', async (req, res) => {
       console.log("Model B2B ainda não carregado.");
     }
 
-    const somaVendas = transacoes.reduce((acc, curr) => acc + curr.valor, 0);
+    const somaVendas = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
 
     res.json({
       alunos: totalAlunos,
@@ -103,7 +105,7 @@ app.get('/api/stats', async (req, res) => {
 // ==========================================
 module.exports = app;
 
-// Inicialização para rodar localmente
+// Inicialização local
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
