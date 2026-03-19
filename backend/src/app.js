@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 
@@ -24,23 +23,16 @@ const app = express();
 connectDB();
 
 // ==========================================
-// MIDDLEWARES & CORS CONFIG (VERSÃO VERCEL)
+// CONFIGURAÇÃO DE CORS (VERSÃO FINAL VERCEL)
 // ==========================================
-app.use(cors({
-  origin: 'https://librasalvador.vercel.app', // Domínio exato do seu frontend
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
-}));
-
-// Middleware manual para garantir que os headers de CORS sejam enviados em TODAS as respostas
+// Removida a biblioteca 'cors' externa para usar apenas o middleware manual
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'https://librasalvador.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
   
-  // Resposta rápida para o Preflight (requisição OPTIONS do navegador)
+  // Resposta rápida e obrigatória para o Preflight (requisição OPTIONS do navegador)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -49,7 +41,9 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// ==========================================
 // SERVIR ARQUIVOS ESTÁTICOS
+// ==========================================
 app.use('/uploads/materiais', express.static(path.join(__dirname, 'uploads/materiais')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -65,7 +59,7 @@ app.use('/api/profissionais', profissionalRoutes);
 app.use('/api/b2b', clienteB2bRoutes);
 app.use('/api/admin', adminRoutes); 
 
-// Rota base para teste
+// Rota base para teste de vida da API
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
 
 // ==========================================
