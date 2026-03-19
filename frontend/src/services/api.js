@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Detecta automaticamente se o site está rodando em produção (Vercel) ou local
+const isProduction = import.meta.env.PROD;
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  // Se for produção, usa a URL do seu backend na Vercel. 
+  // Se for local, usa o localhost:3000.
+  baseURL: isProduction 
+    ? 'https://librasalvador-api.vercel.app/api' // <-- COLOQUE A URL DO SEU BACKEND AQUI
+    : 'http://localhost:3000/api',
 });
 
 api.interceptors.request.use((config) => {

@@ -24,16 +24,26 @@ const app = express();
 connectDB();
 
 // ==========================================
-// MIDDLEWARES
+// MIDDLEWARES & CORS CONFIG
 // ==========================================
-app.use(cors());
+// Ajustado para permitir o seu novo domínio na Vercel
+app.use(cors({
+  origin: [
+    'https://librasalvador.vercel.app', 
+    'http://localhost:5173', 
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // SERVIR ARQUIVOS ESTÁTICOS
-// Esta linha é crucial para que o link de download funcione no painel do aluno
+// Nota: Na Vercel, o sistema de arquivos é somente leitura. 
+// Para que os materiais apareçam, eles precisam estar no seu repositório Git.
 app.use('/uploads/materiais', express.static(path.join(__dirname, 'uploads/materiais')));
-// Mantendo a rota geral de uploads caso use para fotos de perfil ou capas
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
 // REGISTRO DE ROTAS DA API
@@ -46,6 +56,9 @@ app.use('/api/materiais', materialRoutes);
 app.use('/api/profissionais', profissionalRoutes); 
 app.use('/api/b2b', clienteB2bRoutes);
 app.use('/api/admin', adminRoutes); 
+
+// Rota base para teste de fôlego do servidor
+app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
 
 // ==========================================
 // ROTA DE ESTATÍSTICAS (DASHBOARD)
@@ -82,11 +95,13 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// ==========================================
-// INICIALIZAÇÃO DO SERVIDOR
-// ==========================================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando com sucesso na porta ${PORT}`);
-  console.log(`📅 Data: ${new Date().toLocaleDateString('pt-BR')}`);
-});
+// Exportação necessária para o Vercel Serverless
+module.exports = app;
+
+// INICIALIZAÇÃO LOCAL (O Vercel ignora o app.listen, mas você precisa dele para rodar no seu PC)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando localmente na porta ${PORT}`);
+  });
+}
