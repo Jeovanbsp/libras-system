@@ -3,6 +3,7 @@ import axios from 'axios';
 const isProduction = import.meta.env.PROD;
 
 const api = axios.create({
+  // Garanta que não há uma barra "/" após o "api"
   baseURL: isProduction 
     ? 'https://librasalvador-api.vercel.app/api' 
     : 'http://localhost:3000/api',
@@ -10,7 +11,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
