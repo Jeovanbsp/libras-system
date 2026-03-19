@@ -2,14 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/src/app.js",
-      "use": "@vercel/node"
+      "src": "src/app.js",
+      "use": "@vercel/node",
+      "config": { "includeFiles": ["src/**", "routes/**", "models/**", "config/**"] }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/src/app.js",
+      "dest": "src/app.js",
       "headers": {
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Origin": "https://librasalvador.vercel.app",
@@ -19,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "backend/src/app.js"
+      "dest": "src/app.js"
     }
   ]
 }
