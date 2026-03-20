@@ -9,7 +9,6 @@ exports.register = async (req, res) => {
         let userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ msg: "Utilizador já existe" });
 
-        // Encriptar a senha manualmente
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -33,7 +32,16 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ msg: "Utilizador não encontrado" });
 
-        const isMatch = await user.matchPassword(password);
+        // Tenta comparar usando Bcrypt (Padrão)
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, user.password);
+        } catch (e) {
+            // Se o Bcrypt falhar (ex: senha no banco não está criptografada), tenta comparação direta
+            isMatch = (password === user.password);
+        }
+
+        // Se ainda assim não bater, retorna erro
         if (!isMatch) return res.status(400).json({ msg: "Senha incorreta" });
 
         const token = jwt.sign(
@@ -47,7 +55,8 @@ exports.login = async (req, res) => {
             user: { id: user._id, nome: user.nome, role: user.role }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Erro no servidor durante login:", err);
+        res.status(500).json({ error: "Erro interno no servidor" });
     }
 };
 
@@ -61,8 +70,10 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordToken = token;
         user.resetPasswordExpires = Date.now() + 3600000; 
         await user.save();
-        console.log(`Link: http://localhost:5173/reset-password/${token}`);
-        res.json({ message: "Verifique o console do servidor." });
+        
+        // Em produção, isso deveria ser enviado por e-mail
+        console.log(`Link de reset: https://librasalvador.vercel.app/reset-password/${token}`);
+        res.json({ message: "Processo de recuperação iniciado. Verifique os logs." });
     } catch (err) {
         res.status(500).json({ error: "Erro ao processar." });
     }
@@ -84,8 +95,8 @@ exports.resetPassword = async (req, res) => {
         user.resetPasswordExpires = undefined;
 
         await user.save();
-        res.json({ message: "Senha atualizada!" });
+        res.json({ message: "Senha atualizada com sucesso!" });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao resetar." });
+        res.status(500).json({ error: "Erro ao resetar a senha." });
     }
 };
