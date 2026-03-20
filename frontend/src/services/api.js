@@ -3,9 +3,9 @@ import axios from 'axios';
 const isProduction = import.meta.env.PROD;
 
 const api = axios.create({
-  // Garanta que não há uma barra "/" após o "api"
+  // Atualizado para apontar para o Render em produção
   baseURL: isProduction 
-    ? 'https://librasalvador-api.vercel.app/api' 
+    ? 'https://libras-system.onrender.com/api' 
     : 'http://localhost:3000/api',
 });
 
