@@ -63,7 +63,7 @@
             <div v-for="(mod, mIdx) in curso.modulos" :key="mIdx" class="module-item">
               <div class="module-input-row">
                 <input v-model="mod.titulo" placeholder="Título do Módulo" class="mod-title-input" />
-                <button type="button" @click="removerModulo(mIdx)" class="btn-icon-del">
+                <button type="button" @click="removerModulo(mIdx)" class="btn-icon-del" title="Remover Módulo">
                   <Trash2 :size="14" />
                 </button>
               </div>
@@ -73,7 +73,7 @@
                   <div class="lesson-input-row">
                     <input v-model="aula.titulo" placeholder="Nome da Aula" />
                     <input v-model="aula.videoUrl" placeholder="URL do Vídeo" />
-                    <button type="button" @click="removerAula(mIdx, aIdx)" class="btn-icon-del-mini">
+                    <button type="button" @click="removerAula(mIdx, aIdx)" class="btn-icon-del-mini" title="Remover Aula">
                       <X :size="14" />
                     </button>
                   </div>
@@ -113,10 +113,12 @@
           </div>
           <h4>{{ c.titulo }}</h4>
           <p class="line-clamp-2">{{ c.descricao }}</p>
+          
           <div class="course-stats-row">
              <span class="stat-tag"><Library :size="14" /> {{ c.modulos?.length || 0 }} Módulos</span>
              <span class="stat-tag"><Clock :size="14" /> {{ c.cargaHoraria }}h</span>
           </div>
+          
           <div class="curso-footer">
             <button @click="prepararEdicao(c)" class="btn-action-outline edit" title="Editar">
               <Pencil :size="16" />
@@ -276,6 +278,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* =========================================
+   BASE E ESTRUTURA
+   ========================================= */
 .layout-split { display: grid; grid-template-columns: 420px 1fr; gap: 30px; align-items: start; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 
@@ -285,7 +290,9 @@ onMounted(() => {
 .scrollable-content::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
 .scrollable-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-/* FORMULÁRIO */
+/* =========================================
+   FORMULÁRIO PRINCIPAL
+   ========================================= */
 .modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 6px; text-transform: uppercase; }
 .modern-form input, .modern-form textarea, .modern-form select { 
   width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; 
@@ -293,62 +300,111 @@ onMounted(() => {
 }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .section-divider { border-top: 1px solid #f1f5f9; margin: 25px 0; }
-.module-item { background: #f8fafc; padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #f1f5f9; }
 
-/* MODAL (AJUSTES DE DESIGN) */
-.modal-overlay { 
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; 
-  justify-content: center; z-index: 2000; backdrop-filter: blur(4px); 
-}
-.modal-content { max-width: 480px; width: 90%; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.modal-label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
-
-/* SELECT DO MODAL - CORRIGIDO */
-.modal-select {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background-color: #f8fafc;
-  color: #1e293b;
-  font-size: 0.95rem;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 15px center;
-  background-size: 18px;
-  transition: all 0.2s;
-}
-.modal-select:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background-color: white; }
-
-.modal-footer { margin-top: 30px; }
-
-/* BOTÕES */
 .form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 25px; }
 .btn-primary { 
   width: 100%; background: #004aad; color: white; border: none; padding: 16px; 
   border-radius: 14px; font-weight: 800; cursor: pointer; transition: 0.2s;
+  display: flex; justify-content: center; align-items: center; gap: 8px;
 }
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
 .btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-/* CARDS E GRID */
+/* =========================================
+   BOTÕES E SEÇÃO DE MÓDULOS E AULAS
+   ========================================= */
+.module-item { background: #f8fafc; padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #f1f5f9; }
+
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.section-header h4 { margin: 0; font-size: 1rem; color: #1e293b; font-weight: 800; }
+
+.btn-add-small {
+  background: #eff6ff; color: #004aad; border: 1px solid #bfdbfe; padding: 6px 12px;
+  border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center;
+  gap: 6px; cursor: pointer; transition: all 0.2s ease;
+}
+.btn-add-small:hover { background: #004aad; color: white; border-color: #004aad; transform: translateY(-1px); }
+
+.module-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
+.mod-title-input { flex: 1; font-weight: 700 !important; color: #004aad !important; border-color: #bfdbfe !important; background: white !important; }
+
+.btn-icon-del {
+  background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; border-radius: 10px; width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.btn-icon-del:hover { background: #ef4444; color: white; transform: scale(1.05); }
+
+.lesson-admin-card { background: white; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.lesson-input-row { display: flex; gap: 8px; align-items: center; }
+.lesson-input-row input { margin: 0 !important; padding: 10px !important; font-size: 0.85rem !important; }
+
+.btn-icon-del-mini {
+  background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.btn-icon-del-mini:hover { background: #fee2e2; color: #ef4444; }
+
+.btn-add-lesson {
+  width: 100%; background: transparent; color: #64748b; border: 1px dashed #cbd5e1; padding: 10px;
+  border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; margin-top: 5px; transition: all 0.2s;
+}
+.btn-add-lesson:hover { background: #f8fafc; color: #004aad; border-color: #94a3b8; }
+
+.upload-field { margin-top: 10px; }
+.file-label { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; }
+.file-status { font-size: 0.75rem; color: #10b981; font-weight: bold; margin-left: 8px; }
+
+/* =========================================
+   CARDS DOS CURSOS (AJUSTE VISUAL NOVO)
+   ========================================= */
 .cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.curso-card { position: relative; padding: 25px; padding-top: 55px; border: 1px solid #e2e8f0; }
-.price-badge { position: absolute; top: 20px; left: 20px; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; }
+
+.curso-card { 
+  position: relative; padding: 25px; padding-top: 65px; border: 1px solid #e2e8f0; 
+  transition: all 0.3s ease; display: flex; flex-direction: column;
+}
+.curso-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0, 74, 173, 0.08); border-color: #bfdbfe; }
+
+.curso-card h4 { font-size: 1.15rem; color: #1e293b; font-weight: 800; margin: 0 0 10px 0; }
+.curso-card p { color: #64748b; font-size: 0.85rem; line-height: 1.5; margin: 0 0 20px 0; min-height: 40px; }
+
+.price-badge { position: absolute; top: 20px; left: 20px; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; }
 .price-badge.free { background: #dcfce7; color: #166534; }
 .price-badge.paid { background: #fee2e2; color: #991b1b; }
-.curso-badge { position: absolute; top: 20px; right: 20px; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; }
 
-.curso-footer { display: flex; gap: 8px; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+.curso-badge { position: absolute; top: 20px; right: 20px; background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; }
+
+.course-stats-row { display: flex; gap: 10px; align-items: center; margin-top: auto; flex-wrap: wrap; }
+.stat-tag { display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; color: #475569; font-weight: 700; border: 1px solid #e2e8f0; }
+.stat-tag svg { color: #004aad; } 
+
+.curso-footer { display: flex; gap: 8px; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px; }
 .btn-action-outline { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #64748b; transition: 0.2s; }
-.btn-action-outline.edit:hover { color: #004aad; border-color: #004aad; background: #eff6ff; }
-.btn-action-outline.lib:hover { color: #004aad; border-color: #004aad; background: #eff6ff; }
-.btn-action-outline.del:hover { color: #ef4444; border-color: #ef4444; background: #fee2e2; }
+.btn-action-outline.edit:hover { color: #004aad; border-color: #bfdbfe; background: #eff6ff; }
+.btn-action-outline.lib:hover { color: #10b981; border-color: #a7f3d0; background: #ecfdf5; } 
+.btn-action-outline.del:hover { color: #ef4444; border-color: #fecaca; background: #fee2e2; }
 
-.file-label { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; }
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
+
+/* =========================================
+   MODAL (ESTILIZAÇÃO)
+   ========================================= */
+.modal-overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; 
+  z-index: 2000; backdrop-filter: blur(4px); 
+}
+.modal-content { max-width: 480px; width: 90%; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+.modal-select {
+  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;
+  color: #1e293b; font-size: 0.95rem; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 15px center; background-size: 18px; transition: all 0.2s;
+}
+.modal-select:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background-color: white; }
+.modal-footer { margin-top: 30px; }
+.btn-icon-close { background: none; border: none; cursor: pointer; color: #64748b; transition: 0.2s; }
+.btn-icon-close:hover { color: #ef4444; transform: scale(1.1); }
 </style>

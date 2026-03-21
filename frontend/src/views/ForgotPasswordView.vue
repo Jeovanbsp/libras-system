@@ -1,112 +1,123 @@
-<template>
-  <div class="auth-wrapper">
-    <div class="glass-card auth-box">
-      
-      <div class="logo-container">
-        <img src="@/assets/logo.png" alt="Libras System" class="login-logo" />
-      </div>
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const transporter = require('../config/mailer'); // <-- Importando o enviador de e-mail
 
-      <div class="title-box">
-        <KeyRound :size="24" class="text-brand" />
-        <h1>Recuperar<span>Senha</span></h1>
-      </div>
-      
-      <p class="subtitle">Insira o seu e-mail para receber o link de redefinição.</p>
+exports.register = async (req, res) => {
+    const { nome, email, password, role } = req.body;
+    try {
+        let userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ msg: "Utilizador já existe" });
 
-      <form @submit.prevent="handleForgot" class="modern-form">
-        <div class="form-group">
-          <label>E-mail Cadastrado</label>
-          <input 
-            v-model="email" 
-            type="email" 
-            placeholder="seu-email@exemplo.com" 
-            required 
-            :disabled="enviado"
-          />
-        </div>
-        
-        <button type="submit" class="btn-primary" :disabled="loading || enviado">
-          <Send v-if="!enviado && !loading" :size="18" />
-          {{ loading ? 'Processando...' : enviado ? 'E-mail Enviado!' : 'Enviar Link' }}
-        </button>
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        <router-link to="/aluno/login" class="btn-back">
-          <ArrowLeft :size="16" /> Voltar para o Login
-        </router-link>
-      </form>
+        const newUser = new User({
+            nome,
+            email,
+            password: hashedPassword,
+            role: role || 'aluno'
+        });
 
-      <div v-if="message" class="alert success">
-        <CheckCircle2 :size="18" /> {{ message }}
-      </div>
-      <div v-if="error" class="alert error">
-        <AlertCircle :size="18" /> {{ error }}
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref } from 'vue';
-import { KeyRound, Send, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-import api from '../services/api';
-
-const email = ref('');
-const loading = ref(false);
-const enviado = ref(false);
-const message = ref('');
-const error = ref('');
-
-const handleForgot = async () => {
-  loading.value = true;
-  error.value = '';
-  message.value = '';
-
-  try {
-    const res = await api.post('/auth/forgot-password', { email: email.value });
-    message.value = res.data.message;
-    enviado.value = true;
-  } catch (err) {
-    error.value = err.response?.data?.message || "Erro ao solicitar recuperação.";
-  } finally {
-    loading.value = false;
-  }
+        await newUser.save();
+        res.status(201).json({ msg: "Utilizador criado com sucesso!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
-</script>
 
-<style scoped>
-.auth-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
-.auth-box { width: 420px; text-align: center; }
+exports.login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ msg: "Utilizador não encontrado" });
 
-.logo-container { margin-bottom: 25px; }
-.login-logo { max-width: 250px; height: auto; }
+        // Validação estrita e segura usando Bcrypt
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ msg: "Senha incorreta" });
 
-.title-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
-.text-brand { color: #004aad; }
-.title-box h1 { font-size: 1.5rem; color: #1e293b; font-weight: 800; margin: 0; }
-.title-box span { color: #004aad; }
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
-.subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 30px; }
+        res.json({
+            token,
+            user: { id: user._id, nome: user.nome, role: user.role }
+        });
+    } catch (err) {
+        console.error("Erro no servidor durante login:", err);
+        res.status(500).json({ error: "Erro interno no servidor" });
+    }
+};
 
-.modern-form { text-align: left; }
-.modern-form label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
-.modern-form input { 
-  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
-  background: #f8fafc; margin-bottom: 20px; transition: 0.2s; box-sizing: border-box;
-}
-.modern-form input:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background: white; }
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "E-mail não cadastrado no sistema." });
 
-.btn-primary { 
-  width: 100%; background: #004aad; color: white; border: none; padding: 16px; 
-  border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        const token = crypto.randomBytes(20).toString('hex');
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = Date.now() + 3600000; // Validade de 1 hora
+        await user.save();
+        
+        // Link que vai no e-mail apontando para o seu frontend na Vercel
+        const resetUrl = `https://librasalvador.vercel.app/reset-password/${token}`;
 
-.btn-back { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 25px; color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 700; transition: 0.2s; }
-.btn-back:hover { color: #004aad; }
+        // Construindo o corpo do e-mail
+        const mailOptions = {
+            from: `"Libras Salvador" <${process.env.EMAIL_USER}>`,
+            to: user.email,
+            subject: 'Recuperação de Senha - Libras Salvador',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+                    <h2 style="color: #004aad; text-align: center;">Recuperação de Senha</h2>
+                    <p style="color: #333; font-size: 16px;">Olá, <strong>${user.nome}</strong>!</p>
+                    <p style="color: #333; font-size: 16px;">Recebemos um pedido para redefinir a senha da sua conta no sistema Libras Salvador.</p>
+                    <p style="color: #333; font-size: 16px;">Clique no botão abaixo para criar uma nova senha:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetUrl}" style="background-color: #004aad; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Redefinir Minha Senha</a>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px;">Este link é válido por 1 hora. Se você não solicitou essa alteração, por favor, ignore este e-mail.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <p style="color: #64748b; font-size: 12px; text-align: center;">Equipe Libras Salvador</p>
+                </div>
+            `
+        };
 
-.alert { padding: 15px; border-radius: 12px; margin-top: 25px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-</style>
+        // Dispara o e-mail
+        await transporter.sendMail(mailOptions);
+
+        res.json({ message: "E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada." });
+    } catch (err) {
+        console.error("Erro ao enviar e-mail:", err);
+        res.status(500).json({ error: "Erro ao tentar enviar o e-mail. Tente novamente mais tarde." });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { password } = req.body;
+    const { token } = req.params;
+    try {
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+        
+        if (!user) return res.status(400).json({ message: "O link é inválido ou já expirou." });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save();
+        res.json({ message: "Senha atualizada com sucesso! Você já pode fazer login." });
+    } catch (err) {
+        console.error("Erro no reset de senha:", err);
+        res.status(500).json({ error: "Erro ao tentar redefinir a senha." });
+    }
+};
