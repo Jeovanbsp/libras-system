@@ -32,16 +32,8 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ msg: "Utilizador não encontrado" });
 
-        // Tenta comparar usando Bcrypt (Padrão)
-        let isMatch = false;
-        try {
-            isMatch = await bcrypt.compare(password, user.password);
-        } catch (e) {
-            // Se o Bcrypt falhar (ex: senha no banco não está criptografada), tenta comparação direta
-            isMatch = (password === user.password);
-        }
-
-        // Se ainda assim não bater, retorna erro
+        // Validação estrita e segura usando Bcrypt
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ msg: "Senha incorreta" });
 
         const token = jwt.sign(
