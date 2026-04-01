@@ -17,6 +17,7 @@ const cursoSchema = new mongoose.Schema({
   titulo: { type: String, required: true },
   descricao: { type: String, required: true },
   cargaHoraria: { type: Number, required: true },
+  // ATUALIZADO: Agora suportará Cursos, Palestras e Oficinas via Frontend
   nivel: { type: String, default: 'Básico' },
   // Campos de controle de acesso
   gratuito: { type: Boolean, default: false },

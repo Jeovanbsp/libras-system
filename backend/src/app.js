@@ -15,11 +15,14 @@ const clienteB2bRoutes = require('./routes/clienteB2bRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const apostilaRoutes = require('./routes/apostilaRoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
+const servicoConfirmadoRoutes = require('./routes/servicoConfirmadoRoutes');
+// NOVA ROTA DE ESTOQUE:
+const estoqueRoutes = require('./routes/estoqueRoutes');
 
 const app = express();
 
 // ==========================================
-// 1. CONFIGURAÇÃO DE CORS (PRIMEIRO DE TUDO)
+// 1. CONFIGURAÇÃO DE CORS
 // ==========================================
 app.use(cors({
   origin: ["https://librasalvador.vercel.app", "http://localhost:5173"],
@@ -28,7 +31,6 @@ app.use(cors({
   credentials: true
 }));
 
-// CORREÇÃO EXPRESS 5: Substituído '*' por '(.*)' para evitar o PathError
 app.options('(.*)', cors());
 
 // ==========================================
@@ -61,6 +63,9 @@ app.use('/api/b2b', clienteB2bRoutes);
 app.use('/api/admin', adminRoutes); 
 app.use('/api/apostilas', apostilaRoutes);
 app.use('/api/vendas', vendaRoutes);
+app.use('/api/servicos', servicoConfirmadoRoutes);
+// REGISTRO DA ROTA DE ESTOQUE:
+app.use('/api/estoque', estoqueRoutes);
 
 // Rota de teste para confirmar que a API está online
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
@@ -107,7 +112,6 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 Servidor rodando localmente na porta ${PORT}`);
   });
 } else {
-  // No Render (produção), precisamos que o app escute a porta
   app.listen(PORT, () => {
     console.log(`🚀 Servidor de produção rodando na porta ${PORT}`);
   });

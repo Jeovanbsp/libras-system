@@ -87,7 +87,6 @@ const routes = [
     component: () => import('../views/UsuariosView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
-  // NOVA ROTA: LIBERAÇÃO DE CURSOS PAGOS
   {
     path: '/admin/liberar-acesso',
     name: 'LiberarAcesso',
@@ -101,10 +100,16 @@ const routes = [
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
+    path: '/admin/servicos',
+    name: 'Servicos',
+    component: () => import('../views/ServicosView.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
     path: '/admin/financeiro',
     name: 'AdminFinanceiro',
     component: () => import('../views/FinanceiroView.vue'),
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'admin' } // Será filtrado de admin restrito pelo beforeEach abaixo
   },
   {
     path: '/admin/calculadora',
@@ -116,6 +121,13 @@ const routes = [
     path: '/admin/materiais',
     name: 'AdminMateriais',
     component: () => import('../views/MateriaisView.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  // NOVA ROTA DE ESTOQUE
+  {
+    path: '/admin/estoque',
+    name: 'EstoqueMateriais',
+    component: () => import('../views/EstoqueView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   }
 ];
@@ -131,14 +143,29 @@ router.beforeEach((to, from, next) => {
   const userRole = localStorage.getItem('userRole');
 
   if (to.meta.requiresAuth && !token) {
-    next('/aluno/login');
+    return next('/aluno/login');
   } 
-  else if (to.meta.role && to.meta.role !== userRole) {
-    userRole === 'admin' ? next('/admin/dashboard') : next('/aluno/dashboard');
-  } 
-  else {
-    next();
+  
+  if (to.meta.role) {
+    // Regras para rotas de Admin
+    if (to.meta.role === 'admin') {
+      // Se não for nenhum dos dois tipos de admin, manda pro dashboard de aluno
+      if (userRole !== 'admin' && userRole !== 'admin_restrito') {
+        return next('/aluno/dashboard');
+      }
+      
+      // BLOQUEIO FINANCEIRO: Se for admin restrito e tentar acessar o financeiro
+      if (to.path === '/admin/financeiro' && userRole === 'admin_restrito') {
+        return next('/admin/dashboard'); 
+      }
+    } 
+    // Regras para rotas de Aluno
+    else if (to.meta.role === 'aluno' && userRole !== 'aluno') {
+      return next('/admin/dashboard');
+    }
   }
+
+  next();
 });
 
 export default router;

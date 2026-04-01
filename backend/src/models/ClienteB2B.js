@@ -19,18 +19,19 @@ const clienteB2bSchema = new mongoose.Schema({
     required: [true, 'O e-mail de contacto é obrigatório'],
     lowercase: true
   },
-  // AJUSTADO: De 'telefone' para 'whatsapp' para sincronizar com o Frontend
   whatsapp: {
     type: String
   },
-  // Para sabermos que tipo de serviço esta empresa costuma pedir
   servicosInteresse: [{
     type: String
-    // Removido o enum para evitar erros de validação estritos
   }],
-  // NOVO: Campo para observações do contrato ou empresa
   observacoes: {
     type: String
+  },
+  // NOVO CAMPO: Preço por hora praticado para este cliente
+  precoHora: {
+    type: Number,
+    default: 0
   },
   status: {
     type: String,

@@ -110,4 +110,40 @@ const handleForgot = async () => {
 .alert { padding: 15px; border-radius: 12px; margin-top: 25px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* =========================================
+   RESPONSIVIDADE MOBILE PARA AS TELAS
+   ========================================= */
+@media (max-width: 992px) {
+  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
+  .layout-split { 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+  }
+  
+  /* Empilha os campos de formulário que estavam lado a lado */
+  .form-row { 
+    flex-direction: column; 
+    gap: 15px; 
+  }
+  
+  /* Ajusta o padding dos cartões para ecrãs pequenos */
+  .glass-card { 
+    padding: 20px; 
+  }
+
+  /* Ajusta cabeçalhos internos */
+  .header-row, .servico-header, .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  /* Faz com que os botões de ação ocupem a largura toda se necessário */
+  .item-actions-wrapper, .item-actions {
+    align-items: flex-start;
+    margin-top: 15px;
+    width: 100%;
+  }
+}
 </style>

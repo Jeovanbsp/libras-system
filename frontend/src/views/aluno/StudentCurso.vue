@@ -72,4 +72,39 @@ onMounted(buscarMeusCursos);
 .btn-access:hover { background: #1e3a8a; transform: scale(1.03); box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2); }
 .empty-msg { grid-column: 1 / -1; text-align: center; padding: 60px; color: #94a3b8; font-weight: 500; background: white; border-radius: 24px; border: 2px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 .empty-icon-svg { color: #cbd5e1; }
+/* =========================================
+   RESPONSIVIDADE MOBILE PARA AS TELAS
+   ========================================= */
+@media (max-width: 992px) {
+  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
+  .layout-split { 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+  }
+  
+  /* Empilha os campos de formulário que estavam lado a lado */
+  .form-row { 
+    flex-direction: column; 
+    gap: 15px; 
+  }
+  
+  /* Ajusta o padding dos cartões para ecrãs pequenos */
+  .glass-card { 
+    padding: 20px; 
+  }
+
+  /* Ajusta cabeçalhos internos */
+  .header-row, .servico-header, .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  /* Faz com que os botões de ação ocupem a largura toda se necessário */
+  .item-actions-wrapper, .item-actions {
+    align-items: flex-start;
+    margin-top: 15px;
+    width: 100%;
+  }
+}
 </style>

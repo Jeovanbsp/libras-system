@@ -11,16 +11,18 @@ const profissionalSchema = new mongoose.Schema({
     unique: true,
     lowercase: true
   },
-  // AJUSTADO: Mudamos de 'telefone' para 'whatsapp' para bater com o Frontend
   whatsapp: {
     type: String
   },
+  // NOVOS CAMPOS ADICIONADOS
+  cpf: { type: String },
+  rg: { type: String },
+  pix: { type: String },
+  
   especialidades: [{
     type: String,
-    // Removi o enum estrito para evitar erros de validação caso mude o nome no front
     default: 'Educação'
   }],
-  // NOVO: Campo para as observações que adicionamos
   observacoes: {
     type: String
   },
@@ -28,9 +30,10 @@ const profissionalSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'O valor da hora é necessário']
   },
-  // Campos opcionais mantidos para compatibilidade
+  // ATUALIZADO: Controle restrito de disponibilidade
   disponibilidade: {
     type: String, 
+    enum: ['Manhãs', 'Tardes', 'Noites', 'Integral'],
     default: 'Integral'
   },
   ativo: {

@@ -115,4 +115,39 @@ onMounted(async () => {
 
 .arrow { transition: transform 0.3s ease; }
 .glass-card.clickable:hover .arrow { transform: translateX(6px); color: #003a8c; }
+/* =========================================
+   RESPONSIVIDADE MOBILE PARA AS TELAS
+   ========================================= */
+@media (max-width: 992px) {
+  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
+  .layout-split { 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+  }
+  
+  /* Empilha os campos de formulário que estavam lado a lado */
+  .form-row { 
+    flex-direction: column; 
+    gap: 15px; 
+  }
+  
+  /* Ajusta o padding dos cartões para ecrãs pequenos */
+  .glass-card { 
+    padding: 20px; 
+  }
+
+  /* Ajusta cabeçalhos internos */
+  .header-row, .servico-header, .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  /* Faz com que os botões de ação ocupem a largura toda se necessário */
+  .item-actions-wrapper, .item-actions {
+    align-items: flex-start;
+    margin-top: 15px;
+    width: 100%;
+  }
+}
 </style>

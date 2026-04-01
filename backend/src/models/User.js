@@ -8,17 +8,18 @@ const UserSchema = new mongoose.Schema({
   role: { 
     type: String, 
     required: true, 
-    enum: ['admin', 'aluno'], 
+    enum: ['admin', 'admin_restrito', 'aluno'], // NOVO: admin_restrito adicionado
     default: 'aluno' 
   },
   cursosMatriculados: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Curso' 
   }],
-  // NOVO CAMPO PARA O PROGRESSO
   aulasConcluidas: [{ 
     type: mongoose.Schema.Types.ObjectId 
   }],
+  // NOVO: Campo de turma para facilitar o controle
+  turma: { type: String },
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, { timestamps: true });

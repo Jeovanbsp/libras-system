@@ -8,7 +8,10 @@ router.post('/', authMiddleware, profissionalController.criarProfissional);
 router.get('/', authMiddleware, profissionalController.listarProfissionais);
 router.get('/:id', authMiddleware, profissionalController.buscarPorId);
 
-// ADICIONE ESTA LINHA AQUI:
+// --- NOVA ROTA: ATUALIZAR PROFISSIONAL ---
+router.put('/:id', authMiddleware, profissionalController.atualizarProfissional);
+
+// ROTA EXCLUIR
 router.delete('/:id', authMiddleware, profissionalController.excluirProfissional);
 
 module.exports = router;

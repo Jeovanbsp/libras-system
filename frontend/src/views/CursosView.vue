@@ -27,9 +27,9 @@
             <div>
               <label>Nível</label>
               <select v-model="curso.nivel" class="custom-select">
-                <option value="Básico">Básico</option>
-                <option value="Intermediário">Intermediário</option>
-                <option value="Avançado">Avançado</option>
+                <option value="curso">Curso</option>
+                <option value="palestra">Palestra</option>
+                <option value="oficina">Oficina</option>
               </select>
             </div>
           </div>
@@ -107,7 +107,7 @@
 
       <div class="cursos-grid">
         <div v-for="c in cursos" :key="c._id" class="glass-card curso-card">
-          <div class="curso-badge">{{ c.nivel }}</div>
+          <div class="curso-badge">{{ c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) }}</div>
           <div :class="['price-badge', c.gratuito ? 'free' : 'paid']">
             {{ c.gratuito ? 'Grátis' : 'R$ ' + (c.valor || 0).toFixed(2).replace('.', ',') }}
           </div>
@@ -180,7 +180,7 @@ const cursoParaLiberar = ref(null);
 const alunoSelecionadoId = ref('');
 
 const cursoInicial = { 
-  titulo: '', descricao: '', cargaHoraria: 0, nivel: 'Básico', gratuito: true, valor: 0,
+  titulo: '', descricao: '', cargaHoraria: 0, nivel: 'curso', gratuito: true, valor: 0,
   modulos: [{ titulo: '', aulas: [{ titulo: '', videoUrl: '', material: '' }] }]
 };
 
@@ -407,4 +407,40 @@ onMounted(() => {
 .modal-footer { margin-top: 30px; }
 .btn-icon-close { background: none; border: none; cursor: pointer; color: #64748b; transition: 0.2s; }
 .btn-icon-close:hover { color: #ef4444; transform: scale(1.1); }
+
+/* =========================================
+   RESPONSIVIDADE MOBILE PARA AS TELAS
+   ========================================= */
+@media (max-width: 992px) {
+  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
+  .layout-split { 
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+  }
+  
+  /* Empilha os campos de formulário que estavam lado a lado */
+  .form-row { 
+    flex-direction: column; 
+    gap: 15px; 
+  }
+  
+  /* Ajusta o padding dos cartões para ecrãs pequenos */
+  .glass-card { 
+    padding: 20px; 
+  }
+
+  /* Ajusta cabeçalhos internos */
+  .header-row, .servico-header, .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  /* Faz com que os botões de ação ocupem a largura toda se necessário */
+  .item-actions-wrapper, .item-actions {
+    align-items: flex-start;
+    margin-top: 15px;
+    width: 100%;
+  }
+}
 </style>

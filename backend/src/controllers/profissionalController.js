@@ -1,6 +1,6 @@
 const Profissional = require('../models/Profissional');
 
-// Cadastrar novo profissional (Já aceita whatsapp e observacoes via req.body)
+// Cadastrar novo profissional
 exports.criarProfissional = async (req, res) => {
   try {
     const novoProfissional = await Profissional.create(req.body);
@@ -10,11 +10,26 @@ exports.criarProfissional = async (req, res) => {
   }
 };
 
-// Listar todos os profissionais
+// Listar todos os profissionais (AGORA COM FILTROS AVANÇADOS)
 exports.listarProfissionais = async (req, res) => {
   try {
-    const { especialidade } = req.query;
-    const filtro = especialidade ? { especialidades: especialidade } : {};
+    const { especialidade, nome, disponibilidade } = req.query;
+    let filtro = {};
+
+    // Filtro por Nome (ignorando maiúsculas e minúsculas)
+    if (nome) {
+      filtro.nome = { $regex: new RegExp(nome, 'i') };
+    }
+    
+    // Filtro por Especialidade
+    if (especialidade) {
+      filtro.especialidades = especialidade;
+    }
+
+    // Filtro por Disponibilidade
+    if (disponibilidade) {
+      filtro.disponibilidade = disponibilidade;
+    }
     
     const profissionais = await Profissional.find(filtro).sort({ dataCadastro: -1 });
     res.status(200).json(profissionais);
@@ -34,7 +49,26 @@ exports.buscarPorId = async (req, res) => {
   }
 };
 
-// --- NOVA FUNÇÃO: EXCLUIR PROFISSIONAL ---
+// --- NOVA FUNÇÃO: ATUALIZAR/MODIFICAR PROFISSIONAL ---
+exports.atualizarProfissional = async (req, res) => {
+  try {
+    const profissionalAtualizado = await Profissional.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true } // Retorna o doc atualizado e roda as validações do Model
+    );
+
+    if (!profissionalAtualizado) {
+      return res.status(404).json({ message: "Profissional não encontrado" });
+    }
+
+    res.status(200).json(profissionalAtualizado);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// EXCLUIR PROFISSIONAL
 exports.excluirProfissional = async (req, res) => {
   try {
     const profissional = await Profissional.findById(req.params.id);
@@ -43,7 +77,6 @@ exports.excluirProfissional = async (req, res) => {
       return res.status(404).json({ message: "Profissional não encontrado" });
     }
 
-    // Removendo do MongoDB
     await profissional.deleteOne();
     
     res.status(200).json({ message: "Profissional removido com sucesso!" });

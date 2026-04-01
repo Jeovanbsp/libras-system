@@ -32,10 +32,32 @@ exports.liberarCursoManual = async (req, res) => {
   }
 };
 
-// Listar todos os alunos (Útil para você selecionar no formulário de liberação)
+// Listar alunos (AGORA COM FILTROS DE NOME E PERÍODO)
 exports.listarAlunos = async (req, res) => {
   try {
-    const alunos = await User.find({ role: 'aluno' }).select('nome email');
+    const { busca, dataInicio, dataFim } = req.query;
+    let filtro = { role: 'aluno' }; // Garante que só traz alunos
+
+    // Filtro por Nome ou Email
+    if (busca) {
+      filtro.$or = [
+        { nome: { $regex: new RegExp(busca, 'i') } },
+        { email: { $regex: new RegExp(busca, 'i') } }
+      ];
+    }
+
+    // Filtro por Data de Cadastro
+    if (dataInicio || dataFim) {
+      filtro.dataCadastro = {};
+      if (dataInicio) filtro.dataCadastro.$gte = new Date(dataInicio);
+      if (dataFim) {
+        let fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999); // Vai até o fim do dia
+        filtro.dataCadastro.$lte = fim;
+      }
+    }
+
+    const alunos = await User.find(filtro).select('-password').sort({ dataCadastro: -1 });
     res.json(alunos);
   } catch (error) {
     res.status(500).json({ message: "Erro ao listar alunos." });
