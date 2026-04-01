@@ -75,6 +75,11 @@
             <span class="role">Administrador</span>
           </div>
           <div class="avatar">AD</div>
+          
+          <button @click="logout" class="btn-header-logout" title="Sair do Sistema">
+            <LogOut :size="22" />
+          </button>
+
         </div>
       </header>
 
@@ -163,6 +168,28 @@ const logout = () => {
 .user-text .name { font-weight: 600; color: #1e293b; font-size: 0.9rem; }
 .user-text .role { font-size: 0.75rem; color: #94a3b8; }
 .avatar { width: 42px; height: 42px; background: #004aad; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+/* ESTILO DO NOVO BOTÃO DE LOGOUT NO HEADER */
+.btn-header-logout {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #ef4444; 
+  cursor: pointer;
+  padding: 8px;
+  margin-left: 15px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-header-logout:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  transform: scale(1.05); 
+}
+
 .page-body { animation: fadeIn 0.4s ease-out; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -197,6 +224,8 @@ const logout = () => {
 
   .main-content { margin-left: 0; padding: 25px 20px; }
   .content-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+  
+  /* Mantém o botão de logout ao lado do Avatar, mesmo na versão mobile */
   .user-profile { align-self: flex-end; }
 }
 </style>

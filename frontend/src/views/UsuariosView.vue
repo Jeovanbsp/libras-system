@@ -117,7 +117,7 @@ const filtros = ref({
 
 const carregarUsuarios = async () => {
   try {
-    const res = await api.get('/admin/alunos', { params: filtros.value });
+    const res = await api.get('/admin/usuarios', { params: filtros.value });
     usuarios.value = res.data;
   } catch (error) {
     console.error('Erro ao carregar usuários');
@@ -203,6 +203,7 @@ onMounted(carregarUsuarios);
 .btn-del-mini:hover { color: #ef4444; background: #fef2f2; }
 
 .empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
 /* =========================================
    RESPONSIVIDADE MOBILE PARA AS TELAS
    ========================================= */

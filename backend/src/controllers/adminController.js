@@ -6,16 +6,11 @@ exports.liberarCursoManual = async (req, res) => {
     const { alunoId, cursoId } = req.body;
 
     const aluno = await User.findById(alunoId);
-    if (!aluno) {
-      return res.status(404).json({ message: "Aluno não encontrado." });
-    }
+    if (!aluno) return res.status(404).json({ message: "Aluno não encontrado." });
 
     const curso = await Curso.findById(cursoId);
-    if (!curso) {
-      return res.status(404).json({ message: "Curso não encontrado." });
-    }
+    if (!curso) return res.status(404).json({ message: "Curso não encontrado." });
 
-    // Verifica se o aluno já tem o curso para não duplicar
     const jaTem = aluno.cursosMatriculados.some(id => id.toString() === cursoId);
     
     if (!jaTem) {
@@ -25,18 +20,55 @@ exports.liberarCursoManual = async (req, res) => {
     } else {
       return res.status(400).json({ message: "O aluno já possui acesso a este curso." });
     }
-
   } catch (error) {
-    console.error("Erro na liberação manual:", error);
     res.status(500).json({ message: "Erro interno ao liberar curso." });
   }
 };
 
-// Listar alunos (AGORA COM FILTROS DE NOME E PERÍODO)
+// UTILIZADO PELO MODAL DE LIBERAR CURSOS (Traz apenas Alunos)
 exports.listarAlunos = async (req, res) => {
   try {
+    const alunos = await User.find({ role: 'aluno' }).select('-password').sort({ createdAt: -1 });
+    res.json(alunos);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao listar alunos." });
+  }
+};
+
+// NOVA FUNÇÃO: Traz TODOS os utilizadores para a Tabela de Gestão (Admins e Alunos)
+exports.listarTodosUsuarios = async (req, res) => {
+  try {
     const { busca, dataInicio, dataFim } = req.query;
-    let filtro = { role: 'aluno' }; // Garante que só traz alunos
+    let filtro = {}; // Sem restrição de 'role', traz todos!
+
+    if (busca) {
+      filtro.$or = [
+        { nome: { $regex: new RegExp(busca, 'i') } },
+        { email: { $regex: new RegExp(busca, 'i') } }
+      ];
+    }
+
+    // Corrigido para utilizar createdAt (campo padrão do Mongoose timestamps)
+    if (dataInicio || dataFim) {
+      filtro.createdAt = {};
+      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
+      if (dataFim) {
+        let fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999); // Vai até o último segundo do dia
+        filtro.createdAt.$lte = fim;
+      }
+    }
+
+    const usuarios = await User.find(filtro).select('-password').sort({ createdAt: -1 });
+    res.json(usuarios);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao listar todos os utilizadores." });
+  }
+  // Adicione esta função no final do seu adminController.js
+exports.listarTodosUsuarios = async (req, res) => {
+  try {
+    const { busca, dataInicio, dataFim } = req.query;
+    let filtro = {}; // Sem restrição de 'role', traz todos (Admins e Alunos)!
 
     // Filtro por Nome ou Email
     if (busca) {
@@ -46,20 +78,21 @@ exports.listarAlunos = async (req, res) => {
       ];
     }
 
-    // Filtro por Data de Cadastro
+    // Filtro por Data de Cadastro (usa o createdAt do Mongoose)
     if (dataInicio || dataFim) {
-      filtro.dataCadastro = {};
-      if (dataInicio) filtro.dataCadastro.$gte = new Date(dataInicio);
+      filtro.createdAt = {};
+      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
       if (dataFim) {
         let fim = new Date(dataFim);
-        fim.setHours(23, 59, 59, 999); // Vai até o fim do dia
-        filtro.dataCadastro.$lte = fim;
+        fim.setHours(23, 59, 59, 999);
+        filtro.createdAt.$lte = fim;
       }
     }
 
-    const alunos = await User.find(filtro).select('-password').sort({ dataCadastro: -1 });
-    res.json(alunos);
+    const usuarios = await User.find(filtro).select('-password').sort({ createdAt: -1 });
+    res.json(usuarios);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao listar alunos." });
+    res.status(500).json({ message: "Erro ao listar todos os utilizadores." });
   }
+};
 };

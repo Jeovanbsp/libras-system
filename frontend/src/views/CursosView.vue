@@ -16,7 +16,7 @@
           
           <div class="form-group">
             <label>Descrição</label>
-            <textarea v-model="curso.descricao" rows="3" placeholder="Detalhes do curso..."></textarea>
+            <textarea v-model="curso.descricao" rows="3" placeholder="Detalhes do curso..." required></textarea>
           </div>
           
           <div class="form-row">
@@ -107,7 +107,7 @@
 
       <div class="cursos-grid">
         <div v-for="c in cursos" :key="c._id" class="glass-card curso-card">
-          <div class="curso-badge">{{ c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) }}</div>
+          <div class="curso-badge">{{ c.nivel ? c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) : 'Curso' }}</div>
           <div :class="['price-badge', c.gratuito ? 'free' : 'paid']">
             {{ c.gratuito ? 'Grátis' : 'R$ ' + (c.valor || 0).toFixed(2).replace('.', ',') }}
           </div>
@@ -244,11 +244,37 @@ const uploadMaterial = async (event, mIdx, aIdx) => {
 
 const salvarCurso = async () => {
   try {
-    if (curso.value.gratuito) curso.value.valor = 0;
-    if (editandoId.value) await api.put(`/cursos/${editandoId.value}`, curso.value);
-    else await api.post('/cursos', curso.value);
-    cancelarEdicao(); buscarCursos(); alert("Salvo com sucesso!");
-  } catch (err) { alert("Erro ao salvar curso."); }
+    // 1. Clonar para não alterar o formulário visualmente
+    let payload = JSON.parse(JSON.stringify(curso.value));
+    
+    if (payload.gratuito) payload.valor = 0;
+
+    // 2. Limpeza: Só envia módulos que tenham título e filtra as suas aulas vazias
+    if (payload.modulos && payload.modulos.length > 0) {
+      payload.modulos = payload.modulos
+        .filter(mod => mod.titulo && mod.titulo.trim() !== '')
+        .map(mod => {
+          if (mod.aulas && mod.aulas.length > 0) {
+             mod.aulas = mod.aulas.filter(aula => aula.titulo && aula.titulo.trim() !== '');
+          }
+          return mod;
+        });
+    }
+
+    // 3. Enviar para a API
+    if (editandoId.value) {
+      await api.put(`/cursos/${editandoId.value}`, payload);
+    } else {
+      await api.post('/cursos', payload);
+    }
+    
+    cancelarEdicao(); 
+    buscarCursos(); 
+    alert("Salvo com sucesso!");
+  } catch (err) { 
+    console.error("Erro completo:", err.response?.data);
+    alert("Erro ao salvar: " + (err.response?.data?.message || "Verifique se não deixou nenhum campo obrigatório em branco.")); 
+  }
 };
 
 const prepararEdicao = (c) => { 
