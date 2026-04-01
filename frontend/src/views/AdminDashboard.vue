@@ -49,7 +49,7 @@
         </div>
       </div>
 
-      <div class="glass-card clickable" @click="router.push('/admin/financeiro')">
+      <div v-if="userRole === 'admin'" class="glass-card clickable" @click="router.push('/admin/financeiro')">
         <div class="card-header">
           <span class="tag gold">FINANCEIRO</span>
           <h3>Receita Total</h3>
@@ -98,12 +98,15 @@ import {
   Calculator, 
   HandMetal, 
   UploadCloud 
-} from 'lucide-vue-next'; // Ícones profissionais
+} from 'lucide-vue-next'; 
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const router = useRouter();
 const stats = ref({ alunos: 0, cursos: 0, clientesB2B: 0, vendas: '0.00' });
+
+// NOVO: Lê o cargo do utilizador logado
+const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 
 onMounted(async () => {
   try {
@@ -181,6 +184,7 @@ onMounted(async () => {
   .welcome-banner { flex-direction: column; text-align: center; }
   .banner-icon-wrapper { display: none; }
 }
+
 /* =========================================
    RESPONSIVIDADE MOBILE PARA AS TELAS
    ========================================= */
