@@ -1,38 +1,22 @@
 const mongoose = require('mongoose');
 
-const estoqueMaterialSchema = new mongoose.Schema({
-  nome: {
-    type: String,
-    required: [true, 'O nome do material é obrigatório']
-  },
-  tipo: {
-    type: String,
-    enum: ['Material Didático', 'Camisa', 'Acessório', 'Outro'],
-    default: 'Material Didático'
-  },
-  quantidade: {
-    type: Number,
-    required: [true, 'A quantidade em stock é obrigatória'],
-    default: 0
-  },
-  precoCusto: {
-    type: Number,
-    default: 0
-  },
-  precoVenda: {
-    type: Number,
-    default: 0
-  },
-  tamanho: {
-    type: String // Útil para diferenciar tamanhos de camisas, caso necessário
-  },
-  observacoes: {
-    type: String
-  },
-  dataCadastro: {
-    type: Date,
-    default: Date.now
-  }
+// Sub-esquema para registar cada venda feita
+const vendaSchema = new mongoose.Schema({
+  quantidade: { type: Number, required: true },
+  valorTotal: { type: Number, required: true },
+  data: { type: Date, default: Date.now }
+});
+
+const estoqueSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  tipo: { type: String, required: true },
+  tamanho: { type: String },
+  quantidade: { type: Number, required: true, default: 0 },
+  precoCusto: { type: Number, default: 0 },
+  precoVenda: { type: Number, default: 0 },
+  observacoes: { type: String },
+  historicoVendas: [vendaSchema], // NOVO: Guarda todas as vendas deste artigo
+  dataCadastro: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-module.exports = mongoose.model('EstoqueMaterial', estoqueMaterialSchema);
+module.exports = mongoose.model('EstoqueMaterial', estoqueSchema);

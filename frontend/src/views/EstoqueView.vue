@@ -1,5 +1,5 @@
 <template>
-  <MainLayout pageTitle="Controlo de Stock" pageDescription="Faça a gestão de materiais didáticos, camisas e acessórios da escola.">
+  <MainLayout pageTitle="Controlo de Stock" pageDescription="Faça a gestão de materiais, vendas e histórico de receitas.">
     <div class="layout-split">
       
       <div class="glass-card side-form">
@@ -12,12 +12,12 @@
         <form @submit.prevent="salvar" class="modern-form scrollable-form">
           <div class="form-group">
             <label>Nome do Artigo</label>
-            <input v-model="form.nome" placeholder="Ex: Camisa Polo Libras" required />
+            <input v-model="form.nome" placeholder="Ex: Apostila Libras Básico" required />
           </div>
 
           <div class="form-row">
             <div class="form-group-col">
-              <label>Tipo de Categoria</label>
+              <label>Categoria</label>
               <select v-model="form.tipo" class="modern-select" required>
                 <option value="Material Didático">Material Didático</option>
                 <option value="Camisa">Camisa</option>
@@ -26,15 +26,15 @@
               </select>
             </div>
             <div class="form-group-col">
-              <label>Tamanho (Opcional)</label>
+              <label>Tamanho (Opccional)</label>
               <input v-model="form.tamanho" placeholder="Ex: M, G, Único" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group-col">
-              <label>Qtd. em Stock</label>
-              <input v-model.number="form.quantidade" type="number" min="0" placeholder="0" required />
+              <label>Qtd. Inicial (Stock)</label>
+              <input v-model.number="form.quantidade" type="number" min="0" required />
             </div>
           </div>
 
@@ -49,11 +49,6 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Observações</label>
-            <textarea v-model="form.observacoes" placeholder="Detalhes adicionais..." rows="2"></textarea>
-          </div>
-
           <div class="form-actions">
             <button type="submit" class="btn-primary">
               <Save :size="18" /> {{ editandoId ? 'Atualizar Artigo' : 'Adicionar ao Stock' }}
@@ -66,26 +61,37 @@
       </div>
 
       <div class="list-section">
-        <div class="glass-card search-bar">
+        
+        <div class="revenue-card glass-card">
+          <div class="revenue-info">
+            <span class="revenue-label">Receita de Vendas (No período filtrado)</span>
+            <strong class="revenue-value">R$ {{ receitaTotal.toFixed(2).replace('.', ',') }}</strong>
+          </div>
+          <div class="revenue-icon">
+            <BadgeDollarSign :size="36" />
+          </div>
+        </div>
+
+        <div class="glass-card search-bar mt-4">
           <div class="form-row" style="margin-bottom: 0;">
             <div class="form-group-col flex-2">
-              <input v-model="filtros.busca" placeholder="Pesquisar artigo pelo nome..." @input="carregar" />
+              <label class="filter-label">Buscar Produto:</label>
+              <input v-model="filtros.busca" placeholder="Pesquisar..." @input="carregar" />
             </div>
             <div class="form-group-col">
-              <select v-model="filtros.tipo" @change="carregar" class="modern-select">
-                <option value="">Todas as Categorias</option>
-                <option value="Material Didático">Material Didático</option>
-                <option value="Camisa">Camisa</option>
-                <option value="Acessório">Acessório</option>
-                <option value="Outro">Outro</option>
-              </select>
+              <label class="filter-label">Data Início:</label>
+              <input v-model="filtros.dataInicio" type="date" @change="carregar" />
+            </div>
+            <div class="form-group-col">
+              <label class="filter-label">Data Fim:</label>
+              <input v-model="filtros.dataFim" type="date" @change="carregar" />
             </div>
           </div>
         </div>
 
         <div class="glass-card list-box mt-4">
           <h3 class="form-title">
-            <Archive :size="20" class="text-brand" /> Inventário Atual ({{ itens.length }})
+            <Archive :size="20" class="text-brand" /> Inventário Atual
           </h3>
           
           <div class="inventory-grid">
@@ -101,17 +107,22 @@
                   <span class="cost">Custo: R$ {{ (item.precoCusto || 0).toFixed(2) }}</span>
                   <span class="sale">Venda: R$ {{ (item.precoVenda || 0).toFixed(2) }}</span>
                 </div>
-                <p v-if="item.observacoes" class="obs-text"><Info :size="12" /> {{ item.observacoes }}</p>
+                <div class="sales-stats" v-if="item.qtdVendidaNoPeriodo > 0">
+                   Vendido: <strong>{{ item.qtdVendidaNoPeriodo }} un</strong> | 
+                   Receita: <strong>R$ {{ item.receitaNoPeriodo.toFixed(2) }}</strong>
+                </div>
               </div>
 
               <div class="card-footer">
-                <div class="stock-control">
-                  <button @click="alterarQuantidade(item, -1)" class="btn-qty"><Minus :size="14" /></button>
-                  <span class="qty-display" :class="{'low-stock': item.quantidade < 5}">{{ item.quantidade }} un</span>
-                  <button @click="alterarQuantidade(item, 1)" class="btn-qty"><Plus :size="14" /></button>
+                <div class="stock-info">
+                  <span class="stock-label">Stock:</span>
+                  <strong :class="{'low-stock': item.quantidade < 5}">{{ item.quantidade }} un</strong>
                 </div>
                 
                 <div class="action-buttons">
+                  <button @click="abrirModalVenda(item)" class="btn-sell" title="Registar Venda">
+                    <ShoppingCart :size="16" /> Vender
+                  </button>
                   <button @click="prepararEdicao(item)" class="btn-edit-mini" title="Editar Artigo">
                     <Edit2 :size="16" />
                   </button>
@@ -124,36 +135,67 @@
 
             <div v-if="itens.length === 0" class="empty-msg" style="grid-column: 1 / -1;">
               <Inbox :size="40" class="opacity-20" />
-              <p>Nenhum material encontrado no stock.</p>
+              <p>Nenhum material encontrado.</p>
             </div>
           </div>
         </div>
       </div>
 
     </div>
+
+    <div v-if="mostrarModalVenda" class="modal-overlay" @click.self="fecharModalVenda">
+      <div class="glass-card modal-content">
+        <div class="modal-header">
+          <h3>Registar Venda</h3>
+          <button @click="fecharModalVenda" class="btn-icon-close"><X :size="20" /></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-4">Produto: <strong>{{ itemParaVender?.nome }}</strong></p>
+          <p class="mb-4 text-sm text-gray-500">Stock atual: {{ itemParaVender?.quantidade }} unidades</p>
+          
+          <div class="form-group">
+            <label class="modal-label">Quantidade a Vender</label>
+            <input v-model.number="quantidadeVenda" type="number" min="1" :max="itemParaVender?.quantidade" class="modal-input" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="confirmarVenda" class="btn-primary" :disabled="quantidadeVenda < 1 || quantidadeVenda > itemParaVender?.quantidade">
+            Confirmar Venda
+          </button>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { PackagePlus, Archive, Save, Edit2, Trash2, Inbox, Info, Plus, Minus, X } from 'lucide-vue-next';
+import { PackagePlus, Archive, Save, Edit2, Trash2, Inbox, Info, X, ShoppingCart, BadgeDollarSign } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const itens = ref([]);
+const receitaTotal = ref(0); // Guarda a receita total do período
 const editandoId = ref(null);
+
+// Estados do Modal de Venda
+const mostrarModalVenda = ref(false);
+const itemParaVender = ref(null);
+const quantidadeVenda = ref(1);
 
 const formPadrao = {
   nome: '', tipo: 'Material Didático', quantidade: 0, 
   precoCusto: null, precoVenda: null, tamanho: '', observacoes: ''
 };
 const form = ref({ ...formPadrao });
-const filtros = ref({ busca: '', tipo: '' });
+const filtros = ref({ busca: '', tipo: '', dataInicio: '', dataFim: '' });
 
 const carregar = async () => {
   try {
     const res = await api.get('/estoque', { params: filtros.value });
-    itens.value = res.data;
+    itens.value = res.data.itens;
+    receitaTotal.value = res.data.receitaTotal;
   } catch (error) {
     console.error("Erro ao carregar o stock:", error);
   }
@@ -184,19 +226,6 @@ const cancelarEdicao = () => {
   form.value = { ...formPadrao };
 };
 
-const alterarQuantidade = async (item, valor) => {
-  const novaQuantidade = item.quantidade + valor;
-  if (novaQuantidade < 0) return;
-  
-  try {
-    // Atualização rápida apenas da quantidade
-    await api.put(`/estoque/${item._id}`, { quantidade: novaQuantidade });
-    item.quantidade = novaQuantidade;
-  } catch (error) {
-    alert("Erro ao atualizar a quantidade.");
-  }
-};
-
 const remover = async (id) => {
   if (confirm("Deseja realmente remover este artigo do stock?")) {
     try {
@@ -208,12 +237,41 @@ const remover = async (id) => {
   }
 };
 
+// LÓGICA DE VENDA
+const abrirModalVenda = (item) => {
+  itemParaVender.value = item;
+  quantidadeVenda.value = 1;
+  mostrarModalVenda.value = true;
+};
+
+const fecharModalVenda = () => {
+  mostrarModalVenda.value = false;
+  itemParaVender.value = null;
+};
+
+const confirmarVenda = async () => {
+  if (quantidadeVenda.value < 1 || quantidadeVenda.value > itemParaVender.value.quantidade) {
+    return alert("Quantidade inválida.");
+  }
+  
+  try {
+    await api.post(`/estoque/${itemParaVender.value._id}/vender`, {
+      quantidade: quantidadeVenda.value
+    });
+    alert("Venda registada com sucesso!");
+    fecharModalVenda();
+    carregar(); // Recarrega para atualizar o stock e a receita
+  } catch (error) {
+    alert(error.response?.data?.message || "Erro ao registar venda.");
+  }
+};
+
 onMounted(carregar);
 </script>
 
 <style scoped>
 .layout-split { display: grid; grid-template-columns: 380px 1fr; gap: 30px; align-items: start; }
-.list-section { display: flex; flex-direction: column; gap: 20px; }
+.list-section { display: flex; flex-direction: column; gap: 15px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 .search-bar { padding: 20px 25px; }
 
@@ -221,6 +279,13 @@ onMounted(carregar);
 .text-brand { color: #004aad; }
 .mt-4 { margin-top: 1rem; }
 .flex-2 { flex: 2; }
+.filter-label { font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block; text-transform: uppercase; }
+
+/* Cartão de Receita (NOVO) */
+.revenue-card { display: flex; justify-content: space-between; align-items: center; padding: 25px 30px; background: #ecfdf5; border-color: #a7f3d0; }
+.revenue-label { display: block; font-size: 0.85rem; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 5px; }
+.revenue-value { font-size: 2.2rem; font-weight: 900; color: #059669; }
+.revenue-icon { background: #d1fae5; color: #059669; padding: 15px; border-radius: 16px; }
 
 /* Formulário */
 .modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 8px; text-transform: uppercase; }
@@ -236,6 +301,7 @@ onMounted(carregar);
 .form-actions { display: flex; gap: 10px; margin-top: 25px; }
 .btn-primary { flex: 2; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
+.btn-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
 .btn-cancel { flex: 1; background: #f1f5f9; color: #64748b; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
 .btn-cancel:hover { background: #e2e8f0; color: #0f172a; }
 
@@ -252,59 +318,40 @@ onMounted(carregar);
 .financials { display: flex; gap: 15px; font-size: 0.85rem; margin-bottom: 12px; }
 .cost { color: #dc2626; font-weight: 600; }
 .sale { color: #16a34a; font-weight: 600; }
-.obs-text { font-size: 0.8rem; color: #64748b; display: flex; align-items: flex-start; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 8px; margin: 0; }
+.sales-stats { background: #f0fdf4; color: #065f46; font-size: 0.8rem; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; }
 
 .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid #f1f5f9; }
-.stock-control { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 6px; border-radius: 10px; }
-.btn-qty { background: white; border: 1px solid #e2e8f0; border-radius: 6px; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #64748b; }
-.btn-qty:hover { color: #004aad; border-color: #bfdbfe; }
-.qty-display { font-weight: 800; font-size: 0.95rem; color: #1e293b; min-width: 40px; text-align: center; }
-.low-stock { color: #ea580c; }
+.stock-info { display: flex; align-items: center; gap: 8px; }
+.stock-label { font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;}
+.stock-info strong { font-size: 1.1rem; color: #1e293b; }
+.low-stock { color: #ea580c !important; }
 
-.action-buttons { display: flex; gap: 8px; }
-.btn-del-mini, .btn-edit-mini { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+.action-buttons { display: flex; gap: 6px; }
+.btn-sell { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 0.8rem;}
+.btn-sell:hover { background: #059669; }
+.btn-del-mini, .btn-edit-mini { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
 .btn-del-mini { color: #94a3b8; }
 .btn-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
 .btn-edit-mini { color: #004aad; }
 .btn-edit-mini:hover { background: #eff6ff; border-color: #bfdbfe; }
 
-.empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.scrollable-form { max-height: 80vh; overflow-y: auto; padding-right: 10px; }
-.scrollable-form::-webkit-scrollbar { width: 5px; }
-.scrollable-form::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
-@media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
+/* Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+.modal-content { max-width: 400px; width: 90%; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+.modal-input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 1.1rem; font-weight: bold; color: #1e293b; }
+.modal-footer { margin-top: 25px; }
+.btn-icon-close { background: none; border: none; cursor: pointer; color: #64748b; transition: 0.2s; }
+.btn-icon-close:hover { color: #ef4444; transform: scale(1.1); }
+.text-sm { font-size: 0.85rem; }
+.mb-4 { margin-bottom: 1rem; }
 
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+/* Responsividade */
+@media (max-width: 992px) {
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .revenue-card { flex-direction: column; text-align: center; gap: 15px; }
 }
 </style>
