@@ -64,7 +64,7 @@
               <div class="module-input-row">
                 <input v-model="mod.titulo" placeholder="Título do Módulo" class="mod-title-input" />
                 <button type="button" @click="removerModulo(mIdx)" class="btn-icon-del" title="Remover Módulo">
-                  <Trash2 :size="14" />
+                  <Trash2 :size="18" />
                 </button>
               </div>
 
@@ -74,13 +74,13 @@
                     <input v-model="aula.titulo" placeholder="Nome da Aula" />
                     <input v-model="aula.videoUrl" placeholder="URL do Vídeo" />
                     <button type="button" @click="removerAula(mIdx, aIdx)" class="btn-icon-del-mini" title="Remover Aula">
-                      <X :size="14" />
+                      <X :size="16" />
                     </button>
                   </div>
                   
-                  <div class="upload-field mt-2">
+                  <div class="upload-field">
                     <label class="file-label">
-                      <FileUp :size="14" /> 
+                      <FileUp :size="16" /> 
                       {{ aula.material ? 'Trocar Material' : 'Anexar PDF/Material' }}
                       <input type="file" @change="uploadMaterial($event, mIdx, aIdx)" hidden accept=".pdf,.zip,.docx" />
                     </label>
@@ -186,7 +186,6 @@ const cursoInicial = {
 
 const curso = ref({ ...cursoInicial });
 
-// BUSCAS
 const buscarAlunos = async () => {
   try {
     const res = await api.get('/admin/alunos');
@@ -201,7 +200,6 @@ const buscarCursos = async () => {
   } catch (err) { console.error("Erro ao carregar cursos"); } 
 };
 
-// LÓGICA DO MODAL
 const abrirModalLiberacao = (c) => {
   cursoParaLiberar.value = c;
   mostrarModal.value = true;
@@ -227,7 +225,6 @@ const confirmarLiberacao = async () => {
   }
 };
 
-// GESTÃO DE CURSOS
 const uploadMaterial = async (event, mIdx, aIdx) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -244,12 +241,10 @@ const uploadMaterial = async (event, mIdx, aIdx) => {
 
 const salvarCurso = async () => {
   try {
-    // 1. Clonar para não alterar o formulário visualmente
     let payload = JSON.parse(JSON.stringify(curso.value));
     
     if (payload.gratuito) payload.valor = 0;
 
-    // 2. Limpeza: Só envia módulos que tenham título e filtra as suas aulas vazias
     if (payload.modulos && payload.modulos.length > 0) {
       payload.modulos = payload.modulos
         .filter(mod => mod.titulo && mod.titulo.trim() !== '')
@@ -261,7 +256,6 @@ const salvarCurso = async () => {
         });
     }
 
-    // 3. Enviar para a API
     if (editandoId.value) {
       await api.put(`/cursos/${editandoId.value}`, payload);
     } else {
@@ -291,7 +285,6 @@ const removerCurso = async (id) => {
   } 
 };
 
-// AUXILIARES DE FORMULÁRIO
 const adicionarModulo = () => { curso.value.modulos.push({ titulo: '', aulas: [{ titulo: '', videoUrl: '', material: '' }] }); };
 const removerModulo = (idx) => { curso.value.modulos.splice(idx, 1); };
 const adicionarAula = (mIdx) => { curso.value.modulos[mIdx].aulas.push({ titulo: '', videoUrl: '', material: '' }); };
@@ -337,51 +330,67 @@ onMounted(() => {
 .btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
 /* =========================================
-   BOTÕES E SEÇÃO DE MÓDULOS E AULAS
+   BOTÕES E SEÇÃO DE MÓDULOS E AULAS (ATUALIZADO)
    ========================================= */
-.module-item { background: #f8fafc; padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #f1f5f9; }
+.module-item { background: #f8fafc; padding: 18px; border-radius: 16px; margin-bottom: 18px; border: 1px solid #e2e8f0; }
 
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .section-header h4 { margin: 0; font-size: 1rem; color: #1e293b; font-weight: 800; }
 
 .btn-add-small {
-  background: #eff6ff; color: #004aad; border: 1px solid #bfdbfe; padding: 6px 12px;
+  background: #eff6ff; color: #004aad; border: 1px solid #bfdbfe; padding: 8px 14px;
   border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center;
   gap: 6px; cursor: pointer; transition: all 0.2s ease;
 }
 .btn-add-small:hover { background: #004aad; color: white; border-color: #004aad; transform: translateY(-1px); }
 
-.module-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
-.mod-title-input { flex: 1; font-weight: 700 !important; color: #004aad !important; border-color: #bfdbfe !important; background: white !important; }
+/* AJUSTE NA LINHA DO MÓDULO */
+.module-input-row { display: flex; gap: 12px; align-items: stretch; margin-bottom: 15px; }
+.mod-title-input { 
+  flex: 1; font-weight: 700 !important; color: #004aad !important; 
+  border-color: #bfdbfe !important; background: white !important; 
+}
 
+/* LIXEIRA DO MÓDULO COM TAMANHO PROPORCIONAL AO INPUT */
 .btn-icon-del {
-  background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; border-radius: 10px; width: 42px; height: 42px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; border-radius: 12px; 
+  padding: 0 15px; display: flex; align-items: center; justify-content: center; 
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
 }
-.btn-icon-del:hover { background: #ef4444; color: white; transform: scale(1.05); }
+.btn-icon-del:hover { background: #ef4444; color: white; }
 
-.lesson-admin-card { background: white; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-.lesson-input-row { display: flex; gap: 8px; align-items: center; }
-.lesson-input-row input { margin: 0 !important; padding: 10px !important; font-size: 0.85rem !important; }
+.lesson-admin-card { background: white; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
 
+/* AJUSTE NA LINHA DA AULA */
+.lesson-input-row { display: flex; gap: 10px; align-items: stretch; }
+.lesson-input-row input { flex: 1; margin: 0 !important; padding: 12px !important; font-size: 0.85rem !important; }
+
+/* BOTÃO DE EXCLUIR AULA ALINHADO */
 .btn-icon-del-mini {
-  background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 10px; 
+  padding: 0 12px; display: flex; align-items: center; justify-content: center; 
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
 }
-.btn-icon-del-mini:hover { background: #fee2e2; color: #ef4444; }
+.btn-icon-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
 
 .btn-add-lesson {
-  width: 100%; background: transparent; color: #64748b; border: 1px dashed #cbd5e1; padding: 10px;
+  width: 100%; background: transparent; color: #64748b; border: 1px dashed #cbd5e1; padding: 12px;
   border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; margin-top: 5px; transition: all 0.2s;
 }
 .btn-add-lesson:hover { background: #f8fafc; color: #004aad; border-color: #94a3b8; }
 
-.upload-field { margin-top: 10px; }
-.file-label { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; }
-.file-status { font-size: 0.75rem; color: #10b981; font-weight: bold; margin-left: 8px; }
+/* AJUSTE NO BOTÃO DE ANEXAR PDF */
+.upload-field { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+.file-label { 
+  display: inline-flex; align-items: center; gap: 8px; background: #f1f5f9; 
+  border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 10px; 
+  font-size: 0.8rem; cursor: pointer; font-weight: 700; color: #475569; width: 100%; justify-content: center;
+}
+.file-label:hover { background: #e2e8f0; }
+.file-status { font-size: 0.75rem; color: #10b981; font-weight: bold; white-space: nowrap; }
 
 /* =========================================
-   CARDS DOS CURSOS (AJUSTE VISUAL NOVO)
+   CARDS DOS CURSOS
    ========================================= */
 .cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 
@@ -413,7 +422,7 @@ onMounted(() => {
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
 
 /* =========================================
-   MODAL (ESTILIZAÇÃO)
+   MODAL
    ========================================= */
 .modal-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -438,31 +447,26 @@ onMounted(() => {
    RESPONSIVIDADE MOBILE PARA AS TELAS
    ========================================= */
 @media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
   .layout-split { 
     grid-template-columns: 1fr; 
     gap: 20px; 
   }
   
-  /* Empilha os campos de formulário que estavam lado a lado */
   .form-row { 
     flex-direction: column; 
     gap: 15px; 
   }
   
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
   .glass-card { 
     padding: 20px; 
   }
 
-  /* Ajusta cabeçalhos internos */
   .header-row, .servico-header, .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
   
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
   .item-actions-wrapper, .item-actions {
     align-items: flex-start;
     margin-top: 15px;
