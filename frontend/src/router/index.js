@@ -13,7 +13,7 @@ const routes = [
   },
   
   // ==========================================
-  // ROTAS PÚBLICAS (RECUPERAÇÃO DE SENHA)
+  // ROTAS PÚBLICAS / SEGURANÇA
   // ==========================================
   {
     path: '/forgot-password',
@@ -22,8 +22,15 @@ const routes = [
   },
   {
     path: '/reset-password/:token',
-    name: 'ResetPassword',
+    name: 'ResetPasswordToken',
     component: () => import('../views/ResetPasswordView.vue')
+  },
+  // NOVA ROTA ADICIONADA: Para o primeiro acesso (sem token)
+  {
+    path: '/aluno/reset-password',
+    name: 'ResetPasswordPrimeiroAcesso',
+    component: () => import('../views/ResetPasswordView.vue'),
+    meta: { requiresAuth: true }
   },
 
   // ==========================================
@@ -109,7 +116,7 @@ const routes = [
     path: '/admin/financeiro',
     name: 'AdminFinanceiro',
     component: () => import('../views/FinanceiroView.vue'),
-    meta: { requiresAuth: true, role: 'admin' } // Será filtrado de admin restrito pelo beforeEach abaixo
+    meta: { requiresAuth: true, role: 'admin' }
   },
   {
     path: '/admin/calculadora',
@@ -123,7 +130,6 @@ const routes = [
     component: () => import('../views/MateriaisView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
-  // NOVA ROTA DE ESTOQUE
   {
     path: '/admin/estoque',
     name: 'EstoqueMateriais',
@@ -137,7 +143,7 @@ const router = createRouter({
   routes
 });
 
-// Middleware de Segurança (Navigation Guard)
+// Middleware de Segurança
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
@@ -147,19 +153,15 @@ router.beforeEach((to, from, next) => {
   } 
   
   if (to.meta.role) {
-    // Regras para rotas de Admin
     if (to.meta.role === 'admin') {
-      // Se não for nenhum dos dois tipos de admin, manda pro dashboard de aluno
       if (userRole !== 'admin' && userRole !== 'admin_restrito') {
         return next('/aluno/dashboard');
       }
       
-      // BLOQUEIO FINANCEIRO: Se for admin restrito e tentar acessar o financeiro
       if (to.path === '/admin/financeiro' && userRole === 'admin_restrito') {
         return next('/admin/dashboard'); 
       }
     } 
-    // Regras para rotas de Aluno
     else if (to.meta.role === 'aluno' && userRole !== 'aluno') {
       return next('/admin/dashboard');
     }

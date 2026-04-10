@@ -58,7 +58,7 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ShieldCheck, Save, XCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-import api from '../services/api'; // Ajustado o path para 'aluno' view
+import api from '@/services/api'; // Ajustado o path para 'aluno' view
 
 const route = useRoute();
 const router = useRouter();

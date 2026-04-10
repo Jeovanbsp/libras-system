@@ -1,15 +1,14 @@
 const Curso = require('../models/Curso');
 const User = require('../models/User');
-const ForumMessage = require('../models/ForumMessage'); // Integração do Fórum
+const ForumMessage = require('../models/ForumMessage');
 
-// --- GESTÃO DE CURSOS (ADMIN) ---
 exports.criarCurso = async (req, res) => {
   try {
     const novoCurso = new Curso(req.body);
     await novoCurso.save();
     res.status(201).json(novoCurso);
   } catch (error) {
-    res.status(400).json({ error: "Erro ao criar curso: " + error.message });
+    res.status(400).json({ error: error.message });
   }
 };
 
@@ -18,69 +17,49 @@ exports.listarCursos = async (req, res) => {
     const cursos = await Curso.find().sort({ dataCriacao: -1 });
     res.json(cursos);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao listar cursos" });
+    res.status(500).json({ error: "Erro ao listar." });
   }
 };
 
 exports.buscarCursoPorId = async (req, res) => {
   try {
     const curso = await Curso.findById(req.params.id);
-    if (!curso) return res.status(404).json({ message: "Curso não encontrado." });
     res.json(curso);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar curso" });
+    res.status(500).json({ error: "Erro ao buscar." });
   }
 };
 
 exports.editarCurso = async (req, res) => {
   try {
-    const cursoAtualizado = await Curso.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!cursoAtualizado) return res.status(404).json({ message: "Curso não encontrado para editar." });
-    res.json(cursoAtualizado);
+    const curso = await Curso.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(curso);
   } catch (err) {
-    res.status(500).json({ error: "Erro ao editar curso" });
+    res.status(500).json({ error: "Erro ao editar." });
   }
 };
 
 exports.removerCurso = async (req, res) => {
   try {
-    const cursoRemovido = await Curso.findByIdAndDelete(req.params.id);
-    if (!cursoRemovido) return res.status(404).json({ message: "Curso não encontrado para remover." });
-    res.json({ msg: "Curso removido com sucesso" });
+    await Curso.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Removido!" });
   } catch (err) {
-    res.status(500).json({ error: "Erro ao remover curso" });
+    res.status(500).json({ error: "Erro ao remover." });
   }
 };
 
-// --- MATRÍCULA E ACESSO (ALUNO) ---
 exports.matricularAluno = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
     const cursoId = req.params.id;
-
-    const curso = await Curso.findById(cursoId);
-    if (!curso) return res.status(404).json({ message: "Curso não encontrado." });
-
-    if (!curso.gratuito) {
-      return res.status(403).json({ 
-        message: "Este curso requer liberação manual. Entre em contato com o suporte.",
-        whatsapp: "5571988361371" 
-      });
-    }
-
     const user = await User.findById(userId);
-    const jaMatriculado = user.cursosMatriculados.some(id => id.toString() === cursoId);
-    
-    if (jaMatriculado) {
-      return res.status(400).json({ message: "Você já possui este curso!" });
+    if (!user.cursosMatriculados.includes(cursoId)) {
+      user.cursosMatriculados.push(cursoId);
+      await user.save();
     }
-
-    user.cursosMatriculados.push(cursoId);
-    await user.save();
-
-    res.status(200).json({ message: "Matrícula realizada com sucesso!" });
+    res.status(200).json({ message: "Matriculado!" });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao processar matrícula." });
+    res.status(500).json({ message: "Erro." });
   }
 };
 
@@ -90,30 +69,22 @@ exports.meusCursos = async (req, res) => {
     const user = await User.findById(userId).populate('cursosMatriculados');
     res.status(200).json(user.cursosMatriculados);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar seus cursos." });
+    res.status(500).json({ message: "Erro." });
   }
 };
 
-// --- PROGRESSO ---
 exports.concluirAula = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
     const { materialId } = req.body; 
-    
-    if (!materialId) {
-      return res.status(400).json({ message: "ID do material/atividade não fornecido." });
-    }
-
     const user = await User.findById(userId);
-    
     if (!user.materiaisConcluidos.includes(materialId)) {
       user.materiaisConcluidos.push(materialId);
       await user.save();
     }
-    
     res.status(200).json({ materiaisConcluidos: user.materiaisConcluidos });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao salvar progresso da atividade." });
+    res.status(500).json({ message: "Erro ao salvar." });
   }
 };
 
@@ -123,58 +94,35 @@ exports.buscarProgresso = async (req, res) => {
     const user = await User.findById(userId).select('materiaisConcluidos');
     res.json(user.materiaisConcluidos || []);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar progresso do aluno." });
+    res.status(500).json({ message: "Erro." });
   }
 };
 
-// ==========================================
-// FÓRUM DO CURSO
-// ==========================================
 exports.listarMensagensForum = async (req, res) => {
   try {
-    const { cursoId } = req.params;
-    const mensagens = await ForumMessage.find({ curso: cursoId })
-      .populate('autor', 'nome role')
-      .sort({ dataCriacao: 1 });
-
-    const formatadas = mensagens.map(msg => ({
-      _id: msg._id,
-      autor: msg.autor ? msg.autor.nome : 'Usuário Removido',
-      role: msg.autor ? msg.autor.role : 'aluno',
-      texto: msg.texto,
-      data: msg.dataCriacao
-    }));
-
-    res.status(200).json(formatadas);
+    const mensagens = await ForumMessage.find({ curso: req.params.cursoId })
+      .populate('autor', 'nome role').sort({ dataCriacao: 1 });
+    res.status(200).json(mensagens.map(m => ({
+      autor: m.autor.nome,
+      role: m.autor.role,
+      texto: m.texto,
+      data: m.dataCriacao
+    })));
   } catch (error) {
-    res.status(500).json({ message: "Erro ao carregar o fórum." });
+    res.status(500).json({ message: "Erro no fórum." });
   }
 };
 
 exports.enviarMensagemForum = async (req, res) => {
   try {
-    const userId = req.user?.id || req.userId;
-    const { cursoId } = req.params;
-    const { texto } = req.body;
-
-    if (!texto) return res.status(400).json({ message: "A mensagem não pode estar vazia." });
-
-    const novaMensagem = await ForumMessage.create({
-      curso: cursoId,
-      autor: userId,
-      texto
+    const novaMsg = await ForumMessage.create({
+      curso: req.params.cursoId,
+      autor: req.user.id,
+      texto: req.body.texto
     });
-
-    await novaMensagem.populate('autor', 'nome role');
-
-    res.status(201).json({
-      _id: novaMensagem._id,
-      autor: novaMensagem.autor.nome,
-      role: novaMensagem.autor.role,
-      texto: novaMensagem.texto,
-      data: novaMensagem.dataCriacao
-    });
+    await novaMsg.populate('autor', 'nome role');
+    res.status(201).json(novaMsg);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao enviar mensagem." });
+    res.status(500).json({ message: "Erro ao enviar." });
   }
-};  
+};

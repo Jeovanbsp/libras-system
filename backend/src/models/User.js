@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId 
   }],
   turma: { type: String },
-  primeiroAcesso: { type: Boolean, default: true }, // Bloqueio inicial
+  primeiroAcesso: { type: Boolean, default: true }, // NOVO
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, { timestamps: true });
@@ -28,4 +28,4 @@ UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);    
+module.exports = mongoose.model('User', UserSchema);

@@ -6,6 +6,12 @@ const transporter = require('../config/mailer');
 
 exports.register = async (req, res) => {
     const { nome, email, password, role, turma } = req.body;
+    
+    // Proteção: Admin restrito não pode criar Admin geral
+    if (req.user && req.user.role === 'admin_restrito' && role === 'admin') {
+        return res.status(403).json({ msg: "Operação não permitida para o seu nível de acesso." });
+    }
+
     try {
         let userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ msg: "Utilizador já existe" });
@@ -18,7 +24,8 @@ exports.register = async (req, res) => {
             email,
             password: hashedPassword,
             role: role || 'aluno',
-            turma: turma || ''
+            turma: turma || '',
+            primeiroAcesso: true
         });
 
         await newUser.save();
@@ -49,11 +56,10 @@ exports.login = async (req, res) => {
                 id: user._id, 
                 nome: user.nome, 
                 role: user.role,
-                primeiroAcesso: user.primeiroAcesso // Enviado para o Front
+                primeiroAcesso: user.primeiroAcesso 
             }
         });
     } catch (err) {
-        console.error("Erro no servidor durante login:", err);
         res.status(500).json({ error: "Erro interno no servidor" });
     }
 };
@@ -62,7 +68,7 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     try {
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "E-mail não cadastrado no sistema." });
+        if (!user) return res.status(404).json({ message: "E-mail não cadastrado." });
 
         const token = crypto.randomBytes(20).toString('hex');
         user.resetPasswordToken = token;
@@ -70,33 +76,17 @@ exports.forgotPassword = async (req, res) => {
         await user.save();
         
         const resetUrl = `https://librasalvador.vercel.app/reset-password/${token}`;
-
         const mailOptions = {
             from: `"Libras Salvador" <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: 'Recuperação de Senha - Libras Salvador',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
-                    <h2 style="color: #004aad; text-align: center;">Recuperação de Senha</h2>
-                    <p style="color: #333; font-size: 16px;">Olá, <strong>${user.nome}</strong>!</p>
-                    <p style="color: #333; font-size: 16px;">Recebemos um pedido para redefinir a senha da sua conta no sistema Libras Salvador.</p>
-                    <p style="color: #333; font-size: 16px;">Clique no botão abaixo para criar uma nova senha:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetUrl}" style="background-color: #004aad; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Redefinir Minha Senha</a>
-                    </div>
-                    <p style="color: #64748b; font-size: 14px;">Este link é válido por 1 hora. Se não solicitou esta alteração, por favor, ignore este e-mail.</p>
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                    <p style="color: #64748b; font-size: 12px; text-align: center;">Equipa Libras Salvador</p>
-                </div>
-            `
+            subject: 'Recuperação de Senha',
+            html: `<p>Olá ${user.nome}, clique <a href="${resetUrl}">aqui</a> para redefinir sua senha.</p>`
         };
 
         await transporter.sendMail(mailOptions);
-
-        res.json({ message: "E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada." });
+        res.json({ message: "E-mail enviado!" });
     } catch (err) {
-        console.error("Erro ao enviar e-mail:", err);
-        res.status(500).json({ error: "Erro ao tentar enviar o e-mail. Tente novamente mais tarde." });
+        res.status(500).json({ error: "Erro ao enviar e-mail." });
     }
 };
 
@@ -108,24 +98,21 @@ exports.resetPassword = async (req, res) => {
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() }
         });
-        
-        if (!user) return res.status(400).json({ message: "O link é inválido ou já expirou." });
+        if (!user) return res.status(400).json({ message: "Token inválido ou expirado." });
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
-        user.primeiroAcesso = false; // Retira flag de primeiro acesso
+        user.primeiroAcesso = false;
 
         await user.save();
-        res.json({ message: "Senha atualizada com sucesso! Já pode fazer login." });
+        res.json({ message: "Senha redefinida com sucesso!" });
     } catch (err) {
-        console.error("Erro no reset de senha:", err);
-        res.status(500).json({ error: "Erro ao tentar redefinir a senha." });
+        res.status(500).json({ error: "Erro no reset." });
     }
 };
 
-// NOVO: Usado para o utilizador que acabou de fazer login no primeiro acesso
 exports.updatePassword = async (req, res) => {
     try {
         const userId = req.user?.id || req.userId;
@@ -136,11 +123,11 @@ exports.updatePassword = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
-        user.primeiroAcesso = false; // Desbloqueia o utilizador
+        user.primeiroAcesso = false;
 
         await user.save();
-        res.json({ message: "Senha salva com sucesso!" });
+        res.json({ message: "Senha definitiva salva!" });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao atualizar a senha." });
+        res.status(500).json({ error: "Erro ao atualizar." });
     }
-};  
+};
