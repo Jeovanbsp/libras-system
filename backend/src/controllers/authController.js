@@ -2,10 +2,10 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const transporter = require('../config/mailer'); // <-- Importando o enviador de e-mail
+const transporter = require('../config/mailer');
 
 exports.register = async (req, res) => {
-    const { nome, email, password, role } = req.body;
+    const { nome, email, password, role, turma } = req.body;
     try {
         let userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ msg: "Utilizador já existe" });
@@ -17,7 +17,8 @@ exports.register = async (req, res) => {
             nome,
             email,
             password: hashedPassword,
-            role: role || 'aluno'
+            role: role || 'aluno',
+            turma: turma || ''
         });
 
         await newUser.save();
@@ -33,7 +34,6 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ msg: "Utilizador não encontrado" });
 
-        // Validação estrita e segura usando Bcrypt
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ msg: "Senha incorreta" });
 
@@ -45,7 +45,12 @@ exports.login = async (req, res) => {
 
         res.json({
             token,
-            user: { id: user._id, nome: user.nome, role: user.role }
+            user: { 
+                id: user._id, 
+                nome: user.nome, 
+                role: user.role,
+                primeiroAcesso: user.primeiroAcesso // Enviado para o Front
+            }
         });
     } catch (err) {
         console.error("Erro no servidor durante login:", err);
@@ -61,13 +66,11 @@ exports.forgotPassword = async (req, res) => {
 
         const token = crypto.randomBytes(20).toString('hex');
         user.resetPasswordToken = token;
-        user.resetPasswordExpires = Date.now() + 3600000; // Validade de 1 hora
+        user.resetPasswordExpires = Date.now() + 3600000;
         await user.save();
         
-        // Link que vai no e-mail apontando para o seu frontend na Vercel
         const resetUrl = `https://librasalvador.vercel.app/reset-password/${token}`;
 
-        // Construindo o corpo do e-mail
         const mailOptions = {
             from: `"Libras Salvador" <${process.env.EMAIL_USER}>`,
             to: user.email,
@@ -81,17 +84,16 @@ exports.forgotPassword = async (req, res) => {
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${resetUrl}" style="background-color: #004aad; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Redefinir Minha Senha</a>
                     </div>
-                    <p style="color: #64748b; font-size: 14px;">Este link é válido por 1 hora. Se você não solicitou essa alteração, por favor, ignore este e-mail.</p>
+                    <p style="color: #64748b; font-size: 14px;">Este link é válido por 1 hora. Se não solicitou esta alteração, por favor, ignore este e-mail.</p>
                     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                    <p style="color: #64748b; font-size: 12px; text-align: center;">Equipe Libras Salvador</p>
+                    <p style="color: #64748b; font-size: 12px; text-align: center;">Equipa Libras Salvador</p>
                 </div>
             `
         };
 
-        // Dispara o e-mail
         await transporter.sendMail(mailOptions);
 
-        res.json({ message: "E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada." });
+        res.json({ message: "E-mail de recuperação enviado com sucesso! Verifique a sua caixa de entrada." });
     } catch (err) {
         console.error("Erro ao enviar e-mail:", err);
         res.status(500).json({ error: "Erro ao tentar enviar o e-mail. Tente novamente mais tarde." });
@@ -113,11 +115,32 @@ exports.resetPassword = async (req, res) => {
         user.password = await bcrypt.hash(password, salt);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
+        user.primeiroAcesso = false; // Retira flag de primeiro acesso
 
         await user.save();
-        res.json({ message: "Senha atualizada com sucesso! Você já pode fazer login." });
+        res.json({ message: "Senha atualizada com sucesso! Já pode fazer login." });
     } catch (err) {
         console.error("Erro no reset de senha:", err);
         res.status(500).json({ error: "Erro ao tentar redefinir a senha." });
     }
 };
+
+// NOVO: Usado para o utilizador que acabou de fazer login no primeiro acesso
+exports.updatePassword = async (req, res) => {
+    try {
+        const userId = req.user?.id || req.userId;
+        const { password } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "Utilizador não encontrado." });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        user.primeiroAcesso = false; // Desbloqueia o utilizador
+
+        await user.save();
+        res.json({ message: "Senha salva com sucesso!" });
+    } catch (err) {
+        res.status(500).json({ error: "Erro ao atualizar a senha." });
+    }
+};  

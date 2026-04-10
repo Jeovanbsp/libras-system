@@ -1,29 +1,32 @@
 const mongoose = require('mongoose');
 
+// Nova estrutura: cada aula pode ter VÁRIOS materiais (vídeos, links, pdfs, etc)
+const materialSchema = new mongoose.Schema({
+  titulo: { type: String, required: true },
+  tipo: { type: String, enum: ['video', 'link', 'pdf', 'texto'], required: true },
+  url: { type: String, required: true }
+});
+
 const aulaSchema = new mongoose.Schema({
-  titulo: { type: String, required: true }, // Se existir aula, o titulo é obrigatório
+  titulo: { type: String, required: true },
   descricao: { type: String },
   duracao: { type: Number },
-  videoUrl: { type: String },
-  material: { type: String }
+  materiais: [materialSchema] // Modificado: agora é um array de materiais
 });
 
 const moduloSchema = new mongoose.Schema({
-  titulo: { type: String, required: true }, // Se existir módulo, o titulo é obrigatório
-  aulas: [aulaSchema] // Array de aulas
+  titulo: { type: String, required: true },
+  aulas: [aulaSchema]
 });
 
 const cursoSchema = new mongoose.Schema({
-  titulo: { type: String, required: true }, // Obrigatório
-  descricao: { type: String, required: true }, // Obrigatório
-  cargaHoraria: { type: Number, required: true }, // Obrigatório
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  cargaHoraria: { type: Number, required: true },
   nivel: { type: String, default: 'curso' },
   gratuito: { type: Boolean, default: false },
   valor: { type: Number, default: 0 },
-  
-  // O array de módulos NÃO DEVE ter "required: true", assim ele aceita [] (vazio)
-  modulos: [moduloSchema], 
-  
+  modulos: [moduloSchema],
   dataCriacao: { type: Date, default: Date.now }
 }, { timestamps: true });
 

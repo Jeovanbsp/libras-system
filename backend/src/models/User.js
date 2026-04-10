@@ -8,18 +8,18 @@ const UserSchema = new mongoose.Schema({
   role: { 
     type: String, 
     required: true, 
-    enum: ['admin', 'admin_restrito', 'aluno'], // NOVO: admin_restrito adicionado
+    enum: ['admin', 'admin_restrito', 'aluno'],
     default: 'aluno' 
   },
   cursosMatriculados: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Curso' 
   }],
-  aulasConcluidas: [{ 
+  materiaisConcluidos: [{ 
     type: mongoose.Schema.Types.ObjectId 
   }],
-  // NOVO: Campo de turma para facilitar o controle
   turma: { type: String },
+  primeiroAcesso: { type: Boolean, default: true }, // Bloqueio inicial
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, { timestamps: true });
@@ -28,4 +28,4 @@ UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', UserSchema);    

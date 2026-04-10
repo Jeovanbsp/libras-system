@@ -8,7 +8,7 @@
 
       <p class="brand-phrase">Uma paixão pela Libras e pela Bahia</p>
       
-      <p class="subtitle">Bem-vindo(a)! Faça login para acessar sua conta.</p>
+      <p class="subtitle">Bem-vindo(a)! Faça login para aceder à sua conta.</p>
 
       <form @submit.prevent="handleLogin" class="modern-form">
         <div class="input-group">
@@ -26,11 +26,11 @@
             <input type="checkbox" v-model="rememberMe" />
             <span>Lembrar de mim</span>
           </label>
-          <router-link to="/forgot-password" class="forgot-link">Esqueceu sua senha?</router-link>
+          <router-link to="/forgot-password" class="forgot-link">Esqueceu a sua senha?</router-link>
         </div>
 
         <button type="submit" class="btn-primary" :disabled="loading">
-          {{ loading ? 'Autenticando...' : 'Acessar a Plataforma' }}
+          {{ loading ? 'Autenticando...' : 'Aceder à Plataforma' }}
         </button>
       </form>
 
@@ -65,11 +65,10 @@ import api from '../services/api';
 const router = useRouter();
 const email = ref('');
 const password = ref('');
-const rememberMe = ref(false); // Estado do checkbox
+const rememberMe = ref(false); 
 const error = ref(null);
 const loading = ref(false);
 
-// Ao carregar a página, verifica se existem dados salvos
 onMounted(() => {
   const savedEmail = localStorage.getItem('rememberedEmail');
   const savedPassword = localStorage.getItem('rememberedPassword');
@@ -93,20 +92,27 @@ const handleLogin = async () => {
     });
 
     const { token, user } = response.data;
+    
     localStorage.setItem('token', token);
     localStorage.setItem('userRole', user.role);
     localStorage.setItem('userName', user.nome);
 
-    // Lógica para memorizar ou esquecer os dados
     if (rememberMe.value) {
       localStorage.setItem('rememberedEmail', email.value);
-      localStorage.setItem('rememberedPassword', password.value); // Memoriza a senha também
+      localStorage.setItem('rememberedPassword', password.value);
     } else {
       localStorage.removeItem('rememberedEmail');
       localStorage.removeItem('rememberedPassword');
     }
 
-    if (user.role === 'admin') {
+    // BLOQUEIO DE PRIMEIRO ACESSO
+    if (user.primeiroAcesso) {
+      alert("Bem-vindo(a)! Identificamos que este é o seu primeiro acesso. Por segurança, redefina a sua senha antes de continuar.");
+      router.push('/aluno/reset-password'); 
+      return; 
+    }
+
+    if (user.role === 'admin' || user.role === 'admin_restrito') {
       router.push('/admin/dashboard');
     } else {
       router.push('/aluno/dashboard');
@@ -122,94 +128,32 @@ const handleLogin = async () => {
 <style scoped>
 .login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
 .glass-card { background: white; padding: 40px; border-radius: 28px; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); width: 100%; max-width: 460px; text-align: center; }
-
 .logo-container { margin-bottom: 20px; display: flex; justify-content: center; }
 .login-logo { max-width: 380px; width: 100%; height: auto; object-fit: contain; }
-
 .brand-phrase { color: #004aad; font-size: 1.1rem; font-weight: 600; font-style: italic; margin-bottom: 25px; }
 .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; }
-
 .modern-form { display: flex; flex-direction: column; gap: 15px; text-align: left; }
 .input-group { display: flex; flex-direction: column; gap: 8px; }
 .modern-form label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
 .modern-form input[type="email"], 
-.modern-form input[type="password"] { 
-  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
-  background: #f8fafc; font-size: 1rem; color: #1e293b; box-sizing: border-box; 
-}
-
-/* Row com checkbox e link */
-.options-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: -5px;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  text-transform: none !important; /* Tira o uppercase do label padrão */
-  color: #64748b !important;
-  font-size: 0.85rem !important;
-  font-weight: 500 !important;
-}
-
-.remember-me input {
-  width: 16px;
-  height: 16px;
-  accent-color: #004aad;
-  cursor: pointer;
-}
-
+.modern-form input[type="password"] { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 1rem; color: #1e293b; box-sizing: border-box; }
+.options-row { display: flex; justify-content: space-between; align-items: center; margin-top: -5px; }
+.remember-me { display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none !important; color: #64748b !important; font-size: 0.85rem !important; font-weight: 500 !important; }
+.remember-me input { width: 16px; height: 16px; accent-color: #004aad; cursor: pointer; }
 .forgot-link { font-size: 0.8rem; color: #004aad; font-weight: 700; text-decoration: none; }
 .forgot-link:hover { text-decoration: underline; }
-
 .btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 10px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: all 0.3s; }
 .btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
-
 .divider { height: 1px; background: #e2e8f0; margin: 30px 0 20px; }
 .social-footer { display: flex; justify-content: center; gap: 25px; }
 .social-link { color: #94a3b8; transition: all 0.3s ease; }
 .social-link:hover { color: #004aad; transform: translateY(-4px); }
 .social-link.whatsapp:hover { color: #25d366; }
-
 .error-msg { color: #dc2626; background: #fef2f2; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 0.9rem; font-weight: 700; border: 1px solid #fecaca; }
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
-@media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
 
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+@media (max-width: 992px) {
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
 }
 </style>

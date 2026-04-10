@@ -140,6 +140,26 @@
                 <div v-if="pro.observacoes" class="obs-box">
                   <Info :size="12" /> <span>{{ pro.observacoes }}</span>
                 </div>
+
+                <div class="report-box mt-4">
+                  <span class="report-title"><FileText :size="14" /> Emitir Relatório de Serviços Prestados</span>
+                  <div class="form-row report-row">
+                    <div class="form-group-col">
+                      <label>Data Início:</label>
+                      <input type="date" v-model="pro.filtroDataInicio" class="report-input" />
+                    </div>
+                    <div class="form-group-col">
+                      <label>Data Fim:</label>
+                      <input type="date" v-model="pro.filtroDataFim" class="report-input" />
+                    </div>
+                    <div class="form-group-col btn-col">
+                      <button @click="gerarRelatorioInterprete(pro)" class="btn-report">
+                        Gerar PDF
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
               </div>
               
               <div class="item-actions-wrapper">
@@ -169,9 +189,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { UserPlus, Users, Mail, Save, Trash2, Inbox, MessageCircle, Info, Edit2, X } from 'lucide-vue-next';
+import { UserPlus, Users, Mail, Save, Trash2, Inbox, MessageCircle, Info, Edit2, X, FileText } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const profissionais = ref([]);
 const listaEspecialidades = ['Jurídico', 'Saúde', 'Eventos', 'Educação', 'Corporativo', 'Audiovisual'];
@@ -195,7 +217,12 @@ const carregar = async () => {
   try {
     // Passando os filtros como Query Params para o backend
     const res = await api.get('/profissionais', { params: filtros.value });
-    profissionais.value = res.data;
+    // Injetamos as variáveis de filtro de data diretamente no objeto de cada profissional para uso isolado
+    profissionais.value = res.data.map(pro => ({
+      ...pro,
+      filtroDataInicio: '',
+      filtroDataFim: ''
+    }));
   } catch (error) {
     console.error("Erro ao carregar profissionais:", error);
   }
@@ -241,10 +268,111 @@ const remover = async (id) => {
   }
 };
 
+const formatarData = (dataIso) => {
+  if (!dataIso) return '';
+  const data = new Date(dataIso);
+  data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
+  return data.toLocaleDateString('pt-BR');
+};
+
+// -----------------------------------------------------
+// FUNÇÃO: GERAR RELATÓRIO DO INTÉRPRETE POR PERÍODO
+// -----------------------------------------------------
+const gerarRelatorioInterprete = async (pro) => {
+  if (!pro.filtroDataInicio || !pro.filtroDataFim) {
+    alert("Por favor, preencha a Data Início e a Data Fim para gerar o relatório.");
+    return;
+  }
+
+  try {
+    // Busca todos os serviços dentro do período
+    // O backend de '/servicos' já deve estar preparado para receber dataInicio e dataFim
+    const res = await api.get('/servicos', { 
+      params: { 
+        dataInicio: pro.filtroDataInicio, 
+        dataFim: pro.filtroDataFim 
+      } 
+    });
+    
+    // Filtrar localmente quais serviços este profissional específico participou
+    const servicosDoProfissional = res.data.filter(servico => {
+      // Verifica se o ID deste profissional está no array de intérpretes do serviço
+      return servico.interpretes.some(interprete => interprete._id === pro._id);
+    });
+
+    if (servicosDoProfissional.length === 0) {
+      alert(`Nenhum serviço encontrado para ${pro.nome} neste período.`);
+      return;
+    }
+
+    // Inicializar jsPDF
+    const doc = new jsPDF();
+    
+    // Cabeçalho do Documento
+    doc.setFontSize(16);
+    doc.text('Extrato de Serviços Prestados - Libras Salvador', 14, 20);
+    
+    doc.setFontSize(11);
+    doc.text(`Profissional: ${pro.nome}`, 14, 28);
+    doc.text(`PIX: ${pro.pix || 'Não informado'} | E-mail: ${pro.email}`, 14, 34);
+    
+    const periodoTxt = `Período de Apuração: ${formatarData(pro.filtroDataInicio)} até ${formatarData(pro.filtroDataFim)}`;
+    doc.text(periodoTxt, 14, 40);
+
+    // Preparar dados para Tabela
+    const tableColumn = ["Data", "Empresa/Cliente", "Evento/Modalidade", "Horas", "Valor (Est.)"];
+    const tableRows = [];
+    
+    let totalHoras = 0;
+    // Opcional: Se você quiser dividir o "valorInterpretes" pelo número de profissionais para estimar o ganho dele
+    let totalValorEstimado = 0; 
+
+    servicosDoProfissional.forEach(servico => {
+      const data = formatarData(servico.dataEvento);
+      const cliente = servico.cliente?.razaoSocial || 'N/A';
+      const evento = `${servico.tipoEvento} (${servico.modalidade})`;
+      const horas = servico.quantidadeHoras;
+      
+      // Cálculo de valor: Se pagou R$ 100 aos intérpretes e eram 2, são R$ 50 para cada.
+      const qtdInterpretes = servico.interpretes.length;
+      const valorParaEste = qtdInterpretes > 0 ? (servico.valorInterpretes / qtdInterpretes) : 0;
+      
+      totalHoras += horas;
+      totalValorEstimado += valorParaEste;
+
+      tableRows.push([data, cliente, evento, `${horas}h`, `R$ ${valorParaEste.toFixed(2)}`]);
+    });
+
+    // Rodapé de Totais na Tabela
+    tableRows.push(["", "", "TOTAIS:", `${totalHoras}h`, `R$ ${totalValorEstimado.toFixed(2)}`]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 48,
+      theme: 'grid',
+      headStyles: { fillColor: [0, 74, 173] },
+      willDrawCell: function(data) {
+        if (data.row.index === tableRows.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 240, 240];
+        }
+      }
+    });
+
+    doc.save(`Extrato_${pro.nome.replace(/\s+/g, '_')}_${pro.filtroDataInicio}.pdf`);
+
+  } catch (error) {
+    console.error("Erro ao gerar relatório:", error);
+    alert("Ocorreu um erro ao buscar os dados para o relatório.");
+  }
+};
+
 onMounted(carregar);
 </script>
 
 <style scoped>
+/* COPIE TODO O CSS DA SUA VIEW ANTERIOR AQUI PARA MANTER O ESTILO BASE */
 .layout-split { display: grid; grid-template-columns: 380px 1fr; gap: 30px; align-items: start; }
 .list-section { display: flex; flex-direction: column; gap: 20px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
@@ -284,7 +412,7 @@ onMounted(carregar);
 .btn-secondary:hover { background: #e2e8f0; color: #0f172a; }
 
 /* LISTAGEM */
-.pro-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 22px 0; border-bottom: 1px solid #f1f5f9; }
+.pro-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 22px 0; border-bottom: 1px solid #e2e8f0; }
 .header-name { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .contact-links { display: flex; gap: 12px; }
 .info-tag { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: #64748b; font-weight: 500; }
@@ -313,39 +441,21 @@ onMounted(carregar);
 .scrollable-form::-webkit-scrollbar { width: 5px; }
 .scrollable-form::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
-@media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
+/* ESTILOS PARA O BOX DE RELATÓRIO INDIVIDUAL DO PROFISSIONAL */
+.report-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px 15px; }
+.report-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 8px; text-transform: uppercase; }
+.report-row { gap: 10px; align-items: center; margin-bottom: 0; }
+.report-row label { font-size: 0.7rem; color: #64748b; margin-bottom: 4px; display: block; font-weight: 700; }
+.report-input { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white; }
+.btn-col { flex: 0.5; align-self: flex-end; }
+.btn-report { width: 100%; padding: 8px; background: #e2e8f0; color: #1e293b; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: 0.2s;}
+.btn-report:hover { background: #cbd5e1; color: #0f172a;}
 
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+@media (max-width: 992px) {
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
 }
 </style>

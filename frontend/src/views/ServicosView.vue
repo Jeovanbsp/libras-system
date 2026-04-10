@@ -59,7 +59,7 @@
             </div>
           </div>
 
-          <div class="financeiro-module">
+          <div class="financeiro-module" v-if="userRole !== 'admin_restrito'">
             <h4><DollarSign :size="16" /> Resumo Financeiro</h4>
             
             <div class="form-row">
@@ -90,6 +90,11 @@
             </div>
           </div>
 
+          <div class="financeiro-module" v-if="userRole === 'admin_restrito'">
+            <h4><Info :size="16" /> Resumo Financeiro Oculto</h4>
+            <p class="text-xs text-gray-500 mb-0 mt-2">Você não tem permissão para visualizar ou editar os valores financeiros deste serviço.</p>
+          </div>
+
           <div class="form-group mt-4">
             <label>Observações</label>
             <textarea v-model="form.observacoes" placeholder="Detalhes do evento..." rows="2"></textarea>
@@ -104,7 +109,7 @@
       <div class="list-section">
         
         <div class="glass-card search-bar">
-          <div class="form-row" style="margin-bottom: 0;">
+          <div class="form-row" style="margin-bottom: 0; align-items: flex-end;">
             <div class="form-group-col">
               <label class="text-xs font-bold text-gray-500">De:</label>
               <input v-model="filtros.dataInicio" type="date" @change="carregarServicos" />
@@ -115,10 +120,15 @@
             </div>
             <div class="form-group-col">
               <label class="text-xs font-bold text-gray-500">Filtrar Cliente:</label>
-              <select v-model="filtros.clienteId" @change="carregarServicos" class="modern-select">
+              <select v-model="filtros.clienteId" @change="carregarServicos" class="modern-select" style="height: 48px;">
                 <option value="">Todos</option>
                 <option v-for="c in clientes" :key="c._id" :value="c._id">{{ c.razaoSocial }}</option>
               </select>
+            </div>
+            <div class="form-group-col" style="flex: 0.5;" v-if="userRole !== 'admin_restrito'">
+              <button @click="gerarRelatorioPDF" class="btn-secondary" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <FileText :size="18" /> PDF
+              </button>
             </div>
           </div>
         </div>
@@ -153,11 +163,16 @@
               </div>
 
               <div class="servico-footer">
-                <div class="financial-summary">
+                <div class="financial-summary" v-if="userRole !== 'admin_restrito'">
                   <div class="fin-item"><span>Total:</span> <strong>R$ {{ servico.precoTotal.toFixed(2) }}</strong></div>
                   <div class="fin-item"><span>Intérpretes:</span> <strong class="text-orange-600">R$ {{ servico.valorInterpretes.toFixed(2) }}</strong></div>
                   <div class="fin-item"><span>Caixa Empresa:</span> <strong class="text-green-600">R$ {{ servico.caixaEmpresa.toFixed(2) }}</strong></div>
                 </div>
+                
+                <div class="financial-summary" v-else>
+                  <div class="fin-item"><span>Status:</span> <strong class="text-green-600">Confirmado</strong></div>
+                </div>
+
                 <button @click="remover(servico._id)" class="btn-del-mini" title="Excluir Lançamento">
                   <Trash2 :size="18" />
                 </button>
@@ -178,9 +193,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save } from 'lucide-vue-next';
+import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save, FileText, Info } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// NOVO: Capturando o role do usuário logado
+const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 
 const servicos = ref([]);
 const clientes = ref([]);
@@ -199,7 +219,7 @@ const form = ref({
   quantidadeHoras: null,
   tipoEvento: 'Conferência',
   modalidade: 'Presencial',
-  precoTotal: null,
+  precoTotal: 0,
   valorLogistica: 0,
   impostos: 0,
   valorInterpretes: 0,
@@ -207,7 +227,6 @@ const form = ref({
   observacoes: ''
 });
 
-// Calcula automaticamente o caixa da empresa ao digitar os valores
 const calcularCaixa = () => {
   const total = form.value.precoTotal || 0;
   const logistica = form.value.valorLogistica || 0;
@@ -241,13 +260,21 @@ const carregarServicos = async () => {
 
 const cadastrar = async () => {
   try {
+    // Se for admin restrito, garantimos que valores de transação vão zerados
+    if (userRole.value === 'admin_restrito') {
+       form.value.precoTotal = 0;
+       form.value.valorLogistica = 0;
+       form.value.impostos = 0;
+       form.value.valorInterpretes = 0;
+       form.value.caixaEmpresa = 0;
+    }
+
     await api.post('/servicos', form.value);
     alert('Serviço lançado com sucesso!');
     
-    // Resetar formulário
     form.value = {
       cliente: '', interpretes: [], dataEvento: '', quantidadeHoras: null,
-      tipoEvento: 'Conferência', modalidade: 'Presencial', precoTotal: null,
+      tipoEvento: 'Conferência', modalidade: 'Presencial', precoTotal: 0,
       valorLogistica: 0, impostos: 0, valorInterpretes: 0, caixaEmpresa: 0, observacoes: ''
     };
     
@@ -271,8 +298,64 @@ const remover = async (id) => {
 const formatarData = (dataIso) => {
   if (!dataIso) return '';
   const data = new Date(dataIso);
-  data.setMinutes(data.getMinutes() + data.getTimezoneOffset()); // Ajuste de fuso
+  data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
   return data.toLocaleDateString('pt-BR');
+};
+
+const gerarRelatorioPDF = () => {
+  if (userRole.value === 'admin_restrito') return alert("Acesso negado.");
+  
+  if (servicos.value.length === 0) {
+    alert("Nenhum serviço para exportar neste período.");
+    return;
+  }
+
+  const doc = new jsPDF();
+  
+  doc.setFontSize(16);
+  doc.text('Relatório de Serviços Prestados - Libras Salvador', 14, 20);
+  
+  doc.setFontSize(10);
+  const periodoTxt = `Período: ${filtros.value.dataInicio ? formatarData(filtros.value.dataInicio) : 'Início'} até ${filtros.value.dataFim ? formatarData(filtros.value.dataFim) : 'Hoje'}`;
+  doc.text(periodoTxt, 14, 28);
+
+  const tableColumn = ["Data", "Cliente", "Evento", "Intérpretes", "Valor Total"];
+  const tableRows = [];
+
+  let totalGeral = 0;
+  let totalCaixaEmpresa = 0;
+
+  servicos.value.forEach(servico => {
+    const data = formatarData(servico.dataEvento);
+    const cliente = servico.cliente?.razaoSocial || 'N/A';
+    const evento = servico.tipoEvento;
+    const nomeInterpretes = servico.interpretes.map(i => i.nome).join(', ') || '-';
+    const valor = `R$ ${(servico.precoTotal || 0).toFixed(2)}`;
+    
+    totalGeral += (servico.precoTotal || 0);
+    totalCaixaEmpresa += (servico.caixaEmpresa || 0);
+
+    tableRows.push([data, cliente, evento, nomeInterpretes, valor]);
+  });
+
+  tableRows.push(["", "", "", "TOTAL FATURADO:", `R$ ${totalGeral.toFixed(2)}`]);
+  tableRows.push(["", "", "", "CAIXA DA EMPRESA:", `R$ ${totalCaixaEmpresa.toFixed(2)}`]);
+
+  doc.autoTable({
+    head: [tableColumn],
+    body: tableRows,
+    startY: 35,
+    theme: 'grid',
+    headStyles: { fillColor: [0, 74, 173] },
+    willDrawCell: function(data) {
+      if (data.row.index >= tableRows.length - 2) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    }
+  });
+
+  doc.save(`Relatorio_Servicos_${new Date().getTime()}.pdf`);
 };
 
 onMounted(() => {
@@ -291,7 +374,6 @@ onMounted(() => {
 .text-brand { color: #004aad; }
 .mt-4 { margin-top: 1rem; }
 
-/* Formulário */
 .modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 8px; text-transform: uppercase; }
 .modern-form input, .modern-form textarea, .modern-select, .search-bar input { 
   width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
@@ -315,7 +397,9 @@ onMounted(() => {
 .btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
 
-/* Listagem */
+.btn-secondary { background: #e2e8f0; color: #1e293b; border: none; padding: 10px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%;}
+.btn-secondary:hover { background: #cbd5e1; color: #0f172a;}
+
 .servicos-list { display: flex; flex-direction: column; gap: 15px; }
 .servico-card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; transition: 0.2s; }
 .servico-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
@@ -346,39 +430,12 @@ onMounted(() => {
 .scrollable-form { max-height: 80vh; overflow-y: auto; padding-right: 10px; }
 .scrollable-form::-webkit-scrollbar { width: 5px; }
 .scrollable-form::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
-@media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
 
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+@media (max-width: 992px) {
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
 }
 </style>

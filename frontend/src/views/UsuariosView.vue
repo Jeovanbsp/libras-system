@@ -32,8 +32,8 @@
             <label>Nível de Acesso</label>
             <select v-model="form.role" class="modern-select">
               <option value="aluno">Aluno (Área de Estudos)</option>
-              <option value="admin">Administrador (Sistema Completo)</option>
-              <option value="admin_restrito">Administrador (Sem Acesso Financeiro)</option>
+              <option value="admin_restrito">Administrador Restrito</option>
+              <option v-if="userRole === 'admin'" value="admin">Administrador Geral</option>
             </select>
           </div>
 
@@ -82,7 +82,13 @@
                 <span :class="['role-badge', user.role === 'aluno' ? 'role-aluno' : 'role-admin']">
                   {{ user.role === 'admin' ? 'Administrador' : (user.role === 'admin_restrito' ? 'Adm Restrito' : 'Aluno') }}
                 </span>
-                <button @click="removerUsuario(user._id)" class="btn-del-mini" title="Excluir Usuário">
+                
+                <button 
+                  v-if="userRole === 'admin' || (userRole === 'admin_restrito' && user.role === 'aluno')" 
+                  @click="removerUsuario(user._id)" 
+                  class="btn-del-mini" 
+                  title="Excluir Usuário"
+                >
                   <Trash2 :size="18" />
                 </button>
               </div>
@@ -105,6 +111,8 @@ import { ref, onMounted } from 'vue';
 import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
+
+const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 
 const usuarios = ref([]);
 const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '' });
@@ -204,39 +212,11 @@ onMounted(carregarUsuarios);
 
 .empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
 @media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
-
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
 }
 </style>

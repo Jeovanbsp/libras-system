@@ -1,5 +1,6 @@
 const Curso = require('../models/Curso');
 const User = require('../models/User');
+const ForumMessage = require('../models/ForumMessage'); // Integração do Fórum
 
 // --- GESTÃO DE CURSOS (ADMIN) ---
 exports.criarCurso = async (req, res) => {
@@ -31,7 +32,6 @@ exports.buscarCursoPorId = async (req, res) => {
   }
 };
 
-// ADICIONADO: Função para Editar Curso
 exports.editarCurso = async (req, res) => {
   try {
     const cursoAtualizado = await Curso.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -42,7 +42,6 @@ exports.editarCurso = async (req, res) => {
   }
 };
 
-// ADICIONADO: Função para Remover Curso
 exports.removerCurso = async (req, res) => {
   try {
     const cursoRemovido = await Curso.findByIdAndDelete(req.params.id);
@@ -99,25 +98,83 @@ exports.meusCursos = async (req, res) => {
 exports.concluirAula = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
-    const { aulaId } = req.body;
+    const { materialId } = req.body; 
+    
+    if (!materialId) {
+      return res.status(400).json({ message: "ID do material/atividade não fornecido." });
+    }
+
     const user = await User.findById(userId);
     
-    if (!user.aulasConcluidas.includes(aulaId)) {
-      user.aulasConcluidas.push(aulaId);
+    if (!user.materiaisConcluidos.includes(materialId)) {
+      user.materiaisConcluidos.push(materialId);
       await user.save();
     }
-    res.status(200).json({ aulasConcluidas: user.aulasConcluidas });
+    
+    res.status(200).json({ materiaisConcluidos: user.materiaisConcluidos });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao salvar progresso." });
+    res.status(500).json({ message: "Erro ao salvar progresso da atividade." });
   }
 };
 
 exports.buscarProgresso = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
-    const user = await User.findById(userId).select('aulasConcluidas');
-    res.json(user.aulasConcluidas || []);
+    const user = await User.findById(userId).select('materiaisConcluidos');
+    res.json(user.materiaisConcluidos || []);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar progresso." });
+    res.status(500).json({ message: "Erro ao buscar progresso do aluno." });
   }
 };
+
+// ==========================================
+// FÓRUM DO CURSO
+// ==========================================
+exports.listarMensagensForum = async (req, res) => {
+  try {
+    const { cursoId } = req.params;
+    const mensagens = await ForumMessage.find({ curso: cursoId })
+      .populate('autor', 'nome role')
+      .sort({ dataCriacao: 1 });
+
+    const formatadas = mensagens.map(msg => ({
+      _id: msg._id,
+      autor: msg.autor ? msg.autor.nome : 'Usuário Removido',
+      role: msg.autor ? msg.autor.role : 'aluno',
+      texto: msg.texto,
+      data: msg.dataCriacao
+    }));
+
+    res.status(200).json(formatadas);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao carregar o fórum." });
+  }
+};
+
+exports.enviarMensagemForum = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.userId;
+    const { cursoId } = req.params;
+    const { texto } = req.body;
+
+    if (!texto) return res.status(400).json({ message: "A mensagem não pode estar vazia." });
+
+    const novaMensagem = await ForumMessage.create({
+      curso: cursoId,
+      autor: userId,
+      texto
+    });
+
+    await novaMensagem.populate('autor', 'nome role');
+
+    res.status(201).json({
+      _id: novaMensagem._id,
+      autor: novaMensagem.autor.nome,
+      role: novaMensagem.autor.role,
+      texto: novaMensagem.texto,
+      data: novaMensagem.dataCriacao
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao enviar mensagem." });
+  }
+};  

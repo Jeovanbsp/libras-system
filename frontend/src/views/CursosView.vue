@@ -71,24 +71,50 @@
               <div class="lessons-container">
                 <div v-for="(aula, aIdx) in mod.aulas" :key="aIdx" class="lesson-admin-card">
                   <div class="lesson-input-row">
-                    <input v-model="aula.titulo" placeholder="Nome da Aula" />
-                    <input v-model="aula.videoUrl" placeholder="URL do Vídeo" />
+                    <input v-model="aula.titulo" placeholder="Nome da Aula" style="font-weight: 700;" />
                     <button type="button" @click="removerAula(mIdx, aIdx)" class="btn-icon-del-mini" title="Remover Aula">
                       <X :size="16" />
                     </button>
                   </div>
                   
-                  <div class="upload-field">
-                    <label class="file-label">
-                      <FileUp :size="16" /> 
-                      {{ aula.material ? 'Trocar Material' : 'Anexar PDF/Material' }}
-                      <input type="file" @change="uploadMaterial($event, mIdx, aIdx)" hidden accept=".pdf,.zip,.docx" />
-                    </label>
-                    <span v-if="aula.material" class="file-status">✓ {{ aula.material.substring(0, 15) }}...</span>
+                  <div class="lesson-input-row mt-2" style="gap: 5px;">
+                    <input v-model.number="aula.duracao" type="number" placeholder="Duração (min)" style="flex: 0.3;" />
+                    <input v-model="aula.descricao" placeholder="Descrição curta (opcional)" style="flex: 1;" />
+                  </div>
+
+                  <div class="materials-box mt-3">
+                    <label class="text-xs text-brand-color font-bold mb-2 block border-b pb-1">Atividades / Materiais desta Aula:</label>
+                    
+                    <div v-for="(mat, matIdx) in aula.materiais" :key="matIdx" class="material-row mb-2">
+                      <select v-model="mat.tipo" class="material-select">
+                        <option value="video">Vídeo (YouTube)</option>
+                        <option value="link">Link Externo</option>
+                        <option value="pdf">Arquivo PDF</option>
+                        <option value="texto">Texto de Apoio</option>
+                      </select>
+                      <input v-model="mat.titulo" placeholder="Título da Atividade" class="material-input" />
+                      
+                      <div v-if="mat.tipo === 'pdf'" class="upload-mini">
+                         <label class="btn-upload-mini">
+                            <FileUp :size="14" /> {{ mat.url ? 'Troc..' : 'Subir' }}
+                            <input type="file" @change="uploadMaterialMultiplo($event, mIdx, aIdx, matIdx)" hidden accept=".pdf,.zip,.docx" />
+                         </label>
+                         <span v-if="mat.url" class="text-xs text-green-600 block w-full truncate ml-1">✓ OK</span>
+                      </div>
+                      <input v-else v-model="mat.url" :placeholder="mat.tipo === 'texto' ? 'Escreva o texto aqui...' : 'URL / Link'" class="material-input" style="flex: 1.5;" />
+                      
+                      <button type="button" @click="removerMaterial(mIdx, aIdx, matIdx)" class="btn-icon-del-micro" title="Remover Material">
+                        <Trash2 :size="14" />
+                      </button>
+                    </div>
+
+                    <button type="button" @click="adicionarMaterial(mIdx, aIdx)" class="btn-add-micro mt-2">
+                      + Adicionar Atividade/Material
+                    </button>
                   </div>
                 </div>
                 <button type="button" @click="adicionarAula(mIdx)" class="btn-add-lesson">
-                    + Adicionar Aula
+                    + Adicionar Aula neste Módulo
                 </button>
               </div>
             </div>
@@ -144,7 +170,6 @@
         </div>
         <div class="modal-body">
           <p class="mb-4">Liberando acesso ao curso: <br><strong>{{ cursoParaLiberar?.titulo }}</strong></p>
-          
           <div class="form-group">
             <label class="modal-label">Selecione o Aluno</label>
             <select v-model="alunoSelecionadoId" class="modal-select">
@@ -179,12 +204,19 @@ const mostrarModal = ref(false);
 const cursoParaLiberar = ref(null);
 const alunoSelecionadoId = ref('');
 
+// ESTRUTURA INICIAL ATUALIZADA
 const cursoInicial = { 
   titulo: '', descricao: '', cargaHoraria: 0, nivel: 'curso', gratuito: true, valor: 0,
-  modulos: [{ titulo: '', aulas: [{ titulo: '', videoUrl: '', material: '' }] }]
+  modulos: [{ 
+    titulo: '', 
+    aulas: [{ 
+      titulo: '', duracao: null, descricao: '',
+      materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '' }] 
+    }] 
+  }]
 };
 
-const curso = ref({ ...cursoInicial });
+const curso = ref(JSON.parse(JSON.stringify(cursoInicial)));
 
 const buscarAlunos = async () => {
   try {
@@ -225,7 +257,7 @@ const confirmarLiberacao = async () => {
   }
 };
 
-const uploadMaterial = async (event, mIdx, aIdx) => {
+const uploadMaterialMultiplo = async (event, mIdx, aIdx, matIdx) => {
   const file = event.target.files[0];
   if (!file) return;
   const formData = new FormData();
@@ -234,9 +266,9 @@ const uploadMaterial = async (event, mIdx, aIdx) => {
     const res = await api.post('/admin/upload-material', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    curso.value.modulos[mIdx].aulas[aIdx].material = res.data.fileName;
-    alert("Material enviado!");
-  } catch (err) { alert("Erro no upload."); }
+    // Salva o nome do arquivo gerado no campo URL do material específico
+    curso.value.modulos[mIdx].aulas[aIdx].materiais[matIdx].url = res.data.fileName;
+  } catch (err) { alert("Erro no upload do arquivo."); }
 };
 
 const salvarCurso = async () => {
@@ -251,6 +283,12 @@ const salvarCurso = async () => {
         .map(mod => {
           if (mod.aulas && mod.aulas.length > 0) {
              mod.aulas = mod.aulas.filter(aula => aula.titulo && aula.titulo.trim() !== '');
+             // Limpar materiais vazios antes de salvar
+             mod.aulas.forEach(aula => {
+                if(aula.materiais) {
+                   aula.materiais = aula.materiais.filter(mat => mat.titulo && mat.url);
+                }
+             });
           }
           return mod;
         });
@@ -267,13 +305,19 @@ const salvarCurso = async () => {
     alert("Salvo com sucesso!");
   } catch (err) { 
     console.error("Erro completo:", err.response?.data);
-    alert("Erro ao salvar: " + (err.response?.data?.message || "Verifique se não deixou nenhum campo obrigatório em branco.")); 
+    alert("Erro ao salvar. Verifique se os títulos e URLs estão preenchidos."); 
   }
 };
 
 const prepararEdicao = (c) => { 
   editandoId.value = c._id; 
   curso.value = JSON.parse(JSON.stringify(c)); 
+  // Garante que cursos antigos sem array de materiais não quebrem a tela
+  curso.value.modulos.forEach(m => {
+     m.aulas.forEach(a => {
+        if (!a.materiais) a.materiais = [];
+     });
+  });
   window.scrollTo({ top: 0, behavior: 'smooth' }); 
 };
 
@@ -285,10 +329,27 @@ const removerCurso = async (id) => {
   } 
 };
 
-const adicionarModulo = () => { curso.value.modulos.push({ titulo: '', aulas: [{ titulo: '', videoUrl: '', material: '' }] }); };
+const adicionarModulo = () => { 
+  curso.value.modulos.push({ 
+    titulo: '', 
+    aulas: [{ titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '' }] }] 
+  }); 
+};
 const removerModulo = (idx) => { curso.value.modulos.splice(idx, 1); };
-const adicionarAula = (mIdx) => { curso.value.modulos[mIdx].aulas.push({ titulo: '', videoUrl: '', material: '' }); };
+
+const adicionarAula = (mIdx) => { 
+  curso.value.modulos[mIdx].aulas.push({ 
+    titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Atividade 1', tipo: 'video', url: '' }] 
+  }); 
+};
 const removerAula = (mIdx, aIdx) => { curso.value.modulos[mIdx].aulas.splice(aIdx, 1); };
+
+const adicionarMaterial = (mIdx, aIdx) => {
+  curso.value.modulos[mIdx].aulas[aIdx].materiais.push({ titulo: '', tipo: 'video', url: '' });
+};
+const removerMaterial = (mIdx, aIdx, matIdx) => {
+  curso.value.modulos[mIdx].aulas[aIdx].materiais.splice(matIdx, 1);
+};
 
 onMounted(() => {
   buscarCursos();
@@ -300,7 +361,7 @@ onMounted(() => {
 /* =========================================
    BASE E ESTRUTURA
    ========================================= */
-.layout-split { display: grid; grid-template-columns: 420px 1fr; gap: 30px; align-items: start; }
+.layout-split { display: grid; grid-template-columns: 480px 1fr; gap: 30px; align-items: start; } /* Aumentei a coluna esq */
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 
 /* BARRA DE ROLAGEM */
@@ -330,7 +391,7 @@ onMounted(() => {
 .btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
 /* =========================================
-   BOTÕES E SEÇÃO DE MÓDULOS E AULAS (ATUALIZADO)
+   MÓDULOS E AULAS
    ========================================= */
 .module-item { background: #f8fafc; padding: 18px; border-radius: 16px; margin-bottom: 18px; border: 1px solid #e2e8f0; }
 
@@ -344,14 +405,12 @@ onMounted(() => {
 }
 .btn-add-small:hover { background: #004aad; color: white; border-color: #004aad; transform: translateY(-1px); }
 
-/* AJUSTE NA LINHA DO MÓDULO */
 .module-input-row { display: flex; gap: 12px; align-items: stretch; margin-bottom: 15px; }
 .mod-title-input { 
   flex: 1; font-weight: 700 !important; color: #004aad !important; 
   border-color: #bfdbfe !important; background: white !important; 
 }
 
-/* LIXEIRA DO MÓDULO COM TAMANHO PROPORCIONAL AO INPUT */
 .btn-icon-del {
   background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; border-radius: 12px; 
   padding: 0 15px; display: flex; align-items: center; justify-content: center; 
@@ -360,15 +419,12 @@ onMounted(() => {
 .btn-icon-del:hover { background: #ef4444; color: white; }
 
 .lesson-admin-card { background: white; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
-
-/* AJUSTE NA LINHA DA AULA */
 .lesson-input-row { display: flex; gap: 10px; align-items: stretch; }
-.lesson-input-row input { flex: 1; margin: 0 !important; padding: 12px !important; font-size: 0.85rem !important; }
+.lesson-input-row input { flex: 1; margin: 0 !important; padding: 10px !important; font-size: 0.85rem !important; border-radius: 8px !important;}
 
-/* BOTÃO DE EXCLUIR AULA ALINHADO */
 .btn-icon-del-mini {
-  background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 10px; 
-  padding: 0 12px; display: flex; align-items: center; justify-content: center; 
+  background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; 
+  padding: 0 10px; display: flex; align-items: center; justify-content: center; 
   cursor: pointer; transition: all 0.2s; flex-shrink: 0;
 }
 .btn-icon-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
@@ -379,15 +435,20 @@ onMounted(() => {
 }
 .btn-add-lesson:hover { background: #f8fafc; color: #004aad; border-color: #94a3b8; }
 
-/* AJUSTE NO BOTÃO DE ANEXAR PDF */
-.upload-field { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
-.file-label { 
-  display: inline-flex; align-items: center; gap: 8px; background: #f1f5f9; 
-  border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 10px; 
-  font-size: 0.8rem; cursor: pointer; font-weight: 700; color: #475569; width: 100%; justify-content: center;
-}
-.file-label:hover { background: #e2e8f0; }
-.file-status { font-size: 0.75rem; color: #10b981; font-weight: bold; white-space: nowrap; }
+/* ESTILOS DOS MATERIAIS (NOVO) */
+.materials-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.material-row { display: flex; gap: 8px; align-items: center; }
+.material-select { flex: 0.8; padding: 8px !important; font-size: 0.75rem !important; border-radius: 6px !important; }
+.material-input { flex: 1; padding: 8px !important; font-size: 0.75rem !important; border-radius: 6px !important; margin: 0 !important;}
+
+.btn-icon-del-micro { background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; }
+.btn-icon-del-micro:hover { background: #fee2e2; border-radius: 4px; }
+.btn-add-micro { background: none; border: none; color: #004aad; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 4px 0; text-align: left; width: 100%;}
+.btn-add-micro:hover { text-decoration: underline; }
+
+.upload-mini { flex: 1.5; display: flex; align-items: center; }
+.btn-upload-mini { background: #e2e8f0; color: #475569; font-size: 0.7rem; font-weight: bold; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid #cbd5e1; }
+.btn-upload-mini:hover { background: #cbd5e1; }
 
 /* =========================================
    CARDS DOS CURSOS
@@ -421,9 +482,7 @@ onMounted(() => {
 
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
 
-/* =========================================
-   MODAL
-   ========================================= */
+/* MODAL */
 .modal-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
   background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; 
@@ -432,45 +491,15 @@ onMounted(() => {
 .modal-content { max-width: 480px; width: 90%; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .modal-label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
-.modal-select {
-  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;
-  color: #1e293b; font-size: 0.95rem; cursor: pointer; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 15px center; background-size: 18px; transition: all 0.2s;
-}
-.modal-select:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background-color: white; }
+.modal-select { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; color: #1e293b; font-size: 0.95rem; cursor: pointer; }
 .modal-footer { margin-top: 30px; }
 .btn-icon-close { background: none; border: none; cursor: pointer; color: #64748b; transition: 0.2s; }
 .btn-icon-close:hover { color: #ef4444; transform: scale(1.1); }
 
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
 @media (max-width: 992px) {
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  .glass-card { 
-    padding: 20px; 
-  }
-
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .material-row { flex-direction: column; align-items: stretch;}
+  .btn-icon-del-micro { align-self: flex-end;}
 }
 </style>

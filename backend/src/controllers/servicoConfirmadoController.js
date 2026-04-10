@@ -1,39 +1,47 @@
 const ServicoConfirmado = require('../models/ServicoConfirmado');
+const Financeiro = require('../models/Financeiro');
 
-// Cadastrar um novo serviço
+// Cadastrar um novo serviço e lançar entrada financeira
 exports.criarServico = async (req, res) => {
   try {
     const novoServico = await ServicoConfirmado.create(req.body);
+
+    // Integração automática com o Fluxo de Caixa da Empresa
+    if (novoServico.caixaEmpresa && novoServico.caixaEmpresa > 0) {
+      await Financeiro.create({
+        tipo: 'Entrada',
+        descricao: `Receita B2B - Serviço/Evento: ${novoServico.tipoEvento || 'Geral'}`,
+        valor: novoServico.caixaEmpresa,
+        data: novoServico.dataEvento || Date.now(),
+        status: 'Pago'
+      });
+    }
+
     res.status(201).json(novoServico);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// Listar serviços (com filtros de período, cliente ou intérprete)
 exports.listarServicos = async (req, res) => {
   try {
     const { dataInicio, dataFim, clienteId, interpreteId } = req.query;
     let filtro = {};
 
-    // Filtro por período (Data de Início e Fim)
     if (dataInicio || dataFim) {
       filtro.dataEvento = {};
       if (dataInicio) filtro.dataEvento.$gte = new Date(dataInicio);
       if (dataFim) filtro.dataEvento.$lte = new Date(dataFim);
     }
 
-    // Filtro por Cliente B2B específico
     if (clienteId) {
       filtro.cliente = clienteId;
     }
 
-    // Filtro por Intérprete específico
     if (interpreteId) {
-      filtro.interpretes = interpreteId; // Como interpretes é um array, o mongoose busca se o ID está dentro dele
+      filtro.interpretes = interpreteId; 
     }
 
-    // O .populate('cliente') e .populate('interpretes') traz os dados reais da empresa e do profissional em vez de só o ID
     const servicos = await ServicoConfirmado.find(filtro)
       .populate('cliente', 'razaoSocial cnpj')
       .populate('interpretes', 'nome especialidades')
@@ -45,7 +53,6 @@ exports.listarServicos = async (req, res) => {
   }
 };
 
-// Excluir um serviço
 exports.removerServico = async (req, res) => {
   try {
     const servico = await ServicoConfirmado.findByIdAndDelete(req.params.id);
