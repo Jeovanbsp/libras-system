@@ -3,7 +3,7 @@
     <div class="glass-card auth-box">
       
       <div class="logo-container">
-        <img src="@/assets/logo.png" alt="Libras System" class="login-logo" />
+        <img src="../assets/logo.png" alt="Libras System" class="login-logo" />
       </div>
 
       <div class="title-box">
@@ -58,7 +58,8 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ShieldCheck, Save, XCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-import api from '@/services/api';
+// CORREÇÃO AQUI: Usando caminho relativo para não quebrar o Vite no Vercel
+import api from '../../services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -66,7 +67,6 @@ const password = ref('');
 const confirmPassword = ref('');
 const loading = ref(false);
 
-// Sistema de Notificações Unificado
 const mensagemFeedback = ref('');
 const tipoFeedback = ref('');
 const mostrarMensagem = (msg, tipo = 'success') => {
@@ -75,7 +75,6 @@ const mostrarMensagem = (msg, tipo = 'success') => {
   setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
 };
 
-// Determina se veio do Login (Sem token) ou de e-mail de recuperação (Com token)
 const isPrimeiroAcesso = computed(() => !route.params.token);
 
 const handleReset = async () => {
@@ -127,7 +126,6 @@ const handleReset = async () => {
 .title-box span { color: #004aad; }
 .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 30px; }
 
-/* FEEDBACK TOAST */
 .feedback-toast {
   display: flex; align-items: center; gap: 10px; text-align: left;
   padding: 14px 18px; border-radius: 12px;

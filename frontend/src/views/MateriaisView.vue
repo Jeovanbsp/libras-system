@@ -57,7 +57,7 @@
             <a :href="obterUrlArquivo(m.caminho)" target="_blank" rel="noopener noreferrer" class="btn-view">
               <Eye :size="16" /> Ver PDF
             </a>
-            <button @click="remover(m._id)" class="btn-del-red">
+            <button @click="confirmarRemocao(m)" class="btn-del-red">
               <Trash2 :size="18" />
             </button>
           </div>
@@ -68,8 +68,22 @@
           <p>Nenhuma apostila cadastrada ainda.</p>
         </div>
       </div>
-      
     </div>
+
+    <div v-if="mostrarModalExclusao" class="modal-overlay" @click.self="cancelarRemocao">
+      <div class="glass-card modal-content delete-modal">
+        <div class="delete-icon-wrapper">
+          <AlertTriangle :size="40" />
+        </div>
+        <h3>Excluir Material?</h3>
+        <p>Tem certeza que deseja apagar permanentemente o material <strong>{{ materialParaExcluir?.titulo }}</strong>?</p>
+        <div class="modal-actions-row">
+          <button @click="cancelarRemocao" class="btn-cancel flex-1">Cancelar</button>
+          <button @click="executarRemocao" class="btn-primary btn-danger flex-1">Sim, Excluir</button>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
@@ -86,7 +100,10 @@ const form = ref({ titulo: '', descricao: '' });
 const arquivoSelecionado = ref(null);
 const enviando = ref(false);
 
-// Sistema de Notificações
+// Estado para o Modal de Exclusão
+const mostrarModalExclusao = ref(false);
+const materialParaExcluir = ref(null);
+
 const mensagemFeedback = ref('');
 const tipoFeedback = ref('');
 const mostrarMensagem = (msg, tipo = 'success') => {
@@ -132,17 +149,32 @@ const fazerUpload = async () => {
   }
 };
 
-const remover = async (id) => {
-  if (confirm("Tem certeza que deseja apagar este material permanentemente?")) {
-    try {
-      await api.delete(`/materiais/${id}`);
-      buscarMateriais();
-      mostrarMensagem("Material removido.");
-    } catch (err) {
-      mostrarMensagem("Erro ao remover.", "error");
-    }
+// ==========================================
+// LÓGICA DO NOVO MODAL DE EXCLUSÃO
+// ==========================================
+const confirmarRemocao = (material) => {
+  materialParaExcluir.value = material;
+  mostrarModalExclusao.value = true;
+};
+
+const cancelarRemocao = () => {
+  mostrarModalExclusao.value = false;
+  materialParaExcluir.value = null;
+};
+
+const executarRemocao = async () => {
+  if (!materialParaExcluir.value) return;
+  try {
+    await api.delete(`/materiais/${materialParaExcluir.value._id}`);
+    buscarMateriais();
+    mostrarMensagem("Material removido.");
+  } catch (err) {
+    mostrarMensagem("Erro ao remover.", "error");
+  } finally {
+    cancelarRemocao();
   }
 };
+// ==========================================
 
 const obterUrlArquivo = (caminho) => {
   if (!caminho) return '#';
@@ -159,53 +191,26 @@ onMounted(buscarMateriais);
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0, 74, 173, 0.05); }
 .text-brand { color: #004aad; }
 
-/* FEEDBACK TOAST */
-.feedback-toast {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px; border-radius: 12px;
-  margin-bottom: 20px; font-weight: 700; font-size: 0.9rem;
-  animation: slideDown 0.3s ease-out;
-}
+.feedback-toast { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 0.9rem; animation: slideDown 0.3s ease-out; }
 .feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 .form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-
 .modern-form label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin: 15px 0 5px; text-transform: uppercase; }
-.modern-form input, .modern-form textarea { 
-  width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; 
-  background: #f8fafc; font-size: 0.95rem; color: #1e293b; transition: 0.2s; box-sizing: border-box; font-family: inherit;
-}
+.modern-form input, .modern-form textarea { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 0.95rem; color: #1e293b; transition: 0.2s; box-sizing: border-box; font-family: inherit; }
 .modern-form input:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background: white; }
 
 .file-input { padding: 10px !important; background: white !important; cursor: pointer; }
 
-.btn-primary { 
-  width: 100%; background: #004aad; color: white; border: none; padding: 16px; 
-  border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; transition: 0.3s;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
+.btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .materiais-list { display: flex; flex-direction: column; gap: 20px; }
 
-.alert-warning {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background-color: #fffbeb;
-  border: 1px solid #fde68a;
-  padding: 16px 24px;
-  border-radius: 20px;
-  margin-bottom: 5px;
-}
+.alert-warning { display: flex; align-items: center; gap: 15px; background-color: #fffbeb; border: 1px solid #fde68a; padding: 16px 24px; border-radius: 20px; margin-bottom: 5px; }
 .alert-warning .alert-icon { color: #f59e0b; flex-shrink: 0; }
 .alert-warning p { margin: 0; color: #92400e; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
 .alert-warning strong { font-weight: 800; }
@@ -224,6 +229,20 @@ onMounted(buscarMateriais);
 .btn-del-red:hover { color: #ef4444; background: #fef2f2; }
 
 .empty-card { text-align: center; color: #94a3b8; font-weight: 600; padding: 50px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+/* MODAL DE EXCLUSÃO */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+.modal-content { max-width: 400px; width: 90%; padding: 30px; }
+.delete-modal { text-align: center; }
+.delete-icon-wrapper { display: flex; justify-content: center; color: #ef4444; margin-bottom: 15px; }
+.delete-modal h3 { font-size: 1.4rem; color: #1e293b; font-weight: 800; margin-bottom: 10px; }
+.delete-modal p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
+.modal-actions-row { display: flex; gap: 15px; }
+.flex-1 { flex: 1; }
+.btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; text-align: center; }
+.btn-cancel:hover { background: #e2e8f0; }
+.btn-danger { background-color: #ef4444 !important; border: none; margin-top: 0; }
+.btn-danger:hover { background-color: #dc2626 !important; }
 
 @media (max-width: 992px) {
   .layout-split { grid-template-columns: 1fr; }

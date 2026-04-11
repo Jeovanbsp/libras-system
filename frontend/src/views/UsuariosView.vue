@@ -6,6 +6,13 @@
         <h3 class="form-title">
           <UserPlus :size="20" class="text-brand" /> Novo Usuário
         </h3>
+        
+        <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+          <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ mensagemFeedback }}</p>
+        </div>
+
         <form @submit.prevent="salvarUsuario" class="modern-form">
           <div class="form-group">
             <label>Nome Completo</label>
@@ -85,7 +92,7 @@
                 
                 <button 
                   v-if="userRole === 'admin' || (userRole === 'admin_restrito' && user.role === 'aluno')" 
-                  @click="removerUsuario(user._id)" 
+                  @click="confirmarRemocao(user)" 
                   class="btn-del-mini" 
                   title="Excluir Usuário"
                 >
@@ -103,12 +110,27 @@
       </div>
 
     </div>
+
+    <div v-if="mostrarModalExclusao" class="modal-overlay" @click.self="cancelarRemocao">
+      <div class="glass-card modal-content delete-modal">
+        <div class="delete-icon-wrapper">
+          <AlertTriangle :size="40" />
+        </div>
+        <h3>Excluir Usuário?</h3>
+        <p>Tem certeza que deseja apagar o usuário <strong>{{ userParaExcluir?.nome }}</strong>?<br>Todo o progresso de aulas dele será perdido e esta ação é irreversível.</p>
+        <div class="modal-actions-row">
+          <button @click="cancelarRemocao" class="btn-cancel flex-1">Cancelar</button>
+          <button @click="executarRemocao" class="btn-primary btn-danger flex-1">Sim, Excluir</button>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox } from 'lucide-vue-next';
+import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
@@ -123,6 +145,19 @@ const filtros = ref({
   dataFim: ''
 });
 
+// Estado para o Modal de Exclusão
+const mostrarModalExclusao = ref(false);
+const userParaExcluir = ref(null);
+
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
+
 const carregarUsuarios = async () => {
   try {
     const res = await api.get('/admin/usuarios', { params: filtros.value });
@@ -136,23 +171,39 @@ const salvarUsuario = async () => {
   try {
     await api.post('/auth/register', form.value);
     form.value = { nome: '', email: '', password: '', role: 'aluno', turma: '' };
-    alert('Usuário cadastrado com sucesso!');
+    mostrarMensagem('Usuário cadastrado com sucesso!');
     carregarUsuarios();
   } catch (error) {
-    alert('Erro ao cadastrar: ' + (error.response?.data?.msg || 'Verifique os dados'));
+    mostrarMensagem('Erro ao cadastrar: ' + (error.response?.data?.msg || 'Verifique os dados'), 'error');
   }
 };
 
-const removerUsuario = async (id) => {
-  if (confirm("Deseja realmente apagar este usuário? Todo o progresso de aulas dele será perdido.")) {
-    try {
-      await api.delete(`/usuarios/${id}`);
-      carregarUsuarios();
-    } catch (error) {
-      alert("Erro ao excluir usuário.");
-    }
+// ==========================================
+// LÓGICA DO NOVO MODAL DE EXCLUSÃO
+// ==========================================
+const confirmarRemocao = (user) => {
+  userParaExcluir.value = user;
+  mostrarModalExclusao.value = true;
+};
+
+const cancelarRemocao = () => {
+  mostrarModalExclusao.value = false;
+  userParaExcluir.value = null;
+};
+
+const executarRemocao = async () => {
+  if (!userParaExcluir.value) return;
+  try {
+    await api.delete(`/usuarios/${userParaExcluir.value._id}`);
+    carregarUsuarios();
+    mostrarMensagem("Usuário excluído com sucesso.");
+  } catch (error) {
+    mostrarMensagem("Erro ao excluir usuário.", "error");
+  } finally {
+    cancelarRemocao();
   }
 };
+// ==========================================
 
 const formatarData = (dataIso) => {
   if (!dataIso) return 'Data não disponível';
@@ -167,6 +218,12 @@ onMounted(carregarUsuarios);
 .list-section { display: flex; flex-direction: column; gap: 20px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0, 74, 173, 0.05); }
 .search-bar { padding: 20px 25px; }
+
+/* FEEDBACK TOAST */
+.feedback-toast { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 0.9rem; animation: slideDown 0.3s ease-out; }
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 .text-brand { color: #004aad; }
 .mt-4 { margin-top: 1rem; }
@@ -211,6 +268,20 @@ onMounted(carregarUsuarios);
 .btn-del-mini:hover { color: #ef4444; background: #fef2f2; }
 
 .empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* MODAL DE EXCLUSÃO */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+.modal-content { max-width: 400px; width: 90%; padding: 30px; }
+.delete-modal { text-align: center; }
+.delete-icon-wrapper { display: flex; justify-content: center; color: #ef4444; margin-bottom: 15px; }
+.delete-modal h3 { font-size: 1.4rem; color: #1e293b; font-weight: 800; margin-bottom: 10px; }
+.delete-modal p { color: #64748b; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
+.modal-actions-row { display: flex; gap: 15px; }
+.flex-1 { flex: 1; }
+.btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; text-align: center; }
+.btn-cancel:hover { background: #e2e8f0; }
+.btn-danger { background-color: #ef4444 !important; border: none; margin-top: 0; }
+.btn-danger:hover { background-color: #dc2626 !important; }
 
 @media (max-width: 992px) {
   .layout-split { grid-template-columns: 1fr; gap: 20px; }
