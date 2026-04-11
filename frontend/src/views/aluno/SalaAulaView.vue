@@ -123,7 +123,7 @@
           
           <div class="forum-messages">
             <div v-for="(msg, index) in mensagensForum" :key="index" class="message-card">
-              <div class="msg-avatar">{{ msg.autor.charAt(0) }}</div>
+              <div class="msg-avatar">{{ msg.autor.charAt(0).toUpperCase() }}</div>
               <div class="msg-body">
                 <div class="msg-info">
                   <strong>{{ msg.autor }}</strong> <span>{{ msg.data }}</span>
@@ -232,9 +232,10 @@ const carregarForum = async () => {
     const cursoId = route.params.id;
     const res = await api.get(`/cursos/${cursoId}/forum`);
     
+    // CORREÇÃO APLICADA: Acesso seguro a m.autor.nome e uso de m.dataCriacao
     mensagensForum.value = res.data.map(m => ({
-      autor: m.autor + (m.role !== 'aluno' ? ' (Professor)' : ''),
-      data: new Date(m.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+      autor: (m.autor?.nome || 'Utilizador') + (m.autor?.role !== 'aluno' ? ' (Professor)' : ''),
+      data: new Date(m.dataCriacao).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
       texto: m.texto
     }));
   } catch (error) {
@@ -248,9 +249,10 @@ const enviarMensagemForum = async () => {
     const cursoId = route.params.id;
     const res = await api.post(`/cursos/${cursoId}/forum`, { texto: novaMensagem.value });
     
+    // CORREÇÃO APLICADA: Acesso seguro e formatação correta da nova mensagem
     mensagensForum.value.push({
-      autor: res.data.autor + (res.data.role !== 'aluno' ? ' (Professor)' : ''),
-      data: new Date(res.data.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+      autor: (res.data.autor?.nome || 'Você') + (res.data.autor?.role !== 'aluno' ? ' (Professor)' : ''),
+      data: new Date(res.data.dataCriacao || Date.now()).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
       texto: res.data.texto
     });
     
@@ -327,8 +329,10 @@ const obterUrlEmbed = (url) => {
   return url;
 };
 
+// CORREÇÃO APLICADA: Construção dinâmica da URL base para não quebrar em produção
 const obterUrlArquivo = (nomeFicheiro) => {
-  return `http://localhost:3000/uploads/materiais/${nomeFicheiro}`;
+  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
+  return `${baseUrl}/uploads/materiais/${nomeFicheiro}`;
 };
 
 const urlWhatsappCertificado = computed(() => {

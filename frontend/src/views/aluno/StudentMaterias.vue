@@ -12,7 +12,7 @@
             <p>{{ m.descricao }}</p>
           </div>
         </div>
-        <a :href="`http://localhost:3000/${m.caminho}`" target="_blank" class="btn-download">
+        <a :href="obterUrlArquivo(m.caminho)" target="_blank" rel="noopener noreferrer" download class="btn-download">
           <Download :size="18" class="btn-icon" /> Baixar PDF
         </a>
       </div>
@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { FileText, Download, Inbox } from 'lucide-vue-next'; // Ícones profissionais
+import { FileText, Download, Inbox } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
 
@@ -43,6 +43,14 @@ const buscarMateriais = async () => {
   } catch (error) {
     console.error("Erro ao buscar materiais:", error);
   }
+};
+
+// CORREÇÃO: Função para gerar o link correto do PDF
+const obterUrlArquivo = (caminho) => {
+  if (!caminho) return '#';
+  const caminhoLimpo = caminho.replace(/\\/g, '/'); // Previne barras invertidas do Windows
+  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
+  return `${baseUrl}/${caminhoLimpo}`;
 };
 
 onMounted(buscarMateriais);
@@ -91,43 +99,16 @@ onMounted(buscarMateriais);
 .empty-msg { text-align: center; padding: 60px; color: #94a3b8; font-weight: 500; background: white; border-radius: 24px; border: 2px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 .empty-icon-wrapper { color: #cbd5e1; }
 
+/* Responsividade unificada */
 @media (max-width: 600px) {
   .material-item { flex-direction: column; align-items: flex-start; gap: 20px; }
   .btn-download { width: 100%; justify-content: center; }
 }
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
 @media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
-
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
 }
 </style>

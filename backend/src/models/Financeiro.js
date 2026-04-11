@@ -5,12 +5,13 @@ const FinanceiroSchema = new mongoose.Schema({
   valor: { type: Number, required: true },
   tipo: { type: String, enum: ['Entrada', 'Saída'], default: 'Entrada' },
   data: { type: Date, default: Date.now },
-  // Adicionar status ajuda no controle de inadimplência ou agendamentos
   status: { 
     type: String, 
     enum: ['Pendente', 'Pago', 'Cancelado'], 
     default: 'Pago' 
-  }
-}, { timestamps: true }); // Timestamps ajudam a saber quando o registro foi criado/editado
+  },
+  // Vínculo para atualizar/deletar o registo financeiro se o serviço mudar
+  servicoOrigem: { type: mongoose.Schema.Types.ObjectId, ref: 'ServicoConfirmado' }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Financeiro', FinanceiroSchema);

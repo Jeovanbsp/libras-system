@@ -42,7 +42,7 @@
             </div>
           </div>
           <div class="file-actions">
-            <a :href="`http://localhost:3000/${m.caminho}`" target="_blank" class="btn-view">
+            <a :href="obterUrlArquivo(m.caminho)" target="_blank" rel="noopener noreferrer" class="btn-view">
               <Eye :size="16" /> Ver PDF
             </a>
             <button @click="remover(m._id)" class="btn-del-red">
@@ -122,6 +122,15 @@ const remover = async (id) => {
   }
 };
 
+// CORREÇÃO: Função para gerar o link correto do PDF
+const obterUrlArquivo = (caminho) => {
+  if (!caminho) return '#';
+  // O caminho que vem da DB costuma ser algo como "uploads/177...pdf" ou "uploads\177...pdf"
+  const caminhoLimpo = caminho.replace(/\\/g, '/'); // Previne barras invertidas do Windows
+  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
+  return `${baseUrl}/${caminhoLimpo}`;
+};
+
 onMounted(buscarMateriais);
 </script>
 
@@ -158,46 +167,17 @@ onMounted(buscarMateriais);
 .file-texts h4 { color: #1e293b; margin-bottom: 4px; font-size: 1.1rem; font-weight: 700; }
 .file-texts p { color: #64748b; font-size: 0.85rem; font-weight: 500; }
 
-.btn-view { text-decoration: none; color: #004aad; font-weight: 800; font-size: 0.85rem; background: #eff6ff; padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; }
+.btn-view { text-decoration: none; color: #004aad; font-weight: 800; font-size: 0.85rem; background: #eff6ff; padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
 .btn-view:hover { background: #dbeafe; }
 
 .btn-del-red { border: none; background: transparent; color: #94a3b8; padding: 10px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
 .btn-del-red:hover { color: #ef4444; background: #fef2f2; }
 
 .empty-card { text-align: center; color: #94a3b8; font-weight: 600; padding: 50px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-/* =========================================
-   RESPONSIVIDADE MOBILE PARA AS TELAS
-   ========================================= */
-@media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
 
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+/* Responsividade unificada */
+@media (max-width: 992px) {
+  .layout-split { grid-template-columns: 1fr; }
+  .glass-card { padding: 20px; }
 }
 </style>
