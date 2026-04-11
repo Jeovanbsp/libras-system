@@ -33,6 +33,12 @@
           </button>
         </div>
 
+        <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+          <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ mensagemFeedback }}</p>
+        </div>
+
         <div v-if="abaAtiva === 'conteudo'" class="lesson-content">
           <div class="lesson-header glass-card mb-4">
             <h2>{{ aulaAtual.titulo || 'Selecione uma aula' }}</h2>
@@ -191,7 +197,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { 
   CheckCircle2, Circle, ListVideo, MessageCircle, FileText, Download, Trophy, 
-  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Inbox, Users
+  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Inbox, Users, AlertCircle
 } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
@@ -206,6 +212,15 @@ const abaAtiva = ref('conteudo');
 
 const novaMensagem = ref('');
 const mensagensForum = ref([]);
+
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
 
 const carregarDadosDoCurso = async () => {
   try {
@@ -232,7 +247,6 @@ const carregarForum = async () => {
     const cursoId = route.params.id;
     const res = await api.get(`/cursos/${cursoId}/forum`);
     
-    // CORREÇÃO APLICADA: Acesso seguro a m.autor.nome e uso de m.dataCriacao
     mensagensForum.value = res.data.map(m => ({
       autor: (m.autor?.nome || 'Utilizador') + (m.autor?.role !== 'aluno' ? ' (Professor)' : ''),
       data: new Date(m.dataCriacao).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
@@ -249,7 +263,6 @@ const enviarMensagemForum = async () => {
     const cursoId = route.params.id;
     const res = await api.post(`/cursos/${cursoId}/forum`, { texto: novaMensagem.value });
     
-    // CORREÇÃO APLICADA: Acesso seguro e formatação correta da nova mensagem
     mensagensForum.value.push({
       autor: (res.data.autor?.nome || 'Você') + (res.data.autor?.role !== 'aluno' ? ' (Professor)' : ''),
       data: new Date(res.data.dataCriacao || Date.now()).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
@@ -257,14 +270,12 @@ const enviarMensagemForum = async () => {
     });
     
     novaMensagem.value = '';
+    mostrarMensagem("Mensagem enviada no fórum.");
   } catch (error) {
-    alert("Erro ao enviar mensagem.");
+    mostrarMensagem("Erro ao enviar mensagem.", "error");
   }
 };
 
-// ==========================================
-// LÓGICA DE PROGRESSO (POR ATIVIDADE)
-// ==========================================
 const idsMateriaisDesteCurso = computed(() => {
   if (!curso.value || !curso.value.modulos) return [];
   let ids = [];
@@ -329,7 +340,6 @@ const obterUrlEmbed = (url) => {
   return url;
 };
 
-// CORREÇÃO APLICADA: Construção dinâmica da URL base para não quebrar em produção
 const obterUrlArquivo = (nomeFicheiro) => {
   const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
   return `${baseUrl}/uploads/materiais/${nomeFicheiro}`;
@@ -354,6 +364,21 @@ onMounted(() => {
 .mt-6 { margin-top: 24px; }
 .mt-4 { margin-top: 16px; }
 .mt-2 { margin-top: 8px; }
+
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 12px;
+  margin-bottom: 20px; font-weight: 700; font-size: 0.9rem;
+  animation: slideDown 0.3s ease-out;
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Barra de Progresso */
 .progress-card { padding: 20px; background: white; border-radius: 20px; }

@@ -10,6 +10,12 @@
       
       <p class="subtitle">Bem-vindo(a)! Faça login para aceder à sua conta.</p>
 
+      <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+        <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+        <AlertCircle v-else :size="20" />
+        <p>{{ mensagemFeedback }}</p>
+      </div>
+
       <form @submit.prevent="handleLogin" class="modern-form">
         <div class="input-group">
           <label>E-mail de Acesso</label>
@@ -59,7 +65,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Instagram, Linkedin, MessageCircle } from 'lucide-vue-next';
+import { Instagram, Linkedin, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 import api from '../services/api';
 
 const router = useRouter();
@@ -68,6 +74,15 @@ const password = ref('');
 const rememberMe = ref(false); 
 const error = ref(null);
 const loading = ref(false);
+
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
 
 onMounted(() => {
   const savedEmail = localStorage.getItem('rememberedEmail');
@@ -105,10 +120,12 @@ const handleLogin = async () => {
       localStorage.removeItem('rememberedPassword');
     }
 
-    // BLOQUEIO DE PRIMEIRO ACESSO
+    // BLOQUEIO DE PRIMEIRO ACESSO COM TOAST (SUBSTITUI O ALERT)
     if (user.primeiroAcesso) {
-      alert("Bem-vindo(a)! Identificamos que este é o seu primeiro acesso. Por segurança, redefina a sua senha antes de continuar.");
-      router.push('/aluno/reset-password'); 
+      mostrarMensagem("Bem-vindo(a)! Identificamos que este é o seu primeiro acesso. Por segurança, redefina a sua senha antes de continuar.", "warning");
+      setTimeout(() => {
+        router.push('/aluno/reset-password'); 
+      }, 2500); // Redireciona logo após a mensagem
       return; 
     }
 
@@ -132,6 +149,23 @@ const handleLogin = async () => {
 .login-logo { max-width: 380px; width: 100%; height: auto; object-fit: contain; }
 .brand-phrase { color: #004aad; font-size: 1.1rem; font-weight: 600; font-style: italic; margin-bottom: 25px; }
 .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; }
+
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 14px 18px; border-radius: 12px;
+  margin-bottom: 20px; font-weight: 700; font-size: 0.85rem; line-height: 1.4;
+  animation: slideDown 0.3s ease-out;
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+.feedback-toast.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .modern-form { display: flex; flex-direction: column; gap: 15px; text-align: left; }
 .input-group { display: flex; flex-direction: column; gap: 8px; }
 .modern-form label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }

@@ -7,6 +7,12 @@
           <UploadCloud :size="20" class="text-brand" /> Upload de Material
         </h3>
         
+        <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+          <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ mensagemFeedback }}</p>
+        </div>
+        
         <form @submit.prevent="fazerUpload" class="modern-form">
           <div class="form-group">
             <label>Título da Apostila</label>
@@ -31,6 +37,12 @@
       </div>
 
       <div class="materiais-list">
+        
+        <div class="alert-warning glass-card">
+          <AlertTriangle :size="24" class="alert-icon" />
+          <p><strong>Aviso:</strong> Para o download das apostilas, você deverá liberar o pop-up do seu navegador.</p>
+        </div>
+
         <div v-for="m in materiais" :key="m._id" class="glass-card material-card">
           <div class="file-info">
             <div class="file-icon-box">
@@ -64,7 +76,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { 
-  UploadCloud, FileText, FilePlus, Loader2, Eye, Trash2, Inbox 
+  UploadCloud, FileText, FilePlus, Loader2, Eye, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle
 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
@@ -73,6 +85,15 @@ const materiais = ref([]);
 const form = ref({ titulo: '', descricao: '' });
 const arquivoSelecionado = ref(null);
 const enviando = ref(false);
+
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
 
 const buscarMateriais = async () => {
   try {
@@ -103,9 +124,9 @@ const fazerUpload = async () => {
     arquivoSelecionado.value = null;
     document.querySelector('.file-input').value = '';
     buscarMateriais();
-    alert("Upload concluído com sucesso!");
+    mostrarMensagem("Upload concluído com sucesso!");
   } catch (err) {
-    alert("Erro ao enviar o arquivo.");
+    mostrarMensagem("Erro ao enviar o arquivo.", "error");
   } finally {
     enviando.value = false;
   }
@@ -116,17 +137,16 @@ const remover = async (id) => {
     try {
       await api.delete(`/materiais/${id}`);
       buscarMateriais();
+      mostrarMensagem("Material removido.");
     } catch (err) {
-      alert("Erro ao remover.");
+      mostrarMensagem("Erro ao remover.", "error");
     }
   }
 };
 
-// CORREÇÃO: Função para gerar o link correto do PDF
 const obterUrlArquivo = (caminho) => {
   if (!caminho) return '#';
-  // O caminho que vem da DB costuma ser algo como "uploads/177...pdf" ou "uploads\177...pdf"
-  const caminhoLimpo = caminho.replace(/\\/g, '/'); // Previne barras invertidas do Windows
+  const caminhoLimpo = caminho.replace(/\\/g, '/');
   const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
   return `${baseUrl}/${caminhoLimpo}`;
 };
@@ -138,6 +158,21 @@ onMounted(buscarMateriais);
 .layout-split { display: grid; grid-template-columns: 350px 1fr; gap: 30px; align-items: start; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0, 74, 173, 0.05); }
 .text-brand { color: #004aad; }
+
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 12px;
+  margin-bottom: 20px; font-weight: 700; font-size: 0.9rem;
+  animation: slideDown 0.3s ease-out;
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 
@@ -160,6 +195,21 @@ onMounted(buscarMateriais);
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .materiais-list { display: flex; flex-direction: column; gap: 20px; }
+
+.alert-warning {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 16px 24px;
+  border-radius: 20px;
+  margin-bottom: 5px;
+}
+.alert-warning .alert-icon { color: #f59e0b; flex-shrink: 0; }
+.alert-warning p { margin: 0; color: #92400e; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
+.alert-warning strong { font-weight: 800; }
+
 .material-card { display: flex; justify-content: space-between; align-items: center; transition: 0.2s; padding: 20px 25px; border: 1px solid #e2e8f0; }
 .material-card:hover { border-color: #004aad; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0, 74, 173, 0.1); }
 
@@ -175,7 +225,6 @@ onMounted(buscarMateriais);
 
 .empty-card { text-align: center; color: #94a3b8; font-weight: 600; padding: 50px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-/* Responsividade unificada */
 @media (max-width: 992px) {
   .layout-split { grid-template-columns: 1fr; }
   .glass-card { padding: 20px; }

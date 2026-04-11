@@ -44,12 +44,12 @@
         </router-link>
       </form>
 
-      <div v-if="message" class="alert success">
-        <CheckCircle2 :size="18" /> {{ message }}
+      <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+        <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+        <AlertCircle v-else :size="20" />
+        <p>{{ mensagemFeedback }}</p>
       </div>
-      <div v-if="error" class="alert error">
-        <AlertCircle :size="18" /> {{ error }}
-      </div>
+
     </div>
   </div>
 </template>
@@ -58,28 +58,33 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ShieldCheck, Save, XCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-import api from '@/services/api'; // Ajustado o path para 'aluno' view
+import api from '@/services/api';
 
 const route = useRoute();
 const router = useRouter();
 const password = ref('');
 const confirmPassword = ref('');
 const loading = ref(false);
-const message = ref('');
-const error = ref('');
+
+// Sistema de Notificações Unificado
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
 
 // Determina se veio do Login (Sem token) ou de e-mail de recuperação (Com token)
 const isPrimeiroAcesso = computed(() => !route.params.token);
 
 const handleReset = async () => {
   if (password.value !== confirmPassword.value) {
-    error.value = "As senhas não coincidem.";
+    mostrarMensagem("As senhas não coincidem.", "error");
     return;
   }
 
   loading.value = true;
-  error.value = '';
-  message.value = '';
   
   try {
     const token = route.params.token;
@@ -91,7 +96,7 @@ const handleReset = async () => {
       res = await api.post(`/auth/reset-password/${token}`, { password: password.value });
     }
     
-    message.value = res.data.message || "Senha guardada com sucesso!";
+    mostrarMensagem(res.data.message || "Senha guardada com sucesso!");
     
     setTimeout(() => {
       if (isPrimeiroAcesso.value) {
@@ -104,7 +109,7 @@ const handleReset = async () => {
     }, 2000);
 
   } catch (err) {
-    error.value = err.response?.data?.message || err.response?.data?.error || "Erro na validação.";
+    mostrarMensagem(err.response?.data?.message || err.response?.data?.error || "Erro na validação.", "error");
   } finally {
     loading.value = false;
   }
@@ -121,6 +126,22 @@ const handleReset = async () => {
 .title-box h1 { font-size: 1.5rem; color: #1e293b; font-weight: 800; margin: 0; }
 .title-box span { color: #004aad; }
 .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 30px; }
+
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 14px 18px; border-radius: 12px;
+  margin-top: 20px; font-weight: 700; font-size: 0.85rem; line-height: 1.4;
+  animation: slideDown 0.3s ease-out;
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .modern-form { text-align: left; }
 .modern-form label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
 .modern-form input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; margin-bottom: 20px; transition: 0.2s; box-sizing: border-box; }
@@ -129,9 +150,6 @@ const handleReset = async () => {
 .btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
 .btn-back { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 25px; color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 700; transition: 0.2s; }
 .btn-back:hover { color: #004aad; }
-.alert { padding: 15px; border-radius: 12px; margin-top: 25px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 
 @media (max-width: 992px) {

@@ -2,6 +2,11 @@
   <StudentLayout pageTitle="Apostilas e Materiais" pageDescription="Faça o download dos PDFs e materiais de apoio para os seus estudos.">
     <div class="materials-list">
       
+      <div class="alert-warning glass-card">
+        <AlertTriangle :size="24" class="alert-icon" />
+        <p><strong>Aviso:</strong> Para o download das apostilas, você deverá liberar o pop-up do seu navegador.</p>
+      </div>
+
       <div v-for="m in materiais" :key="m._id" class="glass-card material-item">
         <div class="file-info">
           <div class="icon-box">
@@ -30,7 +35,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { FileText, Download, Inbox } from 'lucide-vue-next';
+import { FileText, Download, Inbox, AlertTriangle } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
 
@@ -45,10 +50,9 @@ const buscarMateriais = async () => {
   }
 };
 
-// CORREÇÃO: Função para gerar o link correto do PDF
 const obterUrlArquivo = (caminho) => {
   if (!caminho) return '#';
-  const caminhoLimpo = caminho.replace(/\\/g, '/'); // Previne barras invertidas do Windows
+  const caminhoLimpo = caminho.replace(/\\/g, '/');
   const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
   return `${baseUrl}/${caminhoLimpo}`;
 };
@@ -59,6 +63,21 @@ onMounted(buscarMateriais);
 <style scoped>
 .materials-list { display: flex; flex-direction: column; gap: 20px; }
 .glass-card { background: white; padding: 25px 30px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
+
+/* CSS DO NOVO AVISO DE POP-UP */
+.alert-warning {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 16px 24px;
+  border-radius: 20px;
+  margin-bottom: 5px;
+}
+.alert-warning .alert-icon { color: #f59e0b; flex-shrink: 0; }
+.alert-warning p { margin: 0; color: #92400e; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
+.alert-warning strong { font-weight: 800; }
 
 .material-item { display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
 .material-item:hover { transform: translateY(-4px); border-color: #bfdbfe; box-shadow: 0 15px 35px rgba(0, 74, 173, 0.1); }
@@ -99,16 +118,11 @@ onMounted(buscarMateriais);
 .empty-msg { text-align: center; padding: 60px; color: #94a3b8; font-weight: 500; background: white; border-radius: 24px; border: 2px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 .empty-icon-wrapper { color: #cbd5e1; }
 
-/* Responsividade unificada */
 @media (max-width: 600px) {
   .material-item { flex-direction: column; align-items: flex-start; gap: 20px; }
   .btn-download { width: 100%; justify-content: center; }
 }
 @media (max-width: 992px) {
-  .layout-split { grid-template-columns: 1fr; gap: 20px; }
-  .form-row { flex-direction: column; gap: 15px; }
-  .glass-card { padding: 20px; }
-  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
+  .alert-warning { padding: 16px; flex-direction: column; text-align: center; }
 }
 </style>

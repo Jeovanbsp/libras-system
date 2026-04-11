@@ -8,6 +8,12 @@
           {{ editandoId ? 'Editar Conteúdo' : 'Novo Curso' }}
         </h3>
         
+        <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+          <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ mensagemFeedback }}</p>
+        </div>
+
         <form @submit.prevent="salvarCurso" class="modern-form scrollable-content">
           <div class="form-group">
             <label>Título do Curso</label>
@@ -192,7 +198,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { 
-  PlusCircle, Plus, Trash2, X, Library, Clock, Pencil, Save, FileEdit, FileUp, UserPlus 
+  PlusCircle, Plus, Trash2, X, Library, Clock, Pencil, Save, FileEdit, FileUp, UserPlus, CheckCircle2, AlertCircle 
 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
@@ -204,7 +210,15 @@ const mostrarModal = ref(false);
 const cursoParaLiberar = ref(null);
 const alunoSelecionadoId = ref('');
 
-// ESTRUTURA INICIAL ATUALIZADA
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
+
 const cursoInicial = { 
   titulo: '', descricao: '', cargaHoraria: 0, nivel: 'curso', gratuito: true, valor: 0,
   modulos: [{ 
@@ -244,16 +258,16 @@ const fecharModal = () => {
 };
 
 const confirmarLiberacao = async () => {
-  if(!alunoSelecionadoId.value) return alert("Por favor, selecione um aluno!");
+  if(!alunoSelecionadoId.value) return mostrarMensagem("Por favor, selecione um aluno!", "error");
   try {
     await api.post('/admin/liberar-curso', {
       alunoId: alunoSelecionadoId.value,
       cursoId: cursoParaLiberar.value._id
     });
-    alert("Curso liberado com sucesso!");
+    mostrarMensagem("Curso liberado com sucesso!");
     fecharModal();
   } catch (err) {
-    alert(err.response?.data?.message || "Erro ao liberar curso.");
+    mostrarMensagem(err.response?.data?.message || "Erro ao liberar curso.", "error");
   }
 };
 
@@ -266,9 +280,8 @@ const uploadMaterialMultiplo = async (event, mIdx, aIdx, matIdx) => {
     const res = await api.post('/admin/upload-material', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    // Salva o nome do arquivo gerado no campo URL do material específico
     curso.value.modulos[mIdx].aulas[aIdx].materiais[matIdx].url = res.data.fileName;
-  } catch (err) { alert("Erro no upload do arquivo."); }
+  } catch (err) { mostrarMensagem("Erro no upload do arquivo.", "error"); }
 };
 
 const salvarCurso = async () => {
@@ -283,7 +296,6 @@ const salvarCurso = async () => {
         .map(mod => {
           if (mod.aulas && mod.aulas.length > 0) {
              mod.aulas = mod.aulas.filter(aula => aula.titulo && aula.titulo.trim() !== '');
-             // Limpar materiais vazios antes de salvar
              mod.aulas.forEach(aula => {
                 if(aula.materiais) {
                    aula.materiais = aula.materiais.filter(mat => mat.titulo && mat.url);
@@ -302,17 +314,16 @@ const salvarCurso = async () => {
     
     cancelarEdicao(); 
     buscarCursos(); 
-    alert("Salvo com sucesso!");
+    mostrarMensagem("Salvo com sucesso!");
   } catch (err) { 
     console.error("Erro completo:", err.response?.data);
-    alert("Erro ao salvar. Verifique se os títulos e URLs estão preenchidos."); 
+    mostrarMensagem("Erro ao salvar. Verifique se os títulos e URLs estão preenchidos.", "error"); 
   }
 };
 
 const prepararEdicao = (c) => { 
   editandoId.value = c._id; 
   curso.value = JSON.parse(JSON.stringify(c)); 
-  // Garante que cursos antigos sem array de materiais não quebrem a tela
   curso.value.modulos.forEach(m => {
      m.aulas.forEach(a => {
         if (!a.materiais) a.materiais = [];
@@ -325,7 +336,8 @@ const cancelarEdicao = () => { editandoId.value = null; curso.value = JSON.parse
 
 const removerCurso = async (id) => { 
   if(confirm("Deseja remover este curso permanentemente?")) { 
-    try { await api.delete(`/cursos/${id}`); buscarCursos(); } catch (err) { alert("Erro ao excluir."); } 
+    try { await api.delete(`/cursos/${id}`); buscarCursos(); mostrarMensagem("Curso removido."); } 
+    catch (err) { mostrarMensagem("Erro ao excluir.", "error"); } 
   } 
 };
 
@@ -358,21 +370,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* =========================================
-   BASE E ESTRUTURA
-   ========================================= */
-.layout-split { display: grid; grid-template-columns: 480px 1fr; gap: 30px; align-items: start; } /* Aumentei a coluna esq */
+.layout-split { display: grid; grid-template-columns: 480px 1fr; gap: 30px; align-items: start; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 
-/* BARRA DE ROLAGEM */
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 12px;
+  margin-bottom: 20px; font-weight: 700; font-size: 0.9rem;
+  animation: slideDown 0.3s ease-out;
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .scrollable-content { max-height: 75vh; overflow-y: auto; padding-right: 12px; }
 .scrollable-content::-webkit-scrollbar { width: 6px; }
 .scrollable-content::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
 .scrollable-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-/* =========================================
-   FORMULÁRIO PRINCIPAL
-   ========================================= */
 .modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 6px; text-transform: uppercase; }
 .modern-form input, .modern-form textarea, .modern-form select { 
   width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; 
@@ -390,9 +410,6 @@ onMounted(() => {
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
 .btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-/* =========================================
-   MÓDULOS E AULAS
-   ========================================= */
 .module-item { background: #f8fafc; padding: 18px; border-radius: 16px; margin-bottom: 18px; border: 1px solid #e2e8f0; }
 
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -435,7 +452,6 @@ onMounted(() => {
 }
 .btn-add-lesson:hover { background: #f8fafc; color: #004aad; border-color: #94a3b8; }
 
-/* ESTILOS DOS MATERIAIS (NOVO) */
 .materials-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
 .material-row { display: flex; gap: 8px; align-items: center; }
 .material-select { flex: 0.8; padding: 8px !important; font-size: 0.75rem !important; border-radius: 6px !important; }
@@ -450,9 +466,6 @@ onMounted(() => {
 .btn-upload-mini { background: #e2e8f0; color: #475569; font-size: 0.7rem; font-weight: bold; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid #cbd5e1; }
 .btn-upload-mini:hover { background: #cbd5e1; }
 
-/* =========================================
-   CARDS DOS CURSOS
-   ========================================= */
 .cursos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 
 .curso-card { 
@@ -482,7 +495,6 @@ onMounted(() => {
 
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 2; }
 
-/* MODAL */
 .modal-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
   background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; 
