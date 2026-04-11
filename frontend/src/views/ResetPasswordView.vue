@@ -58,8 +58,9 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ShieldCheck, Save, XCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-// CORREÇÃO AQUI: Usando caminho relativo para não quebrar o Vite no Vercel
-import api from '../../services/api';
+
+// CORREÇÃO: Utilizando '../' em vez de '../../'
+import api from '../services/api';
 
 const route = useRoute();
 const router = useRouter();
