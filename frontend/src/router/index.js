@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
+import AdminForunsView from '../views/AdminForunsView.vue'; // NOVO: Importação do Fórum Admin
 
 const routes = [
   { 
@@ -25,7 +26,6 @@ const routes = [
     name: 'ResetPasswordToken',
     component: () => import('../views/ResetPasswordView.vue')
   },
-  // NOVA ROTA ADICIONADA: Para o primeiro acesso (sem token)
   {
     path: '/aluno/reset-password',
     name: 'ResetPasswordPrimeiroAcesso',
@@ -88,6 +88,15 @@ const routes = [
     component: () => import('../views/CursosView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
+  
+  // 👇 NOVA ROTA: Fórum do Administrador 👇
+  {
+    path: '/admin/forum',
+    name: 'AdminForum',
+    component: AdminForunsView,
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+
   {
     path: '/admin/usuarios',
     name: 'AdminUsuarios',
