@@ -58,8 +58,6 @@
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ShieldCheck, Save, XCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
-
-// CORREÇÃO: Utilizando '../' em vez de '../../'
 import api from '../services/api';
 
 const route = useRoute();

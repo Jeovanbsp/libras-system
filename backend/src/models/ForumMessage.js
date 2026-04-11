@@ -15,6 +15,14 @@ const forumMessageSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
+    imagem: { 
+        type: String, 
+        default: null 
+    },
+    editada: { 
+        type: Boolean, 
+        default: false 
+    },
     dataCriacao: { 
         type: Date, 
         default: Date.now 

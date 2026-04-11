@@ -98,16 +98,16 @@ exports.buscarProgresso = async (req, res) => {
   }
 };
 
+// ==========================================
+// FUNÇÕES DO FÓRUM (COMPLETAS)
+// ==========================================
+
 exports.listarMensagensForum = async (req, res) => {
   try {
     const mensagens = await ForumMessage.find({ curso: req.params.cursoId })
-      .populate('autor', 'nome role').sort({ dataCriacao: 1 });
-    res.status(200).json(mensagens.map(m => ({
-      autor: m.autor.nome,
-      role: m.autor.role,
-      texto: m.texto,
-      data: m.dataCriacao
-    })));
+      .populate('autor', 'nome role')
+      .sort({ dataCriacao: 1 });
+    res.status(200).json(mensagens); 
   } catch (error) {
     res.status(500).json({ message: "Erro no fórum." });
   }
@@ -115,14 +115,57 @@ exports.listarMensagensForum = async (req, res) => {
 
 exports.enviarMensagemForum = async (req, res) => {
   try {
+    const { texto } = req.body;
+    const imagem = req.file ? req.file.filename : null; 
+
     const novaMsg = await ForumMessage.create({
       curso: req.params.cursoId,
       autor: req.user.id,
-      texto: req.body.texto
+      texto,
+      imagem
     });
+    
     await novaMsg.populate('autor', 'nome role');
     res.status(201).json(novaMsg);
   } catch (error) {
     res.status(500).json({ message: "Erro ao enviar." });
+  }
+};
+
+exports.editarMensagemForum = async (req, res) => {
+  try {
+      const { texto } = req.body;
+      const mensagem = await ForumMessage.findById(req.params.mensagemId);
+
+      if (!mensagem) return res.status(404).json({ message: "Mensagem não encontrada" });
+
+      if (mensagem.autor.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
+          return res.status(403).json({ message: "Acesso negado." });
+      }
+
+      mensagem.texto = texto;
+      mensagem.editada = true;
+      await mensagem.save();
+
+      await mensagem.populate('autor', 'nome role');
+      res.json(mensagem);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+};
+
+exports.excluirMensagemForum = async (req, res) => {
+  try {
+      const mensagem = await ForumMessage.findById(req.params.mensagemId);
+      if (!mensagem) return res.status(404).json({ message: "Mensagem não encontrada" });
+
+      if (mensagem.autor.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
+          return res.status(403).json({ message: "Acesso negado." });
+      }
+
+      await ForumMessage.findByIdAndDelete(req.params.mensagemId);
+      res.json({ message: "Mensagem removida com sucesso" });
+  } catch (error) {
+      res.status(500).json({ message: error.message });
   }
 };

@@ -1,5 +1,12 @@
 <template>
   <StudentLayout pageTitle="Catálogo de Cursos" pageDescription="Explore novos treinamentos e aprimore a sua fluência em Libras.">
+    
+    <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+      <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+      <AlertCircle v-else :size="20" />
+      <p>{{ mensagemFeedback }}</p>
+    </div>
+
     <div class="courses-grid">
       
       <div v-for="c in cursosDisponiveis" :key="c._id" class="glass-card course-card">
@@ -61,13 +68,22 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Star, Clock, ShoppingBag, MessageCircle } from 'lucide-vue-next';
+import { Star, Clock, ShoppingBag, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
 
 const router = useRouter();
 const cursosDisponiveis = ref([]);
 const loading = ref(null);
+
+// Sistema de Notificações
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('');
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
+};
 
 const carregarCatalogo = async () => {
   try {
@@ -82,11 +98,16 @@ const matricular = async (cursoId) => {
   loading.value = cursoId;
   try {
     await api.post(`/cursos/${cursoId}/matricular`);
-    alert("Matrícula confirmada com sucesso! Bem-vindo(a) à turma.");
-    router.push('/aluno/cursos');
+    mostrarMensagem("Matrícula confirmada com sucesso! Bem-vindo(a) à turma.");
+    
+    // Aguarda um pouco para que o aluno consiga ler a mensagem antes de ir para os cursos
+    setTimeout(() => {
+      router.push('/aluno/cursos');
+    }, 2000);
+    
   } catch (error) {
     // Caso o backend retorne o erro 403 que configuramos para cursos pagos
-    alert(error.response?.data?.message || "Erro ao realizar matrícula.");
+    mostrarMensagem(error.response?.data?.message || "Erro ao realizar matrícula.", "error");
   } finally {
     loading.value = null;
   }
@@ -102,6 +123,20 @@ onMounted(carregarCatalogo);
 </script>
 
 <style scoped>
+/* FEEDBACK TOAST */
+.feedback-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 12px;
+  margin-bottom: 20px; font-weight: 700; font-size: 0.95rem;
+  animation: slideDown 0.3s ease-out;
+  /* Posicionamento no topo da tela para garantir que se vê sempre no layout */
+  position: sticky; top: 20px; z-index: 50;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+.feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
 .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 .course-card { position: relative; display: flex; flex-direction: column; transition: all 0.3s ease; }
@@ -158,39 +193,15 @@ onMounted(carregarCatalogo);
 .btn-enroll:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .empty-msg { grid-column: 1 / -1; text-align: center; padding: 60px; color: #94a3b8; font-weight: 500; background: white; border-radius: 24px; border: 2px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
 /* =========================================
    RESPONSIVIDADE MOBILE PARA AS TELAS
    ========================================= */
 @media (max-width: 992px) {
-  /* Transforma a grelha de 2 colunas numa grelha de 1 coluna */
-  .layout-split { 
-    grid-template-columns: 1fr; 
-    gap: 20px; 
-  }
-  
-  /* Empilha os campos de formulário que estavam lado a lado */
-  .form-row { 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  /* Ajusta o padding dos cartões para ecrãs pequenos */
-  .glass-card { 
-    padding: 20px; 
-  }
-
-  /* Ajusta cabeçalhos internos */
-  .header-row, .servico-header, .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  /* Faz com que os botões de ação ocupem a largura toda se necessário */
-  .item-actions-wrapper, .item-actions {
-    align-items: flex-start;
-    margin-top: 15px;
-    width: 100%;
-  }
+  .layout-split { grid-template-columns: 1fr; gap: 20px; }
+  .form-row { flex-direction: column; gap: 15px; }
+  .glass-card { padding: 20px; }
+  .header-row, .servico-header, .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .item-actions-wrapper, .item-actions { align-items: flex-start; margin-top: 15px; width: 100%; }
 }
 </style>
