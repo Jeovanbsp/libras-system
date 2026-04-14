@@ -119,34 +119,81 @@
           </div>
         </div>
 
-        <div v-if="abaAtiva === 'forum'" class="forum-content glass-card">
-          <div class="forum-header border-b pb-4 mb-4">
-            <h3 class="font-bold text-lg flex items-center gap-2">
-              <Users :size="20" class="text-brand-color" /> Fórum de Discussão
-            </h3>
-            <p class="text-sm text-gray-500">Tire dúvidas e interaja com os colegas da turma e com os professores.</p>
-          </div>
+        <div v-if="abaAtiva === 'forum'" class="forum-content glass-card chat-area">
           
-          <div class="forum-messages">
-            <div v-for="(msg, index) in mensagensForum" :key="index" class="message-card">
-              <div class="msg-avatar">{{ msg.autor.charAt(0).toUpperCase() }}</div>
-              <div class="msg-body">
-                <div class="msg-info">
-                  <strong>{{ msg.autor }}</strong> <span>{{ msg.data }}</span>
-                </div>
+          <header class="chat-header">
+            <div class="chat-title">
+              <h3>Fórum de Discussão</h3>
+              <p>Tire dúvidas e interaja com a turma</p>
+            </div>
+          </header>
+
+          <div class="messages-container" ref="messagesContainer">
+            <div 
+              v-for="(msg, index) in mensagensForum" 
+              :key="index" 
+              :class="['message', msg.isMinhaMensagem ? 'sent' : 'received']"
+            >
+              <div class="msg-header">
+                <span class="msg-name">{{ msg.autor }}</span>
+                <span class="msg-time">{{ msg.data }}</span>
+              </div>
+              <div class="msg-bubble">
                 <p>{{ msg.texto }}</p>
+                <div v-if="msg.imagem" class="attachment-box">
+                  <a :href="obterUrlArquivoInteiro(msg.imagem)" target="_blank">
+                    <img v-if="isImage(msg.imagem)" :src="obterUrlArquivoInteiro(msg.imagem)" alt="Anexo" class="attachment-image"/>
+                    <div v-else class="btn-download-anexo">
+                      <FileText :size="16" /> Abrir Anexo PDF
+                    </div>
+                  </a>
+                </div>
               </div>
             </div>
             
-            <div v-if="mensagensForum.length === 0" class="text-center py-8 text-gray-400">
-              Seja o primeiro a enviar uma mensagem neste fórum!
+            <div v-if="mensagensForum.length === 0" class="empty-state">
+              <MessageSquare :size="40" />
+              <p>Seja o primeiro a enviar uma dúvida!</p>
             </div>
           </div>
 
-          <form @submit.prevent="enviarMensagemForum" class="forum-input-area mt-4">
-            <textarea v-model="novaMensagem" placeholder="Escreva a sua dúvida ou comentário..." rows="3" required></textarea>
-            <button type="submit" class="btn-primary mt-2">Enviar Mensagem</button>
-          </form>
+          <footer class="chat-input-wrapper">
+            <div v-if="anexoFile" class="attachment-preview">
+              <div class="preview-info">
+                <Paperclip :size="16" />
+                <span class="file-name">{{ anexoFile.name }}</span>
+              </div>
+              <button @click="removerAnexo" type="button" class="btn-remove" title="Remover anexo">
+                <X :size="16" />
+              </button>
+            </div>
+
+            <form @submit.prevent="enviarMensagemForum" class="input-form">
+              <button type="button" class="btn-action btn-attach" @click="triggerFileInput" title="Anexar foto ou arquivo">
+                <Paperclip :size="22" />
+              </button>
+              <input 
+                type="file" 
+                ref="fileInputRef" 
+                class="hidden-input" 
+                @change="handleFileChange"
+                accept="image/*,.pdf,.doc,.docx"
+              />
+
+              <textarea 
+                v-model="novaMensagem" 
+                placeholder="Escreva a sua dúvida aqui..." 
+                rows="1"
+                @keydown.enter.exact.prevent="enviarMensagemForum"
+                class="message-input"
+              ></textarea>
+
+              <button type="submit" class="btn-action btn-send" :disabled="!novaMensagem.trim() && !anexoFile">
+                <Send :size="22" />
+              </button>
+            </form>
+          </footer>
+
         </div>
 
       </div>
@@ -193,11 +240,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { 
   CheckCircle2, Circle, ListVideo, MessageCircle, FileText, Download, Trophy, 
-  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Inbox, Users, AlertCircle
+  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Inbox, AlertCircle, Paperclip, Send, X
 } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
@@ -210,10 +257,15 @@ const aulaAtual = ref({ _id: '', titulo: '', descricao: '', materiais: [] });
 const materiaisConcluidos = ref([]); 
 const abaAtiva = ref('conteudo');
 
+// Estado do Fórum
 const novaMensagem = ref('');
 const mensagensForum = ref([]);
+const anexoFile = ref(null);
+const fileInputRef = ref(null);
+const messagesContainer = ref(null);
 
-// Sistema de Notificações
+const userIdLocal = ref(''); // Para saber qual é a mensagem "minha"
+
 const mensagemFeedback = ref('');
 const tipoFeedback = ref('');
 const mostrarMensagem = (msg, tipo = 'success') => {
@@ -225,13 +277,15 @@ const mostrarMensagem = (msg, tipo = 'success') => {
 const carregarDadosDoCurso = async () => {
   try {
     const cursoId = route.params.id;
-    const [cursoRes, progressoRes] = await Promise.all([
+    const [cursoRes, progressoRes, userRes] = await Promise.all([
       api.get(`/cursos/${cursoId}`),
-      api.get('/cursos/progresso/aluno') 
+      api.get('/cursos/progresso/aluno'),
+      api.get('/auth/me') // Para pegar o ID do aluno logado
     ]);
 
     curso.value = cursoRes.data;
     materiaisConcluidos.value = progressoRes.data || [];
+    userIdLocal.value = userRes.data._id || userRes.data.id;
 
     if (curso.value.modulos?.length > 0 && curso.value.modulos[0].aulas?.length > 0) {
       selecionarAula(curso.value.modulos[0].aulas[0]);
@@ -242,40 +296,86 @@ const carregarDadosDoCurso = async () => {
   }
 };
 
+// ==========================================
+// FUNÇÕES DO FÓRUM 
+// ==========================================
+const triggerFileInput = () => { fileInputRef.value.click(); };
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file) anexoFile.value = file;
+};
+
+const removerAnexo = () => {
+  anexoFile.value = null;
+  fileInputRef.value.value = ''; 
+};
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+};
+
 const carregarForum = async () => {
   try {
     const cursoId = route.params.id;
     const res = await api.get(`/cursos/${cursoId}/forum`);
     
     mensagensForum.value = res.data.map(m => ({
+      _id: m._id,
+      autorId: m.autor?._id || m.autor,
       autor: (m.autor?.nome || 'Utilizador') + (m.autor?.role !== 'aluno' ? ' (Professor)' : ''),
+      isMinhaMensagem: (m.autor?._id === userIdLocal.value) || (m.autor === userIdLocal.value),
       data: new Date(m.dataCriacao).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
-      texto: m.texto
+      texto: m.texto,
+      imagem: m.imagem
     }));
+    scrollToBottom();
   } catch (error) {
     console.error('Erro ao carregar forum', error);
   }
 };
 
 const enviarMensagemForum = async () => {
-  if (!novaMensagem.value.trim()) return;
+  if (!novaMensagem.value.trim() && !anexoFile.value) return;
+  
+  const formData = new FormData();
+  formData.append('texto', novaMensagem.value);
+  if (anexoFile.value) formData.append('anexo', anexoFile.value);
+
   try {
     const cursoId = route.params.id;
-    const res = await api.post(`/cursos/${cursoId}/forum`, { texto: novaMensagem.value });
+    const res = await api.post(`/cursos/${cursoId}/forum`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     
     mensagensForum.value.push({
+      _id: res.data._id,
       autor: (res.data.autor?.nome || 'Você') + (res.data.autor?.role !== 'aluno' ? ' (Professor)' : ''),
+      isMinhaMensagem: true,
       data: new Date(res.data.dataCriacao || Date.now()).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
-      texto: res.data.texto
+      texto: res.data.texto,
+      imagem: res.data.imagem
     });
     
     novaMensagem.value = '';
-    mostrarMensagem("Mensagem enviada no fórum.");
+    removerAnexo();
+    scrollToBottom();
   } catch (error) {
     mostrarMensagem("Erro ao enviar mensagem.", "error");
   }
 };
 
+const isImage = (url) => {
+  if(!url) return false;
+  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+};
+
+// ==========================================
+// FUNÇÕES DO CURSO
+// ==========================================
 const idsMateriaisDesteCurso = computed(() => {
   if (!curso.value || !curso.value.modulos) return [];
   let ids = [];
@@ -340,9 +440,19 @@ const obterUrlEmbed = (url) => {
   return url;
 };
 
-const obterUrlArquivo = (nomeFicheiro) => {
+// Ajuste na função para lidar com o fato de a imagem já vir com barra no BD
+const obterUrlArquivoInteiro = (caminho) => {
+  if(!caminho) return '#';
   const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
-  return `${baseUrl}/uploads/materiais/${nomeFicheiro}`;
+  // Verifica se o caminho já começa com barra
+  if (caminho.startsWith('/')) {
+     return `${baseUrl}${caminho}`;
+  }
+  return `${baseUrl}/${caminho}`;
+};
+
+const obterUrlArquivo = (nomeFicheiro) => {
+  return obterUrlArquivoInteiro(`/uploads/materiais/${nomeFicheiro}`);
 };
 
 const urlWhatsappCertificado = computed(() => {
@@ -420,16 +530,6 @@ onMounted(() => {
 
 .empty-state { text-align: center; padding: 50px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-/* Fórum */
-.forum-messages { display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
-.message-card { display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: #004aad; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
-.msg-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.85rem; }
-.msg-info span { color: #94a3b8; }
-.msg-body p { margin: 0; color: #475569; font-size: 0.95rem; line-height: 1.4; }
-.forum-input-area textarea { width: 100%; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-family: inherit; font-size: 0.95rem; resize: vertical; }
-.forum-input-area textarea:focus { outline: none; border-color: #004aad; background: white; }
-
 /* Banner de Certificado */
 .certificate-banner { padding: 40px; background: #ecfdf5; border: 2px dashed #10b981; border-radius: 24px; text-align: center; animation: fadeIn 0.5s ease-out; }
 .trophy-icon { color: #f59e0b; margin-bottom: 15px; display: inline-block; }
@@ -450,6 +550,57 @@ onMounted(() => {
 .status-done { color: #059669; }
 .status-pending { color: #cbd5e1; }
 .lesson-name { font-weight: 700; color: #1e293b; display: block; font-size: 0.9rem; }
+
+/* =========================================
+   ESTILOS DO FÓRUM (CHAT)
+   ========================================= */
+.chat-area { display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px; padding: 0; overflow: hidden; }
+.chat-header { padding: 20px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+.chat-title h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #0f172a; }
+.chat-title p { margin: 0; font-size: 0.85rem; color: #64748b; }
+
+.messages-container { flex: 1; overflow-y: auto; padding: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 16px; }
+
+.message { max-width: 85%; display: flex; flex-direction: column; }
+.message.received { align-self: flex-start; }
+.message.sent { align-self: flex-end; }
+
+.msg-header { display: flex; gap: 10px; margin-bottom: 6px; font-size: 0.8rem; }
+.message.received .msg-header { flex-direction: row; }
+.message.sent .msg-header { flex-direction: row-reverse; }
+
+.msg-name { font-weight: 700; color: #475569; }
+.msg-time { color: #94a3b8; }
+
+.msg-bubble { padding: 14px 18px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.02); word-wrap: break-word; }
+.message.received .msg-bubble { background: #f8fafc; color: #1e293b; border: 1px solid #e2e8f0; border-top-left-radius: 4px; }
+.message.sent .msg-bubble { background: #004aad; color: #ffffff; border-top-right-radius: 4px; }
+.msg-bubble p { margin: 0; }
+
+.attachment-box { margin-top: 10px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 8px;}
+.attachment-image { max-width: 100%; border-radius: 8px; display: block; }
+.btn-download-anexo { display: inline-flex; align-items: center; gap: 5px; color: inherit; font-weight: bold; text-decoration: underline; }
+
+.chat-input-wrapper { padding: 20px; background: #ffffff; border-top: 1px solid #f1f5f9; }
+
+.attachment-preview { display: flex; justify-content: space-between; align-items: center; background: #eff6ff; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #bfdbfe; }
+.preview-info { display: flex; align-items: center; gap: 10px; color: #1e40af; font-weight: 600; font-size: 0.9rem;}
+.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;}
+
+.input-form { display: flex; align-items: flex-end; gap: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 20px; border: 1px solid #e2e8f0; transition: all 0.3s ease; }
+.input-form:focus-within { border-color: #004aad; background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); }
+
+.hidden-input { display: none; }
+
+.message-input { flex: 1; background: transparent; border: none; resize: none; padding: 10px 0; font-family: inherit; font-size: 1rem; color: #1e293b; max-height: 120px; outline: none; }
+
+.btn-action { background: none; border: none; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; transition: all 0.2s; }
+.btn-attach { color: #64748b; }
+.btn-attach:hover { background: #e2e8f0; color: #0f172a; }
+
+.btn-send { background: #004aad; color: white; }
+.btn-send:hover:not(:disabled) { background: #003a8c; transform: scale(1.05); }
+.btn-send:disabled { background: #cbd5e1; cursor: not-allowed; }
 
 .loading-state { text-align: center; padding: 100px; color: #64748b; }
 .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #004aad; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }

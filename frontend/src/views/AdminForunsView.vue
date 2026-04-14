@@ -1,157 +1,373 @@
 <template>
-  <MainLayout pageTitle="Fórum dos Cursos" pageDescription="Acompanhe as dúvidas dos alunos e responda diretamente.">
-    <div class="layout-split">
+  <MainLayout pageTitle="Fórum dos Cursos" pageDescription="Central de dúvidas e interação com os alunos.">
+    <div class="forum-container">
       
-      <div class="glass-card side-list">
-        <h3 class="font-bold text-brand-color mb-4">Selecione um Curso</h3>
-        <div class="courses-list">
-          <button 
-            v-for="curso in cursos" :key="curso._id"
-            :class="['course-btn', { active: cursoAtual?._id === curso._id }]"
-            @click="selecionarCurso(curso)"
-          >
-            <BookOpen :size="18" /> {{ curso.titulo }}
-          </button>
+      <aside class="forum-sidebar glass-card">
+        <div class="sidebar-header">
+          <h3>Cursos Ativos</h3>
         </div>
-      </div>
-
-      <div class="glass-card chat-area" v-if="cursoAtual">
-        <div class="chat-header border-b pb-4 mb-4 flex justify-between items-center">
-          <h3 class="font-bold text-lg">Fórum: {{ cursoAtual.titulo }}</h3>
+        <div class="curso-list">
+          <div class="curso-item active">
+            <div class="curso-avatar">
+              <BookOpen :size="20" />
+            </div>
+            <div class="curso-info">
+              <h4>Libras Básico - Turma A</h4>
+              <p>Última msg: 10 min atrás</p>
+            </div>
+            <div class="unread-badge">2</div>
+          </div>
+          
+          <div class="curso-item">
+            <div class="curso-avatar">
+              <BookOpen :size="20" />
+            </div>
+            <div class="curso-info">
+              <h4>Libras Intermediário</h4>
+              <p>Nenhuma nova</p>
+            </div>
+          </div>
         </div>
+      </aside>
 
-        <div class="forum-messages">
-          <div v-for="msg in mensagens" :key="msg._id" class="message-card">
-            <div class="msg-avatar">{{ msg.autor?.nome ? msg.autor.nome.charAt(0).toUpperCase() : 'U' }}</div>
-            <div class="msg-body w-full">
-              <div class="msg-info flex justify-between">
-                <div>
-                  <strong>{{ msg.autor?.nome || 'Usuário' }}</strong> 
-                  <span class="text-xs text-gray-500 ml-2">{{ formatarData(msg.dataCriacao) }} <em v-if="msg.editada">(Editado)</em></span>
-                </div>
-                <div class="actions flex gap-2">
-                  <button @click="iniciarEdicao(msg)" class="text-blue-500 hover:text-blue-700" title="Editar"><Pencil :size="14"/></button>
-                  <button @click="excluirMensagem(msg._id)" class="text-red-500 hover:text-red-700" title="Excluir"><Trash2 :size="14"/></button>
-                </div>
-              </div>
+      <main class="chat-area glass-card">
+        
+        <header class="chat-header">
+          <div class="chat-title">
+            <h3>Libras Básico - Turma A</h3>
+            <p>Dúvidas em aberto</p>
+          </div>
+        </header>
 
-              <div v-if="editandoId === msg._id" class="mt-2">
-                <textarea v-model="textoEdicao" class="w-full p-2 border rounded" rows="2"></textarea>
-                <div class="flex gap-2 mt-2">
-                  <button @click="salvarEdicao(msg._id)" class="bg-blue-600 text-white px-3 py-1 rounded text-xs">Salvar</button>
-                  <button @click="editandoId = null" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs">Cancelar</button>
-                </div>
-              </div>
+        <div class="messages-container" ref="messagesContainer">
+          
+          <div class="message received">
+            <div class="msg-header">
+              <span class="msg-name">João Silva (Aluno)</span>
+              <span class="msg-time">10:30</span>
+            </div>
+            <div class="msg-bubble">
+              <p>Professor, fiquei com dúvida no sinal de "Trabalho" mostrado na aula 2. Pode explicar de novo?</p>
+            </div>
+          </div>
 
-              <div v-else>
-                <p class="mt-1 text-gray-700">{{ msg.texto }}</p>
-                <a v-if="msg.imagem" :href="obterUrlArquivo(msg.imagem)" target="_blank" class="block mt-2">
-                  <img :src="obterUrlArquivo(msg.imagem)" class="max-h-32 rounded border border-gray-200 hover:opacity-80 transition" />
-                </a>
+          <div class="message sent">
+            <div class="msg-header">
+              <span class="msg-time">10:45</span>
+              <span class="msg-name">Você (Admin)</span>
+            </div>
+            <div class="msg-bubble">
+              <p>Claro, João! O sinal de trabalho é feito com as duas mãos em formato de 'L'. Veja a foto que anexei.</p>
+              
+              <div class="attachment-box">
+                <img src="https://via.placeholder.com/250x150?text=Exemplo+de+Anexo" alt="Anexo" class="attachment-image"/>
               </div>
             </div>
           </div>
-          
-          <div v-if="mensagens.length === 0" class="text-center py-10 text-gray-400">
-            Nenhuma mensagem neste fórum.
-          </div>
+
         </div>
 
-        <form @submit.prevent="enviarResposta" class="forum-input-area mt-4">
-          <div class="relative">
-            <textarea v-model="novaMensagem" placeholder="Responda como administrador..." rows="3" required class="w-full p-3 border rounded-xl bg-slate-50"></textarea>
+        <footer class="chat-input-wrapper">
+          
+          <div v-if="anexoFile" class="attachment-preview">
+            <div class="preview-info">
+              <Paperclip :size="16" />
+              <span class="file-name">{{ anexoFile.name }}</span>
+            </div>
+            <button @click="removerAnexo" class="btn-remove" title="Remover anexo">
+              <X :size="16" />
+            </button>
           </div>
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-xl mt-2 font-bold w-full flex justify-center items-center gap-2">
-            <Send :size="16" /> Enviar Resposta
-          </button>
-        </form>
-      </div>
 
-      <div v-else class="glass-card flex items-center justify-center text-gray-400">
-        Selecione um curso ao lado para abrir o fórum.
-      </div>
+          <form @submit.prevent="enviarMensagem" class="input-form">
+            <button type="button" class="btn-action btn-attach" @click="triggerFileInput" title="Anexar foto ou arquivo">
+              <Paperclip :size="22" />
+            </button>
+            <input 
+              type="file" 
+              ref="fileInputRef" 
+              class="hidden-input" 
+              @change="handleFileChange"
+              accept="image/*,.pdf,.doc,.docx"
+            />
 
+            <textarea 
+              v-model="textoMensagem" 
+              placeholder="Digite sua resposta aqui..." 
+              rows="1"
+              @keydown.enter.exact.prevent="enviarMensagem"
+              class="message-input"
+            ></textarea>
+
+            <button type="submit" class="btn-action btn-send" :disabled="!textoMensagem.trim() && !anexoFile">
+              <Send :size="22" />
+            </button>
+          </form>
+          <div class="input-hint">Pressione <strong>Enter</strong> para enviar e <strong>Shift + Enter</strong> para pular linha.</div>
+        </footer>
+
+      </main>
     </div>
   </MainLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { BookOpen, Pencil, Trash2, Send } from 'lucide-vue-next';
+import { ref, onMounted, nextTick } from 'vue';
+import { BookOpen, Paperclip, Send, X } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
-import api from '../services/api';
+import api from '../services/api'; // Importe sua API aqui
 
-const cursos = ref([]);
-const cursoAtual = ref(null);
-const mensagens = ref([]);
-const novaMensagem = ref('');
+const textoMensagem = ref('');
+const anexoFile = ref(null);
+const fileInputRef = ref(null);
+const messagesContainer = ref(null);
 
-const editandoId = ref(null);
-const textoEdicao = ref('');
+// Aciona o clique no input de arquivo escondido
+const triggerFileInput = () => {
+  fileInputRef.value.click();
+};
 
-const carregarCursos = async () => {
+// Captura o arquivo selecionado no PC
+const handleFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    anexoFile.value = file;
+  }
+};
+
+// Remove o anexo atual
+const removerAnexo = () => {
+  anexoFile.value = null;
+  fileInputRef.value.value = ''; // Limpa o input
+};
+
+// Lógica de envio da mensagem com anexo
+const enviarMensagem = async () => {
+  if (!textoMensagem.value.trim() && !anexoFile.value) return;
+
+  // IMPORTANTE: Como tem arquivo, precisamos usar FormData em vez de JSON padrão
+  const formData = new FormData();
+  formData.append('texto', textoMensagem.value);
+  
+  if (anexoFile.value) {
+    formData.append('anexo', anexoFile.value); // O arquivo vai aqui
+  }
+
   try {
-    const res = await api.get('/cursos');
-    cursos.value = res.data;
-  } catch (err) { console.error(err); }
+    /* TODO: Ajuste o ID do curso conforme sua variável reativa
+    await api.post(`/cursos/SEU_ID_DO_CURSO/forum`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    */
+    
+    // Limpa a tela após sucesso
+    textoMensagem.value = '';
+    removerAnexo();
+    scrollToBottom();
+    
+    // Aqui você faria um push no array local de mensagens para aparecer na hora
+  } catch (error) {
+    console.error("Erro ao enviar mensagem:", error);
+  }
 };
 
-const selecionarCurso = async (curso) => {
-  cursoAtual.value = curso;
-  editandoId.value = null;
-  try {
-    const res = await api.get(`/cursos/${curso._id}/forum`);
-    mensagens.value = res.data;
-  } catch (err) { console.error(err); }
+// Rolar para o final do chat
+const scrollToBottom = async () => {
+  await nextTick();
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
 };
 
-const enviarResposta = async () => {
-  if(!novaMensagem.value.trim()) return;
-  try {
-    await api.post(`/cursos/${cursoAtual.value._id}/forum`, { texto: novaMensagem.value });
-    novaMensagem.value = '';
-    selecionarCurso(cursoAtual.value); // Recarrega o chat
-  } catch (err) { alert('Erro ao enviar.'); }
-};
-
-const iniciarEdicao = (msg) => { editandoId.value = msg._id; textoEdicao.value = msg.texto; };
-
-const salvarEdicao = async (msgId) => {
-  try {
-    await api.put(`/cursos/${cursoAtual.value._id}/forum/${msgId}`, { texto: textoEdicao.value });
-    editandoId.value = null;
-    selecionarCurso(cursoAtual.value);
-  } catch (err) { alert("Erro ao editar."); }
-};
-
-const excluirMensagem = async (msgId) => {
-  if(!confirm("Apagar esta mensagem permanentemente?")) return;
-  try {
-    await api.delete(`/cursos/${cursoAtual.value._id}/forum/${msgId}`);
-    selecionarCurso(cursoAtual.value);
-  } catch (err) { alert("Erro ao excluir."); }
-};
-
-const obterUrlArquivo = (caminho) => {
-  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
-  return `${baseUrl}/uploads/${caminho.replace(/\\/g, '/')}`;
-};
-
-const formatarData = (iso) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-
-onMounted(carregarCursos);
+onMounted(() => {
+  scrollToBottom();
+});
 </script>
 
 <style scoped>
-.layout-split { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; height: 75vh;}
-.glass-card { background: white; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;}
-.courses-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-.course-btn { text-align: left; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; }
-.course-btn:hover { background: #e2e8f0; }
-.course-btn.active { background: #004aad; color: white; border-color: #004aad; }
+/* ESTRUTURA GERAL DO FÓRUM */
+.forum-container {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  height: calc(100vh - 140px);
+  min-height: 600px;
+}
 
-.forum-messages { flex-grow: 1; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 15px; }
-.message-card { display: flex; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-.msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: #004aad; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
-textarea:focus { outline: none; border-color: #004aad; }
+.glass-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* SIDEBAR (ESQUERDA) */
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+.sidebar-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; font-weight: 700; }
+
+.curso-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.curso-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 5px;
+}
+.curso-item:hover { background: #f1f5f9; }
+.curso-item.active { background: #eff6ff; border-left: 4px solid #004aad; }
+
+.curso-avatar {
+  width: 40px; height: 40px;
+  background: #dbeafe; color: #004aad;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 15px;
+}
+
+.curso-info h4 { margin: 0 0 4px 0; font-size: 0.95rem; color: #0f172a; }
+.curso-info p { margin: 0; font-size: 0.8rem; color: #64748b; }
+
+.unread-badge {
+  background: #ef4444; color: white;
+  font-size: 0.7rem; font-weight: bold;
+  padding: 2px 8px; border-radius: 20px;
+  margin-left: auto;
+}
+
+/* ÁREA DE CHAT (DIREITA) */
+.chat-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  z-index: 10;
+}
+.chat-title h3 { margin: 0 0 5px 0; font-size: 1.2rem; color: #0f172a; }
+.chat-title p { margin: 0; font-size: 0.85rem; color: #64748b; }
+
+/* MENSAGENS */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message { max-width: 75%; display: flex; flex-direction: column; }
+.message.received { align-self: flex-start; }
+.message.sent { align-self: flex-end; }
+
+.msg-header {
+  display: flex; gap: 10px; margin-bottom: 6px; font-size: 0.8rem;
+}
+.message.received .msg-header { flex-direction: row; }
+.message.sent .msg-header { flex-direction: row-reverse; }
+
+.msg-name { font-weight: 700; color: #475569; }
+.msg-time { color: #94a3b8; }
+
+.msg-bubble {
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  word-wrap: break-word;
+}
+.message.received .msg-bubble {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-top-left-radius: 4px;
+}
+.message.sent .msg-bubble {
+  background: #004aad;
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+.msg-bubble p { margin: 0; }
+
+/* ANEXOS NA MENSAGEM */
+.attachment-box { margin-top: 10px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 8px;}
+.attachment-image { max-width: 100%; border-radius: 8px; cursor: pointer; display: block; }
+
+/* ÁREA DE INPUT */
+.chat-input-wrapper {
+  padding: 20px 24px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.attachment-preview {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #eff6ff; padding: 10px 15px;
+  border-radius: 8px; margin-bottom: 10px;
+  border: 1px solid #bfdbfe;
+}
+.preview-info { display: flex; align-items: center; gap: 10px; color: #1e40af; font-weight: 600; font-size: 0.9rem;}
+.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;}
+
+.input-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+.input-form:focus-within { border-color: #004aad; background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); }
+
+.hidden-input { display: none; }
+
+.message-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  resize: none;
+  padding: 10px 0;
+  font-family: inherit;
+  font-size: 1rem;
+  color: #1e293b;
+  max-height: 120px;
+  outline: none;
+}
+
+.btn-action {
+  background: none; border: none;
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-attach { color: #64748b; }
+.btn-attach:hover { background: #e2e8f0; color: #0f172a; }
+
+.btn-send { background: #004aad; color: white; }
+.btn-send:hover:not(:disabled) { background: #003a8c; transform: scale(1.05); }
+.btn-send:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+.input-hint { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 10px; }
+
+@media (max-width: 992px) {
+  .forum-container { grid-template-columns: 1fr; }
+  .forum-sidebar { display: none; /* No mobile a lista deve sumir e virar um botão de voltar */ }
+}
 </style>

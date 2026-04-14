@@ -12,7 +12,7 @@ exports.criarServico = async (req, res) => {
         descricao: `Receita Evento: ${novoServico.tipoEvento}`,
         valor: novoServico.caixaEmpresa,
         data: novoServico.dataEvento || Date.now(),
-        status: 'Pago',
+        status: novoServico.statusPagamento || 'Pendente', // Adaptado da planilha
         servicoOrigem: novoServico._id
       });
     }
@@ -23,7 +23,6 @@ exports.criarServico = async (req, res) => {
   }
 };
 
-// NOVO: Função para atualizar o serviço e refletir a alteração no caixa
 exports.atualizarServico = async (req, res) => {
   try {
     const servicoAtualizado = await ServicoConfirmado.findByIdAndUpdate(
@@ -34,15 +33,16 @@ exports.atualizarServico = async (req, res) => {
 
     if (!servicoAtualizado) return res.status(404).json({ message: "Serviço não encontrado" });
 
-    // Atualiza o valor correspondente no fluxo de caixa se houver "caixaEmpresa"
+    // Atualiza o valor e o STATUS correspondente no fluxo de caixa
     if (servicoAtualizado.caixaEmpresa !== undefined) {
       await Financeiro.findOneAndUpdate(
         { servicoOrigem: servicoAtualizado._id },
         { 
           valor: servicoAtualizado.caixaEmpresa,
-          descricao: `Receita Evento: ${servicoAtualizado.tipoEvento}`
+          descricao: `Receita Evento: ${servicoAtualizado.tipoEvento}`,
+          status: servicoAtualizado.statusPagamento // Sincroniza pendente/pago
         },
-        { upsert: true } // Cria se não existir (garante sincronização total)
+        { upsert: true }
       );
     }
 
@@ -80,7 +80,7 @@ exports.removerServico = async (req, res) => {
   try {
     await ServicoConfirmado.findByIdAndDelete(req.params.id);
     
-    // CORREÇÃO: Remove também a entrada financeira para que o fluxo de caixa se atualize corretamente
+    // Remove também a entrada financeira para o fluxo de caixa bater
     await Financeiro.findOneAndDelete({ servicoOrigem: req.params.id });
 
     res.status(200).json({ message: 'Serviço e entrada financeira removidos!' });

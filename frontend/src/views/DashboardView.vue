@@ -128,13 +128,11 @@ onMounted(async () => {
 const gerarOrcamentoPDF = () => {
   const doc = new jsPDF();
   const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const brandColor = [0, 74, 173]; // Azul padrão Libras Salvador
 
-  // Cores da Marca (Exemplo usando seu azul padrão #004aad)
-  const brandColor = [0, 74, 173];
-
-  // 1. Cabeçalho Principal (Libras Salvador)
+  // 1. Cabeçalho Principal
   doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
-  doc.rect(0, 0, 210, 40, 'F'); // Retângulo azul no topo
+  doc.rect(0, 0, 210, 40, 'F'); 
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
@@ -155,7 +153,7 @@ const gerarOrcamentoPDF = () => {
   doc.setFont("helvetica", "normal");
   doc.text(`Data de emissão: ${dataHoje}`, 195, 65, { align: 'right' });
 
-  // 3. Dados do Solicitante (A caixa cinza)
+  // 3. Dados do Solicitante
   doc.setFillColor(245, 245, 245);
   doc.rect(14, 70, 182, 45, 'F');
   
@@ -165,13 +163,13 @@ const gerarOrcamentoPDF = () => {
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Empresa Solicitante: ${orcamento.value.nomeEmpresa}`, 18, 86);
-  doc.text(`Nome do Evento: ${orcamento.value.nomeEvento}`, 18, 93);
-  doc.text(`Período de Realização: ${orcamento.value.periodo}`, 18, 100);
-  doc.text(`Carga Horária Estimada: ${orcamento.value.cargaHoraria}`, 18, 107);
-  doc.text(`Local / Endereço: ${orcamento.value.endereco}`, 18, 114);
+  doc.text(`Empresa Solicitante: ${orcamento.value.nomeEmpresa || 'Não informado'}`, 18, 86);
+  doc.text(`Nome do Evento: ${orcamento.value.nomeEvento || 'Não informado'}`, 18, 93);
+  doc.text(`Período de Realização: ${orcamento.value.periodo || 'Não informado'}`, 18, 100);
+  doc.text(`Carga Horária Estimada: ${orcamento.value.cargaHoraria || 'Não informado'}`, 18, 107);
+  doc.text(`Local / Endereço: ${orcamento.value.endereco || 'Não informado'}`, 18, 114);
 
-  // 4. Descrição dos Serviços (A tabela de escopo)
+  // 4. Descrição dos Serviços (Tabela de Escopo)
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.text('ESCOPO DOS SERVIÇOS', 14, 130);
@@ -193,9 +191,15 @@ const gerarOrcamentoPDF = () => {
 
   let finalY = doc.lastAutoTable.finalY || 135;
 
-  // 5. Bloco de Valor
+  // 5. Bloco de Valor (Se preenchido)
   if (orcamento.value.valor) {
-    doc.setFillColor(239, 246, 255); // Azul bem clarinho
+    // Formata o número para o padrão de moeda brasileiro (R$)
+    const valorFormatado = new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(orcamento.value.valor);
+
+    doc.setFillColor(239, 246, 255); 
     doc.rect(14, finalY + 10, 182, 20, 'F');
     
     doc.setFontSize(12);
@@ -204,8 +208,8 @@ const gerarOrcamentoPDF = () => {
     
     doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.setFontSize(14);
-    doc.text(`R$ ${orcamento.value.valor.toFixed(2)}`, 190, finalY + 23, { align: 'right' });
-    doc.setTextColor(0, 0, 0); // Volta para preto
+    doc.text(valorFormatado, 190, finalY + 23, { align: 'right' });
+    doc.setTextColor(0, 0, 0); 
 
     finalY += 30;
   }
@@ -221,8 +225,10 @@ const gerarOrcamentoPDF = () => {
   doc.setFont("helvetica", "normal");
   doc.text('CNPJ: XX.XXX.XXX/0001-XX | contato@librassalvador.com.br', 105, finalY + 60, { align: 'center' });
 
-  // Disparar o download
-  doc.save(`Orcamento_${orcamento.value.nomeEmpresa.replace(/\s+/g, '_')}.pdf`);
+  // 7. Sanitização e Download
+  // Substitui espaços e caracteres especiais do nome da empresa para usar no nome do arquivo
+  const safeName = (orcamento.value.nomeEmpresa || 'Avulso').replace(/[^a-z0-9]/gi, '_');
+  doc.save(`Orcamento_${safeName}.pdf`);
 };
 </script>
 

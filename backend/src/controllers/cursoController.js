@@ -50,7 +50,7 @@ exports.removerCurso = async (req, res) => {
 
 exports.matricularAluno = async (req, res) => {
   try {
-    const userId = req.user?.id || req.userId;
+    const userId = req.user?.id || req.user?._id || req.userId;
     const cursoId = req.params.id;
     const user = await User.findById(userId);
     if (!user.cursosMatriculados.includes(cursoId)) {
@@ -65,7 +65,7 @@ exports.matricularAluno = async (req, res) => {
 
 exports.meusCursos = async (req, res) => {
   try {
-    const userId = req.user?.id || req.userId;
+    const userId = req.user?.id || req.user?._id || req.userId;
     const user = await User.findById(userId).populate('cursosMatriculados');
     res.status(200).json(user.cursosMatriculados);
   } catch (error) {
@@ -75,7 +75,7 @@ exports.meusCursos = async (req, res) => {
 
 exports.concluirAula = async (req, res) => {
   try {
-    const userId = req.user?.id || req.userId;
+    const userId = req.user?.id || req.user?._id || req.userId;
     const { materialId } = req.body; 
     const user = await User.findById(userId);
     if (!user.materiaisConcluidos.includes(materialId)) {
@@ -90,7 +90,7 @@ exports.concluirAula = async (req, res) => {
 
 exports.buscarProgresso = async (req, res) => {
   try {
-    const userId = req.user?.id || req.userId;
+    const userId = req.user?.id || req.user?._id || req.userId;
     const user = await User.findById(userId).select('materiaisConcluidos');
     res.json(user.materiaisConcluidos || []);
   } catch (error) {
@@ -99,7 +99,7 @@ exports.buscarProgresso = async (req, res) => {
 };
 
 // ==========================================
-// FUNÇÕES DO FÓRUM (COMPLETAS)
+// FUNÇÕES DO FÓRUM (COMPLETAS E CORRIGIDAS)
 // ==========================================
 
 exports.listarMensagensForum = async (req, res) => {
@@ -116,18 +116,22 @@ exports.listarMensagensForum = async (req, res) => {
 exports.enviarMensagemForum = async (req, res) => {
   try {
     const { texto } = req.body;
-    const imagem = req.file ? req.file.filename : null; 
+    // Captura o caminho completo se vier arquivo do multer
+    const caminhoImagem = req.file ? `/uploads/materiais/${req.file.filename}` : null; 
+    // Busca ID de maneira consistente
+    const autorId = req.user?.id || req.user?._id || req.userId;
 
     const novaMsg = await ForumMessage.create({
       curso: req.params.cursoId,
-      autor: req.user.id,
-      texto,
-      imagem
+      autor: autorId,
+      texto: texto,
+      imagem: caminhoImagem
     });
     
     await novaMsg.populate('autor', 'nome role');
     res.status(201).json(novaMsg);
   } catch (error) {
+    console.error(error); // Adicionado para debug interno caso falhe
     res.status(500).json({ message: "Erro ao enviar." });
   }
 };
@@ -139,7 +143,10 @@ exports.editarMensagemForum = async (req, res) => {
 
       if (!mensagem) return res.status(404).json({ message: "Mensagem não encontrada" });
 
-      if (mensagem.autor.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
+      const userId = req.user?.id || req.user?._id || req.userId;
+      const userRole = req.user?.role;
+
+      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin-restrito') {
           return res.status(403).json({ message: "Acesso negado." });
       }
 
@@ -159,7 +166,10 @@ exports.excluirMensagemForum = async (req, res) => {
       const mensagem = await ForumMessage.findById(req.params.mensagemId);
       if (!mensagem) return res.status(404).json({ message: "Mensagem não encontrada" });
 
-      if (mensagem.autor.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
+      const userId = req.user?.id || req.user?._id || req.userId;
+      const userRole = req.user?.role;
+
+      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin-restrito') {
           return res.status(403).json({ message: "Acesso negado." });
       }
 
