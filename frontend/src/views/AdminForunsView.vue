@@ -60,7 +60,11 @@
               <p>Claro, João! O sinal de trabalho é feito com as duas mãos em formato de 'L'. Veja a foto que anexei.</p>
               
               <div class="attachment-box">
-                <img src="https://via.placeholder.com/250x150?text=Exemplo+de+Anexo" alt="Anexo" class="attachment-image"/>
+                <img 
+                  src="https://placehold.co/400x250/004aad/FFF?text=Sinal+de+Trabalho" 
+                  alt="Anexo" 
+                  class="attachment-image"
+                />
               </div>
             </div>
           </div>
@@ -83,6 +87,7 @@
             <button type="button" class="btn-action btn-attach" @click="triggerFileInput" title="Anexar foto ou arquivo">
               <Paperclip :size="22" />
             </button>
+            
             <input 
               type="file" 
               ref="fileInputRef" 
@@ -115,63 +120,61 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { BookOpen, Paperclip, Send, X } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
-import api from '../services/api'; // Importe sua API aqui
+import api from '../services/api'; 
 
 const textoMensagem = ref('');
 const anexoFile = ref(null);
 const fileInputRef = ref(null);
 const messagesContainer = ref(null);
 
-// Aciona o clique no input de arquivo escondido
 const triggerFileInput = () => {
   fileInputRef.value.click();
 };
 
-// Captura o arquivo selecionado no PC
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
+    // Validação simples de tamanho (ex: 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("O arquivo é muito grande. O limite é 5MB.");
+      return;
+    }
     anexoFile.value = file;
   }
 };
 
-// Remove o anexo atual
 const removerAnexo = () => {
   anexoFile.value = null;
-  fileInputRef.value.value = ''; // Limpa o input
+  if (fileInputRef.value) fileInputRef.value.value = '';
 };
 
-// Lógica de envio da mensagem com anexo
 const enviarMensagem = async () => {
   if (!textoMensagem.value.trim() && !anexoFile.value) return;
 
-  // IMPORTANTE: Como tem arquivo, precisamos usar FormData em vez de JSON padrão
   const formData = new FormData();
   formData.append('texto', textoMensagem.value);
   
   if (anexoFile.value) {
-    formData.append('anexo', anexoFile.value); // O arquivo vai aqui
+    formData.append('anexo', anexoFile.value);
   }
 
   try {
-    /* TODO: Ajuste o ID do curso conforme sua variável reativa
-    await api.post(`/cursos/SEU_ID_DO_CURSO/forum`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    */
+    // Simulação de chamada API
+    // await api.post(`/cursos/id-exemplo/forum`, formData);
     
-    // Limpa a tela após sucesso
+    console.log("Mensagem enviada com sucesso!");
+
+    // Limpa os campos
     textoMensagem.value = '';
     removerAnexo();
     scrollToBottom();
     
-    // Aqui você faria um push no array local de mensagens para aparecer na hora
   } catch (error) {
     console.error("Erro ao enviar mensagem:", error);
+    alert("Falha ao enviar mensagem. Tente novamente.");
   }
 };
 
-// Rolar para o final do chat
 const scrollToBottom = async () => {
   await nextTick();
   if (messagesContainer.value) {
@@ -185,7 +188,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ESTRUTURA GERAL DO FÓRUM */
+/* ESTRUTURA GERAL */
 .forum-container {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -204,7 +207,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* SIDEBAR (ESQUERDA) */
+/* SIDEBAR */
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid #f1f5f9;
@@ -248,17 +251,15 @@ onMounted(() => {
   margin-left: auto;
 }
 
-/* ÁREA DE CHAT (DIREITA) */
+/* CHAT AREA */
 .chat-header {
   padding: 20px 24px;
   border-bottom: 1px solid #f1f5f9;
   background: #ffffff;
-  z-index: 10;
 }
 .chat-title h3 { margin: 0 0 5px 0; font-size: 1.2rem; color: #0f172a; }
 .chat-title p { margin: 0; font-size: 0.85rem; color: #64748b; }
 
-/* MENSAGENS */
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -276,7 +277,6 @@ onMounted(() => {
 .msg-header {
   display: flex; gap: 10px; margin-bottom: 6px; font-size: 0.8rem;
 }
-.message.received .msg-header { flex-direction: row; }
 .message.sent .msg-header { flex-direction: row-reverse; }
 
 .msg-name { font-weight: 700; color: #475569; }
@@ -288,7 +288,6 @@ onMounted(() => {
   font-size: 0.95rem;
   line-height: 1.5;
   box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-  word-wrap: break-word;
 }
 .message.received .msg-bubble {
   background: #ffffff;
@@ -301,17 +300,25 @@ onMounted(() => {
   color: #ffffff;
   border-top-right-radius: 4px;
 }
-.msg-bubble p { margin: 0; }
 
-/* ANEXOS NA MENSAGEM */
-.attachment-box { margin-top: 10px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 8px;}
-.attachment-image { max-width: 100%; border-radius: 8px; cursor: pointer; display: block; }
+/* IMAGENS NO CHAT */
+.attachment-box { 
+  margin-top: 10px; 
+  background: rgba(0,0,0,0.05); 
+  border-radius: 8px;
+  overflow: hidden;
+}
+.attachment-image { 
+  display: block;
+  max-width: 100%; 
+  max-height: 250px;
+  object-fit: contain;
+}
 
-/* ÁREA DE INPUT */
+/* INPUT */
 .chat-input-wrapper {
   padding: 20px 24px;
   background: #ffffff;
-  border-top: 1px solid #f1f5f9;
 }
 
 .attachment-preview {
@@ -321,53 +328,34 @@ onMounted(() => {
   border: 1px solid #bfdbfe;
 }
 .preview-info { display: flex; align-items: center; gap: 10px; color: #1e40af; font-weight: 600; font-size: 0.9rem;}
-.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;}
+.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; }
 
 .input-form {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  background: #f8fafc;
-  padding: 8px 12px;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+  display: flex; align-items: flex-end; gap: 12px;
+  background: #f8fafc; padding: 8px 12px;
+  border-radius: 20px; border: 1px solid #e2e8f0;
 }
-.input-form:focus-within { border-color: #004aad; background: #ffffff; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); }
+
+.message-input {
+  flex: 1; background: transparent; border: none;
+  resize: none; padding: 10px 0; outline: none;
+  font-family: inherit; font-size: 1rem;
+}
 
 .hidden-input { display: none; }
 
-.message-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  resize: none;
-  padding: 10px 0;
-  font-family: inherit;
-  font-size: 1rem;
-  color: #1e293b;
-  max-height: 120px;
-  outline: none;
-}
-
 .btn-action {
-  background: none; border: none;
+  width: 44px; height: 44px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  cursor: pointer; transition: all 0.2s;
+  cursor: pointer; border: none; transition: 0.2s;
 }
-.btn-attach { color: #64748b; }
-.btn-attach:hover { background: #e2e8f0; color: #0f172a; }
-
 .btn-send { background: #004aad; color: white; }
-.btn-send:hover:not(:disabled) { background: #003a8c; transform: scale(1.05); }
-.btn-send:disabled { background: #cbd5e1; cursor: not-allowed; }
+.btn-send:disabled { background: #cbd5e1; }
 
 .input-hint { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 10px; }
 
 @media (max-width: 992px) {
   .forum-container { grid-template-columns: 1fr; }
-  .forum-sidebar { display: none; /* No mobile a lista deve sumir e virar um botão de voltar */ }
+  .forum-sidebar { display: none; }
 }
 </style>
