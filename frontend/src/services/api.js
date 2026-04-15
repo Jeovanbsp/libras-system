@@ -3,7 +3,6 @@ import axios from 'axios';
 const isProduction = import.meta.env.PROD;
 
 const api = axios.create({
-  // Atualizado para apontar para o Render em produção
   baseURL: isProduction 
     ? 'https://libras-system.onrender.com/api' 
     : 'http://localhost:3000/api',
