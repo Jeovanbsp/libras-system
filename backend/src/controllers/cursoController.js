@@ -146,7 +146,7 @@ exports.editarMensagemForum = async (req, res) => {
       const userId = req.user?.id || req.user?._id || req.userId;
       const userRole = req.user?.role;
 
-      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin-restrito') {
+      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin_restrito') {
           return res.status(403).json({ message: "Acesso negado." });
       }
 
@@ -169,7 +169,7 @@ exports.excluirMensagemForum = async (req, res) => {
       const userId = req.user?.id || req.user?._id || req.userId;
       const userRole = req.user?.role;
 
-      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin-restrito') {
+      if (mensagem.autor.toString() !== userId.toString() && userRole !== 'admin' && userRole !== 'admin_restrito') {
           return res.status(403).json({ message: "Acesso negado." });
       }
 

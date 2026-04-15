@@ -40,14 +40,6 @@ const empresaSolicitanteSchema = new mongoose.Schema(
     descricao: {
       type: String,
       trim: true
-    },
-    criadoEm: {
-      type: Date,
-      default: Date.now
-    },
-    atualizadoEm: {
-      type: Date,
-      default: Date.now
     }
   },
   { timestamps: true, collection: 'empresas_solicitantes' }

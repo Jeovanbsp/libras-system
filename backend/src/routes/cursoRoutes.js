@@ -14,7 +14,7 @@ router.post('/concluir-aula', authMiddleware, cursoController.concluirAula);
 router.delete('/forum/mensagem/:mensagemId', authMiddleware, cursoController.excluirMensagemForum);
 
 // Admin
-router.get('/', cursoController.listarCursos);
+router.get('/', authMiddleware, cursoController.listarCursos);
 router.post('/', authMiddleware, cursoController.criarCurso);
 
 // 2. Rotas com parâmetros genéricos

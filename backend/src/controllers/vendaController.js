@@ -7,7 +7,7 @@ exports.realizarMatricula = async (req, res) => {
     const { alunoId, cursoId, apostilaId } = req.body;
 
     const curso = await Curso.findById(cursoId);
-    let valorTotal = curso.valorBase;
+    let valorTotal = curso.valor;
     let desconto = 0;
 
     // Lógica do Combo (Escopo item 3)

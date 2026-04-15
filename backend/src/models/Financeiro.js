@@ -159,6 +159,10 @@ const financeiroSchema = new mongoose.Schema(
     atualizadoPor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
+    },
+    servicoOrigem: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ServicoConfirmado'
     }
   },
   { 

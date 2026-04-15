@@ -7,12 +7,27 @@ exports.criarServico = async (req, res) => {
 
     // Registar lucro automaticamente no financeiro COM a referência
     if (novoServico.caixaEmpresa && novoServico.caixaEmpresa > 0) {
+      const meses = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+      ];
+      const dataEvento = novoServico.dataEvento ? new Date(novoServico.dataEvento) : new Date();
       await Financeiro.create({
-        tipo: 'Entrada',
-        descricao: `Receita Evento: ${novoServico.tipoEvento}`,
-        valor: novoServico.caixaEmpresa,
-        data: novoServico.dataEvento || Date.now(),
-        status: novoServico.statusPagamento || 'Pendente', // Adaptado da planilha
+        empresa: 'OUTRA',
+        solicitante: novoServico.solicitante || 'Serviço Confirmado',
+        tematica: novoServico.tipoEvento || 'Evento',
+        evento: `Receita Evento: ${novoServico.tipoEvento}`,
+        dataInicial: dataEvento,
+        quantidadeHoras: novoServico.quantidadeHoras || 0,
+        interpretes: 'Via Serviço',
+        precoTotal: novoServico.precoTotal || 0,
+        transporte: novoServico.valorLogistica || 0,
+        impostos: novoServico.impostos || 0,
+        pagosInterpretes: novoServico.valorInterpretes || 0,
+        caixaEmpresa: novoServico.caixaEmpresa,
+        mes: meses[dataEvento.getMonth()],
+        ano: dataEvento.getFullYear(),
+        status: novoServico.statusPagamento === 'Pago' ? 'pago' : 'pendente',
         servicoOrigem: novoServico._id
       });
     }

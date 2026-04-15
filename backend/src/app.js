@@ -24,8 +24,12 @@ const app = express();
 // ==========================================
 // 1. CONFIGURAÇÃO DE CORS
 // ==========================================
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+  : ["https://librasalvador.vercel.app", "http://localhost:5173"];
+
 app.use(cors({
-  origin: ["https://librasalvador.vercel.app", "http://localhost:5173"],
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   credentials: true
@@ -107,12 +111,6 @@ app.get('/api/stats', async (req, res) => {
 module.exports = app;
 
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando localmente na porta ${PORT}`);
-  });
-} else {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor de produção rodando na porta ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
