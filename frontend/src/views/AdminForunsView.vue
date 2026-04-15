@@ -4,7 +4,7 @@
     <aside class="sidebar">
       <div class="logo-section">
         <!-- CORREÇÃO: Usando caminho relativo para o Vite encontrar a imagem no build -->
-        <img src="../assets/images.png" alt="Logo" class="logo" />
+        <img src="@/assets/logo.png" alt="Logo" class="logo" />
       </div>
       
       <nav class="menu">
