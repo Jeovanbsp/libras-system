@@ -1,610 +1,977 @@
 <template>
-  <MainLayout pageTitle="Fórum dos Cursos" pageDescription="Central de dúvidas e interação com os alunos.">
-    <div class="forum-container">
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo-section">
+        <img src="/src/assets/images.png" alt="Logo" class="logo" />
+      </div>
       
-      <aside class="forum-sidebar glass-card">
-        <div class="sidebar-header">
-          <h3>Cursos Ativos</h3>
+      <nav class="menu">
+        <router-link to="/admin/dashboard" class="menu-item">
+          <i class="fas fa-home"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/admin/usuarios" class="menu-item">
+          <i class="fas fa-users"></i>
+          <span>Usuários</span>
+        </router-link>
+        <router-link to="/admin/cursos" class="menu-item">
+          <i class="fas fa-graduation-cap"></i>
+          <span>Cursos</span>
+        </router-link>
+        <router-link to="/admin/forum" class="menu-item active">
+          <i class="fas fa-comments"></i>
+          <span>Fórum</span>
+        </router-link>
+        <router-link to="/admin/materiais" class="menu-item">
+          <i class="fas fa-book"></i>
+          <span>Materiais</span>
+        </router-link>
+        <router-link to="/admin/financeiro" class="menu-item" v-if="userRole === 'admin'">
+          <i class="fas fa-chart-line"></i>
+          <span>Financeiro</span>
+        </router-link>
+        <router-link to="/admin/logs" class="menu-item" v-if="userRole === 'admin'">
+          <i class="fas fa-file-alt"></i>
+          <span>Logs</span>
+        </router-link>
+      </nav>
+
+      <div class="logout-section">
+        <button @click="logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="forum-header">
+        <h1>Fórum de Discussão</h1>
+        <div class="header-actions">
+          <button @click="showNewTopicModal = true" class="btn-primary">
+            <i class="fas fa-plus"></i>
+            Novo Tópico
+          </button>
         </div>
-        <div class="curso-list">
-          <div v-if="cursos.length === 0" class="empty-sidebar">
-            <p>Nenhum curso encontrado.</p>
-          </div>
+      </div>
+
+      <!-- Lista de Tópicos -->
+      <div class="topics-container">
+        <div v-if="loading" class="loading">
+          <i class="fas fa-spinner fa-spin"></i>
+          Carregando tópicos...
+        </div>
+
+        <div v-else-if="topics.length === 0" class="empty-state">
+          <i class="fas fa-comments fa-3x"></i>
+          <p>Nenhum tópico criado ainda</p>
+          <button @click="showNewTopicModal = true" class="btn-primary">
+            Criar Primeiro Tópico
+          </button>
+        </div>
+
+        <div v-else class="topics-list">
           <div 
-            v-for="curso in cursos" 
-            :key="curso._id" 
-            :class="['curso-item', { active: cursoSelecionado && cursoSelecionado._id === curso._id }]"
-            @click="selecionarCurso(curso)"
+            v-for="topic in topics" 
+            :key="topic._id"
+            class="topic-card"
+            @click="selectTopic(topic)"
+            :class="{ active: selectedTopic?._id === topic._id }"
           >
-            <div class="curso-avatar">
-              <BookOpen :size="20" />
+            <div class="topic-header">
+              <h3>{{ topic.title }}</h3>
+              <span class="topic-date">{{ formatDate(topic.createdAt) }}</span>
             </div>
-            <div class="curso-info">
-              <h4>{{ curso.titulo }}</h4>
-              <p>{{ curso.nivel || 'Sem nível' }}</p>
+            <div class="topic-info">
+              <span class="topic-author">
+                <i class="fas fa-user"></i>
+                {{ topic.author?.name || 'Anônimo' }}
+              </span>
+              <span class="topic-replies">
+                <i class="fas fa-comment"></i>
+                {{ topic.replies?.length || 0 }} respostas
+              </span>
+              <span v-if="topic.hasAttachment" class="topic-attachment">
+                <i class="fas fa-paperclip"></i>
+                Anexo
+              </span>
             </div>
           </div>
         </div>
-      </aside>
+      </div>
 
-      <main class="chat-area glass-card">
-        
-        <div v-if="!cursoSelecionado" class="empty-chat">
-          <MessageSquare :size="48" />
-          <h3>Selecione um curso</h3>
-          <p>Escolha um curso na lista lateral para ver as mensagens do fórum.</p>
+      <!-- Visualização do Tópico Selecionado -->
+      <div v-if="selectedTopic" class="topic-detail">
+        <div class="detail-header">
+          <h2>{{ selectedTopic.title }}</h2>
+          <button @click="closeTopic" class="btn-close">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
-        <template v-else>
-          <header class="chat-header">
-            <div class="chat-title">
-              <h3>{{ cursoSelecionado.titulo }}</h3>
-              <p>{{ mensagens.length }} mensagen{{ mensagens.length === 1 ? '' : 's' }} no fórum</p>
-            </div>
-            <button class="btn-refresh" @click="carregarMensagens" title="Atualizar mensagens">
-              <RefreshCw :size="18" />
-            </button>
-          </header>
-
-          <div class="messages-container" ref="messagesContainer">
-            
-            <div v-if="carregandoMensagens" class="loading-state">
-              <div class="spinner"></div>
-              <p>A carregar mensagens...</p>
-            </div>
-
-            <div v-else-if="mensagens.length === 0" class="empty-state">
-              <MessageSquare :size="40" />
-              <p>Nenhuma mensagem neste fórum ainda.</p>
-            </div>
-
-            <div 
-              v-else
-              v-for="msg in mensagens" 
-              :key="msg._id" 
-              :class="['message', msg.isMinha ? 'sent' : 'received']"
-            >
-              <div class="msg-header">
-                <span class="msg-name">{{ msg.autorNome }} <span v-if="msg.autorRole !== 'aluno'" class="role-badge">({{ msg.autorRole === 'admin' ? 'Admin' : 'Prof.' }})</span><span v-else class="role-badge aluno">(Aluno)</span></span>
-                <span class="msg-time">{{ msg.dataFormatada }}</span>
+        <div class="detail-content">
+          <div class="original-post">
+            <div class="post-author">
+              <i class="fas fa-user-circle fa-2x"></i>
+              <div>
+                <strong>{{ selectedTopic.author?.name || 'Anônimo' }}</strong>
+                <small>{{ formatDate(selectedTopic.createdAt) }}</small>
               </div>
-              <div class="msg-bubble">
-                <p v-if="editandoId !== msg._id">{{ msg.texto }}</p>
-                <div v-else class="edit-inline">
-                  <textarea v-model="textoEditando" rows="2" class="edit-input"></textarea>
-                  <div class="edit-actions">
-                    <button @click="salvarEdicao(msg._id)" class="btn-save-edit">Salvar</button>
-                    <button @click="cancelarEdicao" class="btn-cancel-edit">Cancelar</button>
+            </div>
+            <div class="post-body">
+              <p>{{ selectedTopic.content }}</p>
+              
+              <!-- Visualização de Anexo PDF -->
+              <div v-if="selectedTopic.attachment" class="attachment-section">
+                <div class="attachment-header">
+                  <i class="fas fa-file-pdf"></i>
+                  <span>Documento Anexado</span>
+                </div>
+                
+                <!-- Preview do PDF -->
+                <div class="pdf-preview">
+                  <iframe 
+                    v-if="selectedTopic.attachment.type === 'application/pdf'"
+                    :src="`${API_URL}/uploads/${selectedTopic.attachment.filename}`"
+                    class="pdf-viewer"
+                    frameborder="0"
+                  ></iframe>
+                  
+                  <div v-else class="file-preview">
+                    <i class="fas fa-file fa-3x"></i>
+                    <p>{{ selectedTopic.attachment.originalname }}</p>
                   </div>
                 </div>
-                <span v-if="msg.editada && editandoId !== msg._id" class="edited-label">(editada)</span>
                 
-                <div v-if="msg.imagem" class="attachment-box">
-                  <a :href="obterUrlArquivo(msg.imagem)" target="_blank">
-                    <img v-if="isImage(msg.imagem)" :src="obterUrlArquivo(msg.imagem)" alt="Anexo" class="attachment-image"/>
-                    <div v-else class="btn-download-anexo">
-                      <FileText :size="16" /> Abrir Anexo
-                    </div>
+                <!-- Botões de Ação -->
+                <div class="attachment-actions">
+                  <a 
+                    :href="`${API_URL}/uploads/${selectedTopic.attachment.filename}`"
+                    target="_blank"
+                    class="btn-secondary"
+                  >
+                    <i class="fas fa-external-link-alt"></i>
+                    Abrir em Nova Aba
+                  </a>
+                  <a 
+                    :href="`${API_URL}/uploads/${selectedTopic.attachment.filename}`"
+                    :download="selectedTopic.attachment.originalname"
+                    class="btn-secondary"
+                  >
+                    <i class="fas fa-download"></i>
+                    Baixar PDF
                   </a>
                 </div>
               </div>
-              <div class="msg-actions" v-if="editandoId !== msg._id">
-                <button v-if="msg.isMinha || userRole === 'admin'" @click="iniciarEdicao(msg)" class="btn-msg-action" title="Editar">
-                  <Pencil :size="14" />
-                </button>
-                <button v-if="msg.isMinha || userRole === 'admin'" @click="excluirMensagem(msg._id)" class="btn-msg-action btn-danger" title="Excluir">
-                  <Trash2 :size="14" />
-                </button>
-              </div>
             </div>
-
           </div>
 
-          <footer class="chat-input-wrapper">
+          <!-- Respostas -->
+          <div class="replies-section">
+            <h3>Respostas ({{ selectedTopic.replies?.length || 0 }})</h3>
             
-            <div v-if="anexoFile" class="attachment-preview">
-              <div class="preview-info">
-                <Paperclip :size="16" />
-                <span class="file-name">{{ anexoFile.name }}</span>
-              </div>
-              <button @click="removerAnexo" class="btn-remove" title="Remover anexo">
-                <X :size="16" />
-              </button>
+            <div v-if="selectedTopic.replies?.length === 0" class="no-replies">
+              <p>Nenhuma resposta ainda. Seja o primeiro!</p>
             </div>
 
-            <form @submit.prevent="enviarMensagem" class="input-form">
-              <button type="button" class="btn-action btn-attach" @click="triggerFileInput" title="Anexar foto ou arquivo">
-                <Paperclip :size="22" />
-              </button>
-              
-              <input 
-                type="file" 
-                ref="fileInputRef" 
-                class="hidden-input" 
-                @change="handleFileChange"
-                accept="image/*,.pdf,.doc,.docx"
-              />
+            <div v-else class="replies-list">
+              <div 
+                v-for="reply in selectedTopic.replies" 
+                :key="reply._id"
+                class="reply-card"
+              >
+                <div class="reply-header">
+                  <div class="reply-author">
+                    <i class="fas fa-user-circle"></i>
+                    <strong>{{ reply.author?.name || 'Anônimo' }}</strong>
+                  </div>
+                  <small>{{ formatDate(reply.createdAt) }}</small>
+                </div>
+                <div class="reply-content">
+                  <p>{{ reply.content }}</p>
+                </div>
+                
+                <!-- Ações do Admin para moderar -->
+                <div class="reply-actions" v-if="userRole === 'admin'">
+                  <button 
+                    @click="deleteReply(selectedTopic._id, reply._id)" 
+                    class="btn-danger-small"
+                    title="Excluir resposta"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <textarea 
-                v-model="textoMensagem" 
-                placeholder="Digite sua resposta aqui..." 
-                rows="1"
-                @keydown.enter.exact.prevent="enviarMensagem"
-                class="message-input"
-              ></textarea>
+          <!-- Formulário de Resposta -->
+          <div class="reply-form">
+            <h3>Adicionar Resposta</h3>
+            <textarea 
+              v-model="newReply"
+              placeholder="Digite sua resposta..."
+              class="form-textarea"
+              rows="4"
+            ></textarea>
+            <button 
+              @click="submitReply" 
+              class="btn-primary"
+              :disabled="!newReply.trim()"
+            >
+              <i class="fas fa-paper-plane"></i>
+              Enviar Resposta
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
 
-              <button type="submit" class="btn-action btn-send" :disabled="!textoMensagem.trim() && !anexoFile">
-                <Send :size="22" />
-              </button>
-            </form>
-            <div class="input-hint">Pressione <strong>Enter</strong> para enviar e <strong>Shift + Enter</strong> para pular linha.</div>
-          </footer>
-        </template>
-
-      </main>
+    <!-- Modal Novo Tópico -->
+    <div v-if="showNewTopicModal" class="modal" @click.self="showNewTopicModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Criar Novo Tópico</h2>
+          <button @click="showNewTopicModal = false" class="btn-close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Título do Tópico</label>
+            <input 
+              v-model="newTopic.title"
+              type="text"
+              placeholder="Digite o título do tópico"
+              class="form-input"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label>Conteúdo</label>
+            <textarea 
+              v-model="newTopic.content"
+              placeholder="Descreva o assunto..."
+              class="form-textarea"
+              rows="6"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Anexar Arquivo (opcional)</label>
+            <input 
+              type="file"
+              @change="handleFileUpload"
+              accept=".pdf,.doc,.docx,.txt"
+              class="form-input"
+            />
+            <small>Formatos aceitos: PDF, DOC, DOCX, TXT</small>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button @click="showNewTopicModal = false" class="btn-secondary">
+            Cancelar
+          </button>
+          <button 
+            @click="createTopic" 
+            class="btn-primary"
+            :disabled="!newTopic.title || !newTopic.content"
+          >
+            <i class="fas fa-check"></i>
+            Criar Tópico
+          </button>
+        </div>
+      </div>
     </div>
-  </MainLayout>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
-import { BookOpen, Paperclip, Send, X, MessageSquare, RefreshCw, Pencil, Trash2, FileText } from 'lucide-vue-next';
-import MainLayout from '../components/MainLayout.vue';
-import api from '../services/api';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import { toast } from 'vue3-toastify';
 
-const cursos = ref([]);
-const cursoSelecionado = ref(null);
-const mensagens = ref([]);
-const carregandoMensagens = ref(false);
-const textoMensagem = ref('');
-const anexoFile = ref(null);
-const fileInputRef = ref(null);
-const messagesContainer = ref(null);
+const router = useRouter();
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const editandoId = ref(null);
-const textoEditando = ref('');
+// Estados
+const topics = ref([]);
+const selectedTopic = ref(null);
+const loading = ref(false);
+const showNewTopicModal = ref(false);
+const newReply = ref('');
+const userRole = computed(() => localStorage.getItem('userRole'));
 
-const userId = localStorage.getItem('userId') || '';
-const userRole = localStorage.getItem('userRole') || '';
+const newTopic = ref({
+  title: '',
+  content: '',
+  attachment: null
+});
 
-const carregarCursos = async () => {
+// Carregar tópicos
+const loadTopics = async () => {
+  loading.value = true;
   try {
-    const res = await api.get('/cursos');
-    cursos.value = res.data;
-    if (cursos.value.length > 0) {
-      selecionarCurso(cursos.value[0]);
-    }
+    const response = await axios.get(`${API_URL}/api/forum/topics`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    topics.value = response.data;
   } catch (error) {
-    console.error('Erro ao carregar cursos:', error);
-  }
-};
-
-const selecionarCurso = async (curso) => {
-  cursoSelecionado.value = curso;
-  await carregarMensagens();
-};
-
-const carregarMensagens = async () => {
-  if (!cursoSelecionado.value) return;
-  carregandoMensagens.value = true;
-  try {
-    const res = await api.get(`/cursos/${cursoSelecionado.value._id}/forum`);
-    mensagens.value = res.data.map(m => ({
-      _id: m._id,
-      autorId: m.autor?._id || m.autor,
-      autorNome: m.autor?.nome || 'Utilizador',
-      autorRole: m.autor?.role || 'aluno',
-      isMinha: (m.autor?._id === userId) || (m.autor === userId),
-      dataFormatada: new Date(m.dataCriacao).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
-      texto: m.texto,
-      imagem: m.imagem,
-      editada: m.editada || false
-    }));
-    scrollToBottom();
-  } catch (error) {
-    console.error('Erro ao carregar mensagens:', error);
+    toast.error('Erro ao carregar tópicos');
+    console.error(error);
   } finally {
-    carregandoMensagens.value = false;
+    loading.value = false;
   }
 };
 
-const enviarMensagem = async () => {
-  if (!textoMensagem.value.trim() && !anexoFile.value) return;
-  if (!cursoSelecionado.value) return;
-
-  const formData = new FormData();
-  formData.append('texto', textoMensagem.value);
-  if (anexoFile.value) {
-    formData.append('anexo', anexoFile.value);
-  }
-
+// Selecionar tópico
+const selectTopic = async (topic) => {
   try {
-    const res = await api.post(`/cursos/${cursoSelecionado.value._id}/forum`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const response = await axios.get(`${API_URL}/api/forum/topics/${topic._id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
     });
-
-    mensagens.value.push({
-      _id: res.data._id,
-      autorId: res.data.autor?._id || userId,
-      autorNome: res.data.autor?.nome || localStorage.getItem('userName') || 'Você',
-      autorRole: res.data.autor?.role || userRole,
-      isMinha: true,
-      dataFormatada: new Date(res.data.dataCriacao || Date.now()).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }),
-      texto: res.data.texto,
-      imagem: res.data.imagem,
-      editada: false
-    });
-
-    textoMensagem.value = '';
-    removerAnexo();
-    scrollToBottom();
+    selectedTopic.value = response.data;
   } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    alert('Falha ao enviar mensagem. Tente novamente.');
+    toast.error('Erro ao carregar detalhes do tópico');
   }
 };
 
-const iniciarEdicao = (msg) => {
-  editandoId.value = msg._id;
-  textoEditando.value = msg.texto;
+// Fechar tópico
+const closeTopic = () => {
+  selectedTopic.value = null;
 };
 
-const cancelarEdicao = () => {
-  editandoId.value = null;
-  textoEditando.value = '';
-};
-
-const salvarEdicao = async (mensagemId) => {
-  if (!textoEditando.value.trim()) return;
+// Criar novo tópico
+const createTopic = async () => {
   try {
-    await api.put(`/cursos/forum/mensagem/${mensagemId}`, { texto: textoEditando.value });
-    const msg = mensagens.value.find(m => m._id === mensagemId);
-    if (msg) {
-      msg.texto = textoEditando.value;
-      msg.editada = true;
+    const formData = new FormData();
+    formData.append('title', newTopic.value.title);
+    formData.append('content', newTopic.value.content);
+    
+    if (newTopic.value.attachment) {
+      formData.append('attachment', newTopic.value.attachment);
     }
-    cancelarEdicao();
+    
+    await axios.post(`${API_URL}/api/forum/topics`, formData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    toast.success('Tópico criado com sucesso!');
+    showNewTopicModal.value = false;
+    newTopic.value = { title: '', content: '', attachment: null };
+    loadTopics();
   } catch (error) {
-    console.error('Erro ao editar mensagem:', error);
-    alert('Falha ao editar mensagem.');
+    toast.error('Erro ao criar tópico');
+    console.error(error);
   }
 };
 
-const excluirMensagem = async (mensagemId) => {
-  if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return;
+// Enviar resposta
+const submitReply = async () => {
+  if (!newReply.value.trim()) return;
+  
   try {
-    await api.delete(`/cursos/forum/mensagem/${mensagemId}`);
-    mensagens.value = mensagens.value.filter(m => m._id !== mensagemId);
+    await axios.post(
+      `${API_URL}/api/forum/topics/${selectedTopic.value._id}/replies`,
+      { content: newReply.value },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    
+    toast.success('Resposta enviada!');
+    newReply.value = '';
+    selectTopic(selectedTopic.value); // Recarregar tópico
   } catch (error) {
-    console.error('Erro ao excluir mensagem:', error);
-    alert('Falha ao excluir mensagem.');
+    toast.error('Erro ao enviar resposta');
   }
 };
 
-const triggerFileInput = () => {
-  fileInputRef.value.click();
+// Deletar resposta (admin)
+const deleteReply = async (topicId, replyId) => {
+  if (!confirm('Deseja realmente excluir esta resposta?')) return;
+  
+  try {
+    await axios.delete(
+      `${API_URL}/api/forum/topics/${topicId}/replies/${replyId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    
+    toast.success('Resposta excluída');
+    selectTopic(selectedTopic.value); // Recarregar
+  } catch (error) {
+    toast.error('Erro ao excluir resposta');
+  }
 };
 
-const handleFileChange = (event) => {
+// Upload de arquivo
+const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('O arquivo é muito grande. O limite é 5MB.');
-      return;
-    }
-    anexoFile.value = file;
+    newTopic.value.attachment = file;
   }
 };
 
-const removerAnexo = () => {
-  anexoFile.value = null;
-  if (fileInputRef.value) fileInputRef.value.value = '';
+// Formatar data
+const formatDate = (date) => {
+  return new Date(date).toLocaleString('pt-BR');
 };
 
-const scrollToBottom = async () => {
-  await nextTick();
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-  }
-};
-
-const obterUrlArquivo = (caminho) => {
-  if (!caminho) return '#';
-  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
-  if (caminho.startsWith('/')) {
-    return `${baseUrl}${caminho}`;
-  }
-  return `${baseUrl}/${caminho}`;
-};
-
-const isImage = (url) => {
-  if (!url) return false;
-  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+// Logout
+const logout = () => {
+  localStorage.clear();
+  router.push('/aluno/login');
 };
 
 onMounted(() => {
-  carregarCursos();
+  loadTopics();
 });
 </script>
 
 <style scoped>
-/* ESTRUTURA GERAL */
-.forum-container {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
-  height: calc(100vh - 140px);
-  min-height: 600px;
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
 }
 
-.glass-card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-/* SIDEBAR */
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
-}
-.sidebar-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; font-weight: 700; }
-
-.curso-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.empty-sidebar {
+.logo-section {
   padding: 20px;
   text-align: center;
-  color: #94a3b8;
+  border-bottom: 1px solid #eee;
 }
 
-.curso-item {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 5px;
-}
-.curso-item:hover { background: #f1f5f9; }
-.curso-item.active { background: #eff6ff; border-left: 4px solid #004aad; }
-
-.curso-avatar {
-  width: 40px; height: 40px;
-  background: #dbeafe; color: #004aad;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  margin-right: 15px;
-  flex-shrink: 0;
+.logo {
+  max-width: 150px;
+  height: auto;
 }
 
-.curso-info { overflow: hidden; }
-.curso-info h4 { margin: 0 0 4px 0; font-size: 0.95rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.curso-info p { margin: 0; font-size: 0.8rem; color: #64748b; }
-
-/* CHAT AREA */
-.empty-chat {
+.menu {
   flex: 1;
+  padding: 20px 0;
+}
+
+.menu-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  color: #94a3b8;
   gap: 12px;
-}
-.empty-chat h3 { margin: 0; color: #64748b; }
-.empty-chat p { margin: 0; }
-
-.chat-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.chat-title h3 { margin: 0 0 5px 0; font-size: 1.2rem; color: #0f172a; }
-.chat-title p { margin: 0; font-size: 0.85rem; color: #64748b; }
-
-.btn-refresh {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px;
-  cursor: pointer;
-  color: #64748b;
-  transition: 0.2s;
-}
-.btn-refresh:hover { background: #e2e8f0; color: #004aad; }
-
-.messages-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  background: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 12px 20px;
+  color: #666;
+  text-decoration: none;
+  transition: all 0.3s;
 }
 
-.loading-state, .empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  gap: 12px;
+.menu-item:hover,
+.menu-item.active {
+  background: #f0f2ff;
+  color: #667eea;
 }
 
-.spinner {
-  width: 32px; height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #004aad;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.message { max-width: 75%; display: flex; flex-direction: column; position: relative; }
-.message.received { align-self: flex-start; }
-.message.sent { align-self: flex-end; }
-
-.msg-header {
-  display: flex; gap: 10px; margin-bottom: 6px; font-size: 0.8rem;
-}
-.message.sent .msg-header { flex-direction: row-reverse; }
-
-.msg-name { font-weight: 700; color: #475569; }
-.msg-time { color: #94a3b8; }
-
-.role-badge { font-weight: 500; color: #004aad; font-size: 0.75rem; }
-.role-badge.aluno { color: #059669; }
-
-.msg-bubble {
-  padding: 14px 18px;
-  border-radius: 16px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
-.message.received .msg-bubble {
-  background: #ffffff;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
-  border-top-left-radius: 4px;
-}
-.message.sent .msg-bubble {
-  background: #004aad;
-  color: #ffffff;
-  border-top-right-radius: 4px;
+.menu-item i {
+  width: 20px;
+  text-align: center;
 }
 
-.edited-label { font-size: 0.7rem; opacity: 0.7; font-style: italic; }
-
-/* MSG ACTIONS */
-.msg-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+.logout-section {
+  padding: 20px;
+  border-top: 1px solid #eee;
 }
-.message:hover .msg-actions { opacity: 1; }
-.message.sent .msg-actions { align-self: flex-end; }
 
-.btn-msg-action {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  transition: 0.2s;
-}
-.btn-msg-action:hover { background: #e2e8f0; color: #004aad; }
-.btn-msg-action.btn-danger:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
-
-/* EDIT INLINE */
-.edit-inline { display: flex; flex-direction: column; gap: 8px; }
-.edit-input {
+.logout-btn {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  resize: vertical;
-  color: #1e293b;
-}
-.edit-actions { display: flex; gap: 8px; }
-.btn-save-edit {
-  background: #004aad; color: white; border: none;
-  padding: 4px 12px; border-radius: 6px; cursor: pointer;
-  font-size: 0.8rem;
-}
-.btn-cancel-edit {
-  background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;
-  padding: 4px 12px; border-radius: 6px; cursor: pointer;
-  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-/* IMAGENS NO CHAT */
-.attachment-box { 
-  margin-top: 10px; 
-  background: rgba(0,0,0,0.05); 
+.logout-btn:hover {
+  background: #ff3838;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.forum-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.forum-header h1 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Topics Container */
+.topics-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.loading i {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.empty-state i {
+  color: #ddd;
+  margin-bottom: 20px;
+}
+
+.topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.topic-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.topic-card:hover {
+  background: #f0f2ff;
+  border-color: #667eea;
+}
+
+.topic-card.active {
+  background: #f0f2ff;
+  border-color: #667eea;
+}
+
+.topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.topic-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.topic-date {
+  color: #999;
+  font-size: 12px;
+}
+
+.topic-info {
+  display: flex;
+  gap: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.topic-info span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.topic-attachment {
+  color: #667eea;
+}
+
+/* Topic Detail */
+.topic-detail {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #eee;
+}
+
+.detail-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.btn-close:hover {
+  color: #ff4757;
+}
+
+.detail-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.original-post {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #eee;
+}
+
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.post-author i {
+  color: #667eea;
+}
+
+.post-body {
+  color: #444;
+  line-height: 1.6;
+}
+
+/* Attachment Section - MELHORADO */
+.attachment-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.attachment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  color: #495057;
+  font-weight: 600;
+}
+
+.attachment-header i {
+  color: #dc3545;
+  font-size: 20px;
+}
+
+.pdf-preview {
+  margin-bottom: 15px;
+  background: white;
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid #dee2e6;
 }
-.attachment-image { 
+
+.pdf-viewer {
+  width: 100%;
+  height: 600px;
+  border: none;
+}
+
+.file-preview {
+  padding: 40px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.file-preview i {
+  color: #dc3545;
+  margin-bottom: 10px;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.attachment-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.attachment-actions a:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+/* Replies Section */
+.replies-section {
+  margin-top: 30px;
+}
+
+.replies-section h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.no-replies {
+  text-align: center;
+  padding: 30px;
+  color: #999;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.replies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reply-card {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.reply-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #495057;
+}
+
+.reply-content {
+  color: #444;
+  line-height: 1.5;
+}
+
+.reply-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.btn-danger-small {
+  padding: 4px 8px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.btn-danger-small:hover {
+  background: #ff3838;
+}
+
+/* Reply Form */
+.reply-form {
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 2px solid #eee;
+}
+
+.reply-form h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
   display: block;
-  max-width: 100%; 
-  max-height: 250px;
-  object-fit: contain;
-}
-.btn-download-anexo {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 16px;
-  color: #004aad;
-  font-weight: 600;
-  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: #495057;
+  font-weight: 500;
 }
 
-/* INPUT */
-.chat-input-wrapper {
-  padding: 20px 24px;
-  background: #ffffff;
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
 }
 
-.attachment-preview {
-  display: flex; justify-content: space-between; align-items: center;
-  background: #eff6ff; padding: 10px 15px;
-  border-radius: 8px; margin-bottom: 10px;
-  border: 1px solid #bfdbfe;
-}
-.preview-info { display: flex; align-items: center; gap: 10px; color: #1e40af; font-weight: 600; font-size: 0.9rem;}
-.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; }
-
-.input-form {
-  display: flex; align-items: flex-end; gap: 12px;
-  background: #f8fafc; padding: 8px 12px;
-  border-radius: 20px; border: 1px solid #e2e8f0;
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
-.message-input {
-  flex: 1; background: transparent; border: none;
-  resize: none; padding: 10px 0; outline: none;
-  font-family: inherit; font-size: 1rem;
+.form-textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
-.hidden-input { display: none; }
-
-.btn-action {
-  width: 44px; height: 44px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border: none; transition: 0.2s;
+/* Buttons */
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
-.btn-attach { background: transparent; color: #64748b; }
-.btn-attach:hover { color: #004aad; }
-.btn-send { background: #004aad; color: white; }
-.btn-send:disabled { background: #cbd5e1; }
 
-.input-hint { text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 10px; }
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
 
-@media (max-width: 992px) {
-  .forum-container { grid-template-columns: 1fr; }
-  .forum-sidebar { display: none; }
+.btn-primary:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.btn-secondary:hover {
+  background: #dee2e6;
 }
 </style>

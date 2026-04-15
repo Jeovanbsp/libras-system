@@ -147,6 +147,13 @@ const routes = [
     name: 'EstoqueMateriais',
     component: () => import('../views/EstoqueView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
+  },
+  // NOVA ROTA DE LOGS DE AUDITORIA
+  {
+    path: '/admin/logs',
+    name: 'AdminLogs',
+    component: () => import('../views/AdminLogs.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
   }
 ];
 
@@ -176,7 +183,8 @@ router.beforeEach((to, from, next) => {
       }
       
       // Admin restrito: bloquear acesso a financeiro e empresas
-      if ((to.path === '/admin/financeiro' || to.path === '/admin/empresas') && userRole === 'admin_restrito') {
+      if ((to.path === '/admin/financeiro' || to.path === '/admin/empresas' || to.path === '/admin/logs') && userRole === 'admin_restrito') {
+        // Bloqueamos também a visão de logs para o admin_restrito (opcional)
         return next('/admin/dashboard'); 
       }
     } 
@@ -188,4 +196,4 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-export default router;  
+export default router;
