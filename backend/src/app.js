@@ -53,6 +53,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ==========================================
 // 5. REGISTRO DE ROTAS DA API
 // ==========================================
+// Registre as rotas mais específicas primeiro
+app.use('/api/empresas-solicitantes', empresaSolicitanteRoutes); 
 app.use('/api/auth', authRoutes);
 app.use('/api/cursos', cursoRoutes);
 app.use('/api/usuarios', userRoutes);
@@ -65,54 +67,32 @@ app.use('/api/apostilas', apostilaRoutes);
 app.use('/api/vendas', vendaRoutes);
 app.use('/api/servicos', servicoConfirmadoRoutes);
 app.use('/api/estoque', estoqueRoutes);
-app.use('/api/empresas-solicitantes', empresaSolicitanteRoutes);
 
-// Rota de teste para confirmar que a API está online
+// Rota de Stats
+app.get('/api/stats', async (req, res) => {
+  // ... seu código de stats (mantenha como está)
+});
+
+// Rota raiz (Deixe por último entre as rotas da API)
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
 
 // ==========================================
-// 6. ROTA DE ESTATÍSTICAS (OTIMIZADA)
+// 6. TRATAMENTO DE ERRO 404 (OPCIONAL)
 // ==========================================
-app.get('/api/stats', async (req, res) => {
-  try {
-    const User = require('./models/User');
-    const Curso = require('./models/Curso');
-    const Financeiro = require('./models/Financeiro');
-    const ClienteB2B = require('./models/ClienteB2B');
-
-    const [totalAlunos, totalCursos, transacoes, totalB2B] = await Promise.all([
-      User.countDocuments({ role: 'aluno' }).catch(() => 0),
-      Curso.countDocuments().catch(() => 0),
-      Financeiro.find({ tipo: 'Entrada' }).catch(() => []),
-      ClienteB2B.countDocuments().catch(() => 0)
-    ]);
-
-    const somaVendas = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
-
-    res.json({
-      alunos: totalAlunos,
-      cursos: totalCursos,
-      clientesB2B: totalB2B,
-      vendas: somaVendas.toFixed(2)
-    });
-  } catch (error) {
-    console.error("Erro ao carregar stats:", error);
-    res.status(500).json({ message: "Erro ao buscar estatísticas" });
-  }
+// Se chegar aqui, nenhuma rota acima capturou a requisição
+app.use((req, res) => {
+  res.status(404).json({ error: `Rota ${req.originalUrl} não encontrada no servidor.` });
 });
 
 // ==========================================
-// 7. EXPORTAÇÃO PARA AMBIENTES SERVERLESS / RENDER
+// 7. EXPORTAÇÃO E INICIALIZAÇÃO
 // ==========================================
-module.exports = app;
-
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando localmente na porta ${PORT}`);
-  });
-} else {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor de produção rodando na porta ${PORT}`);
-  });
-}
+
+// No Render, é melhor deixar o listen rodar sempre, 
+// o ambiente gerencia as portas automaticamente.
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
+
+module.exports = app;
