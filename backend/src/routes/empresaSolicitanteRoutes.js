@@ -1,60 +1,123 @@
-const mongoose = require('mongoose');
+const express = require('express');
+const router = express.Router();
+const EmpresaSolicitante = require('../models/EmpresaSolicitante');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-const empresaSolicitanteSchema = new mongoose.Schema(
-  {
-    nome: {
-      type: String,
-      required: [true, 'Nome da empresa é obrigatório'],
-      unique: true,
-      trim: true,
-      minlength: [3, 'Nome deve ter no mínimo 3 caracteres'],
-      maxlength: [100, 'Nome não pode exceder 100 caracteres']
-    },
-    sigla: {
-      type: String,
-      trim: true,
-      uppercase: true,
-      maxlength: [10, 'Sigla não pode exceder 10 caracteres']
-    },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true
-    },
-    telefone: {
-      type: String,
-      trim: true
-    },
-    endereco: {
-      type: String,
-      trim: true
-    },
-    contato: {
-      type: String,
-      trim: true
-    },
-    ativo: {
-      type: Boolean,
-      default: true
-    },
-    descricao: {
-      type: String,
-      trim: true
-    },
-    criadoEm: {
-      type: Date,
-      default: Date.now
-    },
-    atualizadoEm: {
-      type: Date,
-      default: Date.now
+// GET: Listar todas as empresas solicitantes
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const empresas = await EmpresaSolicitante.find().sort({ createdAt: -1 });
+    res.json(empresas);
+  } catch (error) {
+    console.error('Erro ao listar empresas:', error);
+    res.status(500).json({ error: 'Erro ao listar empresas', details: error.message });
+  }
+});
+
+// GET: Buscar empresa por ID
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const empresa = await EmpresaSolicitante.findById(req.params.id);
+    if (!empresa) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
     }
-  },
-  { timestamps: true, collection: 'empresas_solicitantes' }
-);
+    res.json(empresa);
+  } catch (error) {
+    console.error('Erro ao buscar empresa:', error);
+    res.status(500).json({ error: 'Erro ao buscar empresa', details: error.message });
+  }
+});
 
-// Índices
-empresaSolicitanteSchema.index({ nome: 1 });
-empresaSolicitanteSchema.index({ ativo: 1 });
+// POST: Criar nova empresa solicitante
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { nome, sigla, email, telefone, endereco, contato, ativo, descricao } = req.body;
 
-module.exports = mongoose.model('EmpresaSolicitante', empresaSolicitanteSchema);    
+    if (!nome) {
+      return res.status(400).json({ error: 'Nome da empresa é obrigatório' });
+    }
+
+    const novaEmpresa = new EmpresaSolicitante({
+      nome,
+      sigla,
+      email,
+      telefone,
+      endereco,
+      contato,
+      ativo: ativo !== undefined ? ativo : true,
+      descricao
+    });
+
+    await novaEmpresa.save();
+    res.status(201).json({ message: 'Empresa criada com sucesso', empresa: novaEmpresa });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Já existe uma empresa com este nome' });
+    }
+    console.error('Erro ao criar empresa:', error);
+    res.status(400).json({ error: 'Erro ao criar empresa', details: error.message });
+  }
+});
+
+// PUT: Atualizar empresa solicitante
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const empresa = await EmpresaSolicitante.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!empresa) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+
+    res.json({ message: 'Empresa atualizada com sucesso', empresa });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Já existe uma empresa com este nome' });
+    }
+    console.error('Erro ao atualizar empresa:', error);
+    res.status(400).json({ error: 'Erro ao atualizar empresa', details: error.message });
+  }
+});
+
+// PATCH: Atualizar status (ativar/desativar)
+router.patch('/:id/status', authMiddleware, async (req, res) => {
+  try {
+    const { ativo } = req.body;
+
+    const empresa = await EmpresaSolicitante.findByIdAndUpdate(
+      req.params.id,
+      { ativo },
+      { new: true }
+    );
+
+    if (!empresa) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+
+    res.json({ message: `Empresa ${ativo ? 'ativada' : 'desativada'} com sucesso`, empresa });
+  } catch (error) {
+    console.error('Erro ao atualizar status:', error);
+    res.status(500).json({ error: 'Erro ao atualizar status', details: error.message });
+  }
+});
+
+// DELETE: Remover empresa solicitante
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const empresa = await EmpresaSolicitante.findByIdAndDelete(req.params.id);
+
+    if (!empresa) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+
+    res.json({ message: 'Empresa removida com sucesso', empresa });
+  } catch (error) {
+    console.error('Erro ao remover empresa:', error);
+    res.status(500).json({ error: 'Erro ao remover empresa', details: error.message });
+  }
+});
+
+module.exports = router;        

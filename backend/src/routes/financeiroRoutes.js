@@ -1,53 +1,46 @@
 const express = require('express');
 const router = express.Router();
 const Financeiro = require('../models/Financeiro');
-
-// Middleware de autenticação (assume que existe)
-const auth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ error: 'Token não fornecido' });
-  }
-  next();
-};
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // ==========================================
-// GET: Listar todos os eventos financeiros
+// ROTAS ESPECÍFICAS PRIMEIRO (antes de /:id)
 // ==========================================
-router.get('/', async (req, res) => {
+
+// GET: Resumo do mês atual
+router.get('/resumo-mes-atual', authMiddleware, async (req, res) => {
   try {
-    const { mes, ano, empresa, status } = req.query;
-    let query = {};
+    const agora = new Date();
+    const meses = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    ];
+    const mes = meses[agora.getMonth()];
+    const ano = agora.getFullYear();
 
-    if (mes && mes !== '') {
-      query.mes = mes;
-    }
-    if (ano && ano !== '') {
-      query.ano = parseInt(ano);
-    }
-    if (empresa && empresa !== '') {
-      query.empresa = empresa;
-    }
-    if (status && status !== '') {
-      query.status = status;
-    }
+    const eventos = await Financeiro.find({ mes, ano });
 
-    const financeiro = await Financeiro.find(query)
-      .sort({ dataInicial: -1 })
-      .populate('criadoPor', 'nome email')
-      .populate('atualizadoPor', 'nome email');
+    const resumo = {
+      mes,
+      ano,
+      precoTotal: eventos.reduce((s, e) => s + (e.precoTotal || 0), 0),
+      totalHoras: eventos.reduce((s, e) => s + (e.quantidadeHoras || 0), 0),
+      transporte: eventos.reduce((s, e) => s + (e.transporte || 0), 0),
+      impostos: eventos.reduce((s, e) => s + (e.impostos || 0), 0),
+      pagosInterpretes: eventos.reduce((s, e) => s + (e.pagosInterpretes || 0), 0),
+      caixaEmpresa: eventos.reduce((s, e) => s + (e.caixaEmpresa || 0), 0),
+      totalEventos: eventos.length
+    };
 
-    res.json(financeiro);
+    res.json(resumo);
   } catch (error) {
-    console.error('Erro ao listar financeiro:', error);
-    res.status(500).json({ error: 'Erro ao listar eventos', details: error.message });
+    console.error('Erro ao obter resumo do mês atual:', error);
+    res.status(500).json({ error: 'Erro ao obter resumo', details: error.message });
   }
 });
 
-// ==========================================
 // GET: Resumo do mês especificado
-// ==========================================
-router.get('/resumo/:mes/:ano', async (req, res) => {
+router.get('/resumo/:mes/:ano', authMiddleware, async (req, res) => {
   try {
     const { mes, ano } = req.params;
 
@@ -81,64 +74,123 @@ router.get('/resumo/:mes/:ano', async (req, res) => {
   }
 });
 
-// ==========================================
-// GET: Resumo do mês atual
-// ==========================================
-router.get('/resumo-mes-atual', async (req, res) => {
+// GET: Relatório financeiro completo
+router.get('/relatorios/completo', authMiddleware, async (req, res) => {
   try {
-    const agora = new Date();
-    const meses = [
-      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
-    ];
-    const mes = meses[agora.getMonth()];
-    const ano = agora.getFullYear();
+    const { mesInicio, anoInicio, mesFim, anoFim } = req.query;
 
-    const eventos = await Financeiro.find({ mes, ano });
+    let query = {};
 
-    const resumo = {
-      mes,
-      ano,
+    if (mesInicio && anoInicio) {
+      const dataInicio = new Date(`${anoInicio}-${new Date(`${mesInicio} 1`).getMonth() + 1}-01`);
+      const dataFim = new Date(`${anoFim || anoInicio}-${new Date(`${mesFim || mesInicio} 1`).getMonth() + 2}-01`);
+      query.dataInicial = { $gte: dataInicio, $lt: dataFim };
+    }
+
+    const eventos = await Financeiro.find(query).sort({ dataInicial: -1 });
+
+    const relatorio = {
+      periodo: `${mesInicio || 'Início'} ${anoInicio || ''} a ${mesFim || 'Fim'} ${anoFim || ''}`,
+      totalEventos: eventos.length,
       precoTotal: eventos.reduce((s, e) => s + (e.precoTotal || 0), 0),
       totalHoras: eventos.reduce((s, e) => s + (e.quantidadeHoras || 0), 0),
       transporte: eventos.reduce((s, e) => s + (e.transporte || 0), 0),
       impostos: eventos.reduce((s, e) => s + (e.impostos || 0), 0),
       pagosInterpretes: eventos.reduce((s, e) => s + (e.pagosInterpretes || 0), 0),
       caixaEmpresa: eventos.reduce((s, e) => s + (e.caixaEmpresa || 0), 0),
-      totalEventos: eventos.length
+      porEmpresa: {
+        SINDAUTO: eventos.filter(e => e.empresa === 'SINDAUTO').length,
+        BOTICÁRIO: eventos.filter(e => e.empresa === 'BOTICÁRIO').length,
+        OUTRA: eventos.filter(e => e.empresa === 'OUTRA').length
+      },
+      porStatus: {
+        pendente: eventos.filter(e => e.status === 'pendente').length,
+        pago: eventos.filter(e => e.status === 'pago').length,
+        cancelado: eventos.filter(e => e.status === 'cancelado').length
+      },
+      eventos
     };
 
-    res.json(resumo);
+    res.json(relatorio);
   } catch (error) {
-    console.error('Erro ao obter resumo do mês atual:', error);
-    res.status(500).json({ error: 'Erro ao obter resumo', details: error.message });
+    console.error('Erro ao gerar relatório completo:', error);
+    res.status(500).json({ error: 'Erro ao gerar relatório', details: error.message });
+  }
+});
+
+// GET: Relatório por empresa
+router.get('/relatorio/empresa/:empresa', authMiddleware, async (req, res) => {
+  try {
+    const { empresa } = req.params;
+    const { mes, ano } = req.query;
+
+    let query = { empresa };
+    if (mes && mes !== '') {
+      query.mes = mes;
+    }
+    if (ano && ano !== '') {
+      query.ano = parseInt(ano);
+    }
+
+    const eventos = await Financeiro.find(query).sort({ dataInicial: -1 });
+
+    const relatorio = {
+      empresa,
+      filtros: { mes: mes || 'Todos', ano: ano || 'Todos' },
+      totalEventos: eventos.length,
+      precoTotal: eventos.reduce((s, e) => s + (e.precoTotal || 0), 0),
+      totalHoras: eventos.reduce((s, e) => s + (e.quantidadeHoras || 0), 0),
+      transporte: eventos.reduce((s, e) => s + (e.transporte || 0), 0),
+      impostos: eventos.reduce((s, e) => s + (e.impostos || 0), 0),
+      pagosInterpretes: eventos.reduce((s, e) => s + (e.pagosInterpretes || 0), 0),
+      caixaEmpresa: eventos.reduce((s, e) => s + (e.caixaEmpresa || 0), 0),
+      eventos
+    };
+
+    res.json(relatorio);
+  } catch (error) {
+    console.error('Erro ao gerar relatório:', error);
+    res.status(500).json({ error: 'Erro ao gerar relatório', details: error.message });
   }
 });
 
 // ==========================================
-// GET: Detalhes de um evento específico
+// GET: Listar todos os eventos financeiros
 // ==========================================
-router.get('/:id', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const evento = await Financeiro.findById(req.params.id)
+    const { mes, ano, empresa, status } = req.query;
+    let query = {};
+
+    if (mes && mes !== '') {
+      query.mes = mes;
+    }
+    if (ano && ano !== '') {
+      query.ano = parseInt(ano);
+    }
+    if (empresa && empresa !== '') {
+      query.empresa = empresa;
+    }
+    if (status && status !== '') {
+      query.status = status;
+    }
+
+    const financeiro = await Financeiro.find(query)
+      .sort({ dataInicial: -1 })
       .populate('criadoPor', 'nome email')
       .populate('atualizadoPor', 'nome email');
 
-    if (!evento) {
-      return res.status(404).json({ error: 'Evento não encontrado' });
-    }
-
-    res.json(evento);
+    res.json(financeiro);
   } catch (error) {
-    console.error('Erro ao obter evento:', error);
-    res.status(500).json({ error: 'Erro ao obter evento', details: error.message });
+    console.error('Erro ao listar financeiro:', error);
+    res.status(500).json({ error: 'Erro ao listar eventos', details: error.message });
   }
 });
 
 // ==========================================
 // POST: Criar novo evento financeiro
 // ==========================================
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const {
       empresa,
@@ -215,7 +267,7 @@ router.post('/', async (req, res) => {
 // ==========================================
 // PUT: Atualizar evento financeiro
 // ==========================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const evento = await Financeiro.findByIdAndUpdate(
       req.params.id,
@@ -238,68 +290,9 @@ router.put('/:id', async (req, res) => {
 });
 
 // ==========================================
-// DELETE: Remover evento financeiro
-// ==========================================
-router.delete('/:id', async (req, res) => {
-  try {
-    const evento = await Financeiro.findByIdAndDelete(req.params.id);
-
-    if (!evento) {
-      return res.status(404).json({ error: 'Evento não encontrado' });
-    }
-
-    res.json({
-      message: 'Evento removido com sucesso',
-      evento
-    });
-  } catch (error) {
-    console.error('Erro ao remover evento:', error);
-    res.status(500).json({ error: 'Erro ao remover evento', details: error.message });
-  }
-});
-
-// ==========================================
-// GET: Relatório por empresa
-// ==========================================
-router.get('/relatorio/empresa/:empresa', async (req, res) => {
-  try {
-    const { empresa } = req.params;
-    const { mes, ano } = req.query;
-
-    let query = { empresa };
-    if (mes && mes !== '') {
-      query.mes = mes;
-    }
-    if (ano && ano !== '') {
-      query.ano = parseInt(ano);
-    }
-
-    const eventos = await Financeiro.find(query).sort({ dataInicial: -1 });
-
-    const relatorio = {
-      empresa,
-      filtros: { mes: mes || 'Todos', ano: ano || 'Todos' },
-      totalEventos: eventos.length,
-      precoTotal: eventos.reduce((s, e) => s + (e.precoTotal || 0), 0),
-      totalHoras: eventos.reduce((s, e) => s + (e.quantidadeHoras || 0), 0),
-      transporte: eventos.reduce((s, e) => s + (e.transporte || 0), 0),
-      impostos: eventos.reduce((s, e) => s + (e.impostos || 0), 0),
-      pagosInterpretes: eventos.reduce((s, e) => s + (e.pagosInterpretes || 0), 0),
-      caixaEmpresa: eventos.reduce((s, e) => s + (e.caixaEmpresa || 0), 0),
-      eventos
-    };
-
-    res.json(relatorio);
-  } catch (error) {
-    console.error('Erro ao gerar relatório:', error);
-    res.status(500).json({ error: 'Erro ao gerar relatório', details: error.message });
-  }
-});
-
-// ==========================================
 // PATCH: Atualizar status do pagamento
 // ==========================================
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', authMiddleware, async (req, res) => {
   try {
     const { status } = req.body;
 
@@ -331,48 +324,43 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 // ==========================================
-// GET: Relatório financeiro completo
+// DELETE: Remover evento financeiro
 // ==========================================
-router.get('/relatorios/completo', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const { mesInicio, anoInicio, mesFim, anoFim } = req.query;
+    const evento = await Financeiro.findByIdAndDelete(req.params.id);
 
-    let query = {};
-
-    if (mesInicio && anoInicio) {
-      const dataInicio = new Date(`${anoInicio}-${new Date(`${mesInicio} 1`).getMonth() + 1}-01`);
-      const dataFim = new Date(`${anoFim || anoInicio}-${new Date(`${mesFim || mesInicio} 1`).getMonth() + 2}-01`);
-      query.dataInicial = { $gte: dataInicio, $lt: dataFim };
+    if (!evento) {
+      return res.status(404).json({ error: 'Evento não encontrado' });
     }
 
-    const eventos = await Financeiro.find(query).sort({ dataInicial: -1 });
-
-    const relatorio = {
-      periodo: `${mesInicio || 'Início'} ${anoInicio || ''} a ${mesFim || 'Fim'} ${anoFim || ''}`,
-      totalEventos: eventos.length,
-      precoTotal: eventos.reduce((s, e) => s + (e.precoTotal || 0), 0),
-      totalHoras: eventos.reduce((s, e) => s + (e.quantidadeHoras || 0), 0),
-      transporte: eventos.reduce((s, e) => s + (e.transporte || 0), 0),
-      impostos: eventos.reduce((s, e) => s + (e.impostos || 0), 0),
-      pagosInterpretes: eventos.reduce((s, e) => s + (e.pagosInterpretes || 0), 0),
-      caixaEmpresa: eventos.reduce((s, e) => s + (e.caixaEmpresa || 0), 0),
-      porEmpresa: {
-        SINDAUTO: eventos.filter(e => e.empresa === 'SINDAUTO').length,
-        BOTICÁRIO: eventos.filter(e => e.empresa === 'BOTICÁRIO').length,
-        OUTRA: eventos.filter(e => e.empresa === 'OUTRA').length
-      },
-      porStatus: {
-        pendente: eventos.filter(e => e.status === 'pendente').length,
-        pago: eventos.filter(e => e.status === 'pago').length,
-        cancelado: eventos.filter(e => e.status === 'cancelado').length
-      },
-      eventos
-    };
-
-    res.json(relatorio);
+    res.json({
+      message: 'Evento removido com sucesso',
+      evento
+    });
   } catch (error) {
-    console.error('Erro ao gerar relatório completo:', error);
-    res.status(500).json({ error: 'Erro ao gerar relatório', details: error.message });
+    console.error('Erro ao remover evento:', error);
+    res.status(500).json({ error: 'Erro ao remover evento', details: error.message });
+  }
+});
+
+// ==========================================
+// GET: Detalhes de um evento específico (DEVE ficar por último)
+// ==========================================
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const evento = await Financeiro.findById(req.params.id)
+      .populate('criadoPor', 'nome email')
+      .populate('atualizadoPor', 'nome email');
+
+    if (!evento) {
+      return res.status(404).json({ error: 'Evento não encontrado' });
+    }
+
+    res.json(evento);
+  } catch (error) {
+    console.error('Erro ao obter evento:', error);
+    res.status(500).json({ error: 'Erro ao obter evento', details: error.message });
   }
 });
 

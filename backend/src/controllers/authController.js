@@ -90,7 +90,8 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordExpires = Date.now() + 3600000;
         await user.save();
         
-        const resetUrl = `https://librasalvador.vercel.app/reset-password/${token}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'https://librasalvador.vercel.app';
+        const resetUrl = `${frontendUrl}/reset-password/${token}`;
         const mailOptions = {
             from: `"Libras Salvador" <${process.env.EMAIL_USER}>`,
             to: user.email,

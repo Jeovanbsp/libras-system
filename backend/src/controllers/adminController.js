@@ -39,7 +39,7 @@ exports.listarAlunos = async (req, res) => {
 exports.listarTodosUsuarios = async (req, res) => {
   try {
     const { busca, dataInicio, dataFim } = req.query;
-    let filtro = {}; // Sem restrição de 'role', traz todos!
+    let filtro = {};
 
     if (busca) {
       filtro.$or = [
@@ -48,37 +48,6 @@ exports.listarTodosUsuarios = async (req, res) => {
       ];
     }
 
-    // Corrigido para utilizar createdAt (campo padrão do Mongoose timestamps)
-    if (dataInicio || dataFim) {
-      filtro.createdAt = {};
-      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
-      if (dataFim) {
-        let fim = new Date(dataFim);
-        fim.setHours(23, 59, 59, 999); // Vai até o último segundo do dia
-        filtro.createdAt.$lte = fim;
-      }
-    }
-
-    const usuarios = await User.find(filtro).select('-password').sort({ createdAt: -1 });
-    res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao listar todos os utilizadores." });
-  }
-  // Adicione esta função no final do seu adminController.js
-exports.listarTodosUsuarios = async (req, res) => {
-  try {
-    const { busca, dataInicio, dataFim } = req.query;
-    let filtro = {}; // Sem restrição de 'role', traz todos (Admins e Alunos)!
-
-    // Filtro por Nome ou Email
-    if (busca) {
-      filtro.$or = [
-        { nome: { $regex: new RegExp(busca, 'i') } },
-        { email: { $regex: new RegExp(busca, 'i') } }
-      ];
-    }
-
-    // Filtro por Data de Cadastro (usa o createdAt do Mongoose)
     if (dataInicio || dataFim) {
       filtro.createdAt = {};
       if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
@@ -94,5 +63,4 @@ exports.listarTodosUsuarios = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Erro ao listar todos os utilizadores." });
   }
-};
 };

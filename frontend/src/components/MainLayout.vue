@@ -82,10 +82,10 @@
         </div>
         <div class="user-profile">
           <div class="user-text">
-            <span class="name">Professor Admin</span>
-            <span class="role">Administrador</span>
+            <span class="name">{{ userName }}</span>
+            <span class="role">{{ userRole === 'admin' ? 'Administrador' : 'Admin Restrito' }}</span>
           </div>
-          <div class="avatar">AD</div>
+          <div class="avatar">{{ userInitials }}</div>
           
           <button @click="logout" class="btn-header-logout" title="Sair do Sistema">
             <LogOut :size="22" />
@@ -114,6 +114,15 @@ const router = useRouter();
 defineProps(['pageTitle', 'pageDescription']);
 
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
+const userName = ref(localStorage.getItem('userName') || 'Admin');
+const userInitials = ref(
+  (localStorage.getItem('userName') || 'AD')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase()
+);
 const isMenuOpen = ref(false); 
 
 const toggleMenu = () => { isMenuOpen.value = !isMenuOpen.value; };
@@ -127,6 +136,8 @@ const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('userRole');
   localStorage.removeItem('userId');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userEmail');
   router.push('/aluno/login');
 };
 </script>

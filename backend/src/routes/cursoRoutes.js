@@ -10,11 +10,11 @@ router.get('/progresso/aluno', authMiddleware, cursoController.buscarProgresso);
 router.post('/concluir-aula', authMiddleware, cursoController.concluirAula);
 
 // --- Rotas do Fórum ---
-// AJUSTADO: Nome da função corrigido para 'excluirMensagemForum' e parâmetro para ':mensagemId'
+router.put('/forum/mensagem/:mensagemId', authMiddleware, cursoController.editarMensagemForum);
 router.delete('/forum/mensagem/:mensagemId', authMiddleware, cursoController.excluirMensagemForum);
 
 // Admin
-router.get('/', cursoController.listarCursos);
+router.get('/', authMiddleware, cursoController.listarCursos);
 router.post('/', authMiddleware, cursoController.criarCurso);
 
 // 2. Rotas com parâmetros genéricos
