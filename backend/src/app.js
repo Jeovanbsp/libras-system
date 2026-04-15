@@ -68,12 +68,13 @@ app.use('/api/estoque', estoqueRoutes);
 app.use('/api/empresas-solicitantes', empresaSolicitanteRoutes);
 
 // Rota de teste para confirmar que a API está online
-app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
+app.get('/', (req, res) => res.send('API Libras Salvador rodando...'));
 
 // ==========================================
 // 6. ROTA DE ESTATÍSTICAS (OTIMIZADA)
 // ==========================================
-app.get('/api/stats', async (req, res) => {
+const authMiddleware = require('./middlewares/authMiddleware');
+app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
     const User = require('./models/User');
     const Curso = require('./models/Curso');

@@ -1,4 +1,5 @@
 const Profissional = require('../models/Profissional');
+const { escapeRegex } = require('../utils/sanitize');
 
 // Cadastrar novo profissional
 exports.criarProfissional = async (req, res) => {
@@ -18,7 +19,7 @@ exports.listarProfissionais = async (req, res) => {
 
     // Filtro por Nome (ignorando maiúsculas e minúsculas)
     if (nome) {
-      filtro.nome = { $regex: new RegExp(nome, 'i') };
+      filtro.nome = { $regex: new RegExp(escapeRegex(nome), 'i') };
     }
     
     // Filtro por Especialidade

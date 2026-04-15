@@ -1,4 +1,5 @@
 const EstoqueMaterial = require('../models/EstoqueMaterial');
+const { escapeRegex } = require('../utils/sanitize');
 
 exports.criarItem = async (req, res) => {
   try {
@@ -33,7 +34,7 @@ exports.listarItens = async (req, res) => {
     const { busca, tipo, dataInicio, dataFim } = req.query;
     let filtro = {};
 
-    if (busca) filtro.nome = { $regex: new RegExp(busca, 'i') };
+    if (busca) filtro.nome = { $regex: new RegExp(escapeRegex(busca), 'i') };
     if (tipo) filtro.tipo = tipo;
 
     const itens = await EstoqueMaterial.find(filtro).sort({ dataCadastro: -1 });
