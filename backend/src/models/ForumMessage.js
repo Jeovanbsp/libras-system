@@ -13,7 +13,7 @@ const forumMessageSchema = new mongoose.Schema({
     },
     texto: { 
         type: String, 
-        required: true 
+        default: '' 
     },
     imagem: { 
         type: String, 

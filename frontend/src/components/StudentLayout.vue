@@ -37,13 +37,17 @@
           <h1>{{ pageTitle }}</h1>
           <p>{{ pageDescription }}</p>
         </div>
-        <div class="user-profile">
-          <div class="user-text">
-            <span class="name">{{ userName }}</span>
-            <span class="role">Área de Estudos</span>
+          <div class="user-profile">
+            <div class="user-text">
+              <span class="name">{{ userName }}</span>
+              <span class="role">Área de Estudos</span>
+            </div>
+            <div class="avatar">{{ avatarInitials }}</div>
+          
+            <button @click="logout" class="btn-header-logout" title="Sair do Sistema">
+              <LogOut :size="22" />
+            </button>
           </div>
-          <div class="avatar">{{ avatarInitials }}</div>
-        </div>
       </header>
 
       <section class="page-body">
@@ -175,6 +179,31 @@ const logout = () => {
 .user-text .name { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
 .user-text .role { font-size: 0.8rem; color: #64748b; font-weight: 500; }
 .avatar { width: 45px; height: 45px; background: #004aad; color: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; flex-shrink: 0; }
+
+.btn-header-logout { 
+  background: transparent; 
+  border: 1px solid #fecaca; 
+  color: #ef4444; 
+  cursor: pointer; 
+  padding: 8px 12px; 
+  margin-left: 15px; 
+  border-radius: 10px; 
+  transition: all 0.2s ease; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-header-logout:hover { 
+  background: #fee2e2; 
+  color: #dc2626; 
+  transform: scale(1.05); 
+}
+
+.btn-header-logout:active {
+  transform: scale(0.98);
+}
 
 .page-body { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

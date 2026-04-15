@@ -39,7 +39,7 @@
             <label>Nível de Acesso</label>
             <select v-model="form.role" class="modern-select">
               <option value="aluno">Aluno (Área de Estudos)</option>
-              <option value="admin_restrito">Administrador Restrito</option>
+              <option v-if="userRole === 'admin'" value="admin_restrito">Administrador Restrito</option>
               <option v-if="userRole === 'admin'" value="admin">Administrador Geral</option>
             </select>
           </div>
@@ -92,6 +92,15 @@
                 
                 <button 
                   v-if="userRole === 'admin' || (userRole === 'admin_restrito' && user.role === 'aluno')" 
+                  @click="abrirModalEdicao(user)" 
+                  class="btn-edit-mini" 
+                  title="Editar Usuário"
+                >
+                  <Edit2 :size="18" />
+                </button>
+                
+                <button 
+                  v-if="userRole === 'admin' || (userRole === 'admin_restrito' && user.role === 'aluno')" 
                   @click="confirmarRemocao(user)" 
                   class="btn-del-mini" 
                   title="Excluir Usuário"
@@ -125,12 +134,44 @@
       </div>
     </div>
 
+    <!-- MODAL DE EDIÇÃO -->
+    <div v-if="mostrarModalEdicao" class="modal-overlay" @click.self="fecharModalEdicao">
+      <div class="glass-card modal-content edit-modal">
+        <div class="edit-icon-wrapper">
+          <Edit2 :size="36" />
+        </div>
+        <h3>Editar Usuário</h3>
+        <p class="edit-subtitle">Atualize o nome e/ou e-mail do usuário <strong>{{ userParaEditar?.nome }}</strong>.</p>
+        
+        <div v-if="editFeedback" :class="['feedback-toast', editFeedbackTipo]" style="margin-bottom: 15px;">
+          <CheckCircle2 v-if="editFeedbackTipo === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ editFeedback }}</p>
+        </div>
+
+        <form @submit.prevent="salvarEdicao" class="edit-form">
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input v-model="editForm.nome" placeholder="Nome do usuário" required />
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input v-model="editForm.email" type="email" placeholder="email@exemplo.com" required />
+          </div>
+          <div class="modal-actions-row mt-4">
+            <button type="button" @click="fecharModalEdicao" class="btn-cancel flex-1">Cancelar</button>
+            <button type="submit" class="btn-primary btn-save flex-1">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
@@ -205,6 +246,43 @@ const executarRemocao = async () => {
 };
 // ==========================================
 
+// ==========================================
+// LÓGICA DO MODAL DE EDIÇÃO
+// ==========================================
+const mostrarModalEdicao = ref(false);
+const userParaEditar = ref(null);
+const editForm = ref({ nome: '', email: '' });
+const editFeedback = ref('');
+const editFeedbackTipo = ref('');
+
+const abrirModalEdicao = (user) => {
+  userParaEditar.value = user;
+  editForm.value = { nome: user.nome, email: user.email };
+  editFeedback.value = '';
+  mostrarModalEdicao.value = true;
+};
+
+const fecharModalEdicao = () => {
+  mostrarModalEdicao.value = false;
+  userParaEditar.value = null;
+  editFeedback.value = '';
+};
+
+const salvarEdicao = async () => {
+  if (!userParaEditar.value) return;
+  try {
+    await api.put(`/usuarios/${userParaEditar.value._id}`, editForm.value);
+    editFeedback.value = 'Usuário atualizado com sucesso!';
+    editFeedbackTipo.value = 'success';
+    carregarUsuarios();
+    setTimeout(() => fecharModalEdicao(), 1500);
+  } catch (error) {
+    editFeedback.value = error.response?.data?.error || 'Erro ao atualizar usuário.';
+    editFeedbackTipo.value = 'error';
+  }
+};
+// ==========================================
+
 const formatarData = (dataIso) => {
   if (!dataIso) return 'Data não disponível';
   return new Date(dataIso).toLocaleDateString('pt-BR');
@@ -264,8 +342,20 @@ onMounted(carregarUsuarios);
 .role-aluno { color: #004aad; background: #eff6ff; }
 .turma-badge { background: #f8fafc; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
+.btn-edit-mini { background: transparent; border: none; padding: 10px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
+.btn-edit-mini:hover { color: #0284c7; background: #dbeafe; }
 .btn-del-mini { background: transparent; border: none; padding: 10px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
 .btn-del-mini:hover { color: #ef4444; background: #fef2f2; }
+
+.edit-modal { text-align: center; }
+.edit-icon-wrapper { background: #eff6ff; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: #004aad; }
+.edit-subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 15px; }
+.edit-form .form-group { text-align: left; margin-bottom: 12px; }
+.edit-form .form-group label { font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 4px; display: block; }
+.edit-form .form-group input { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; transition: 0.2s; box-sizing: border-box; }
+.edit-form .form-group input:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0,74,173,0.1); }
+.btn-save { background: #004aad !important; }
+.btn-save:hover { background: #003a8c !important; }
 
 .empty-msg { text-align: center; padding: 40px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
