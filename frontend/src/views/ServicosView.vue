@@ -80,48 +80,6 @@
             </div>
           </div>
 
-          <div class="financeiro-module" v-if="userRole !== 'admin_restrito'">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h4><DollarSign :size="16" /> Resumo Financeiro</h4>
-              
-              <select v-model="form.statusPagamento" class="status-select" :class="form.statusPagamento === 'Pago' ? 'text-green-600' : 'text-orange-600'">
-                <option value="Pendente">⏳ Pendente</option>
-                <option value="Pago">✅ Recebido (Pago)</option>
-              </select>
-            </div>
-            
-            <div class="form-row mt-2">
-              <div class="form-group-col">
-                <label>Preço Total (R$)</label>
-                <input v-model.number="form.precoTotal" @input="calcularCaixa" type="number" step="0.01" required />
-              </div>
-              <div class="form-group-col">
-                <label>Pagar Intérpretes (R$)</label>
-                <input v-model.number="form.valorInterpretes" @input="calcularCaixa" type="number" step="0.01" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group-col">
-                <label>Logística (R$)</label>
-                <input v-model.number="form.valorLogistica" @input="calcularCaixa" type="number" step="0.01" />
-              </div>
-              <div class="form-group-col">
-                <label>Impostos (R$)</label>
-                <input v-model.number="form.impostos" @input="calcularCaixa" type="number" step="0.01" />
-              </div>
-            </div>
-
-            <div class="caixa-empresa-box">
-              <span>Caixa da Empresa:</span>
-              <strong>R$ {{ form.caixaEmpresa.toFixed(2) }}</strong>
-            </div>
-          </div>
-
-          <div class="financeiro-module" v-if="userRole === 'admin_restrito'">
-            <h4><Info :size="16" /> Resumo Financeiro Oculto</h4>
-            <p class="text-xs text-gray-500 mb-0 mt-2">Você não tem permissão para visualizar ou editar os valores financeiros deste serviço.</p>
-          </div>
 
           <div class="form-group mt-4">
             <label>Observações</label>
@@ -136,20 +94,6 @@
 
       <div class="list-section">
         
-        <div class="mini-dashboard" v-if="userRole !== 'admin_restrito'">
-          <div class="dash-card">
-            <span class="dash-title">Total Faturado</span>
-            <span class="dash-value">R$ {{ totalFaturado.toFixed(2) }}</span>
-          </div>
-          <div class="dash-card success">
-            <span class="dash-title">Lucro da Empresa</span>
-            <span class="dash-value">R$ {{ totalCaixa.toFixed(2) }}</span>
-          </div>
-          <div class="dash-card warning">
-            <span class="dash-title">A Receber (Pendente)</span>
-            <span class="dash-value">R$ {{ totalPendente.toFixed(2) }}</span>
-          </div>
-        </div>
 
         <div class="glass-card search-bar mt-2">
           <div class="form-row" style="margin-bottom: 0; align-items: flex-end;">
@@ -212,10 +156,6 @@
               </div>
 
               <div class="servico-footer">
-                <div class="financial-summary" v-if="userRole !== 'admin_restrito'">
-                  <div class="fin-item"><span>Total:</span> <strong>R$ {{ (servico.precoTotal || 0).toFixed(2) }}</strong></div>
-                  <div class="fin-item"><span>Caixa Empresa:</span> <strong class="text-green-600">R$ {{ (servico.caixaEmpresa || 0).toFixed(2) }}</strong></div>
-                </div>
                 <button @click="remover(servico._id)" class="btn-del-mini" title="Excluir">
                   <Trash2 :size="18" />
                 </button>

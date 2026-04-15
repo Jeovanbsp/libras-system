@@ -41,6 +41,37 @@
 
     </div>
 
+    <!-- SUPORTE / AJUDA -->
+    <div class="help-section mt-4">
+      <div class="glass-card">
+        <div class="help-header" @click="mostrarAjuda = !mostrarAjuda">
+          <h3 class="section-title">
+            <HelpCircle :size="22" class="text-brand" /> Central de Suporte
+          </h3>
+          <button class="btn-toggle-help">
+            <ChevronDown :size="20" :class="{ 'rotated': mostrarAjuda }" />
+          </button>
+        </div>
+        <p class="section-desc">Aprenda a utilizar cada funcionalidade do sistema.</p>
+
+        <div v-if="mostrarAjuda" class="help-topics">
+          <div v-for="(topic, idx) in helpTopicsAdmin" :key="idx" class="help-topic" @click="topic.open = !topic.open">
+            <div class="help-topic-header">
+              <component :is="topic.icon" :size="20" class="help-topic-icon" />
+              <span class="help-topic-title">{{ topic.title }}</span>
+              <ChevronDown :size="16" :class="['chevron', { rotated: topic.open }]" />
+            </div>
+            <div v-if="topic.open" class="help-topic-body">
+              <p>{{ topic.description }}</p>
+              <ul>
+                <li v-for="(step, i) in topic.steps" :key="i">{{ step }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="orcamento-section mt-4">
       <div class="glass-card">
         <h3 class="section-title">
@@ -92,9 +123,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowRight, FileText, Download } from 'lucide-vue-next';
+import { ArrowRight, FileText, Download, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, Users, CalendarPlus, Building2, BadgeDollarSign, Package, MessageSquare, HandMetal } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 import jsPDF from 'jspdf';
@@ -102,6 +133,111 @@ import 'jspdf-autotable';
 
 const router = useRouter();
 const stats = ref({ alunos: 0, cursos: 0, vendas: '0.00' });
+const mostrarAjuda = ref(false);
+
+const helpTopicsAdmin = reactive([
+  {
+    icon: LayoutDashboard,
+    title: 'Dashboard (Painel de Controle)',
+    description: 'Tela inicial com visão geral do sistema. Mostra estatísticas rápidas e acesso ao gerador de orçamentos.',
+    steps: [
+      'Visualize o total de alunos, cursos e receita.',
+      'Clique em qualquer card para ir à página correspondente.',
+      'Use o gerador de orçamento para criar PDFs profissionais.'
+    ],
+    open: false
+  },
+  {
+    icon: BookOpen,
+    title: 'Cursos',
+    description: 'Gerencie os cursos de Libras disponíveis na plataforma.',
+    steps: [
+      'Clique em "Novo Curso" para criar um curso.',
+      'Adicione materiais (vídeos, PDFs) dentro de cada curso.',
+      'Os alunos poderão se matricular e acessar o conteúdo.'
+    ],
+    open: false
+  },
+  {
+    icon: MessageSquare,
+    title: 'Fórum dos Alunos',
+    description: 'Espaço para comunicação com os alunos em cada curso.',
+    steps: [
+      'Selecione um curso na barra lateral do fórum.',
+      'Envie mensagens de texto ou anexe arquivos/imagens.',
+      'Você pode editar ou excluir qualquer mensagem como admin.'
+    ],
+    open: false
+  },
+  {
+    icon: Users,
+    title: 'Alunos (Usuários)',
+    description: 'Cadastre e gerencie alunos e administradores do sistema.',
+    steps: [
+      'Cadastre novos usuários com nome, e-mail e senha.',
+      'Defina o nível de acesso: Aluno, Admin Restrito ou Admin.',
+      'Use o botão de editar para alterar nome e e-mail.',
+      'Exclua usuários que não fazem mais parte do sistema.'
+    ],
+    open: false
+  },
+  {
+    icon: HandMetal,
+    title: 'Profissionais',
+    description: 'Cadastro de intérpretes e profissionais de Libras.',
+    steps: [
+      'Adicione profissionais com nome, especialidade e contato.',
+      'Vincule profissionais aos serviços/eventos.',
+      'Mantenha o cadastro atualizado para facilitar a gestão.'
+    ],
+    open: false
+  },
+  {
+    icon: CalendarPlus,
+    title: 'Serviços / Eventos',
+    description: 'Lance e acompanhe serviços confirmados de interpretação.',
+    steps: [
+      'Clique em "Novo Serviço" para lançar um evento.',
+      'Preencha cliente, data, horário e intérpretes.',
+      'Acompanhe todos os serviços na lista.'
+    ],
+    open: false
+  },
+  {
+    icon: Building2,
+    title: 'Empresas Solicitantes',
+    description: 'Cadastre as empresas que solicitam serviços de Libras.',
+    steps: [
+      'Clique em "Nova Empresa" para cadastrar.',
+      'Preencha CNPJ, nome, contato e endereço.',
+      'As empresas ficam disponíveis para seleção nos serviços financeiros.'
+    ],
+    open: false
+  },
+  {
+    icon: BadgeDollarSign,
+    title: 'Gestão Financeira',
+    description: 'Controle financeiro completo dos serviços prestados.',
+    steps: [
+      'Cadastre eventos com valores, impostos e pagamentos.',
+      'Filtre por mês, ano ou empresa.',
+      'Acompanhe o caixa da empresa nos cards de resumo.',
+      'Exporte relatórios e controle pagamentos de intérpretes.'
+    ],
+    open: false
+  },
+  {
+    icon: Package,
+    title: 'Controle de Estoque',
+    description: 'Gerencie materiais e itens do estoque da empresa.',
+    steps: [
+      'Adicione itens ao estoque com nome, quantidade e descrição.',
+      'Atualize quantidades conforme entrada e saída.',
+      'Mantenha o controle de materiais organizados.'
+    ],
+    open: false
+  }
+]);
 
 // Estado para o formulário de orçamento
 const orcamento = ref({
@@ -306,6 +442,25 @@ const gerarOrcamentoPDF = () => {
 
 .btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
+
+/* ESTILOS DA CENTRAL DE SUPORTE */
+.help-section { max-width: 800px; margin: 0 auto; }
+.help-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.btn-toggle-help { background: transparent; border: none; cursor: pointer; color: #64748b; padding: 8px; border-radius: 8px; transition: 0.2s; }
+.btn-toggle-help:hover { background: #f1f5f9; }
+.chevron, .btn-toggle-help svg { transition: transform 0.3s ease; }
+.rotated { transform: rotate(180deg); }
+
+.help-topics { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+.help-topic { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0; overflow: hidden; cursor: pointer; transition: 0.2s; }
+.help-topic:hover { border-color: #bfdbfe; }
+.help-topic-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.help-topic-icon { color: #004aad; flex-shrink: 0; }
+.help-topic-title { flex: 1; font-weight: 700; font-size: 0.95rem; color: #1e293b; }
+.help-topic-body { padding: 0 20px 16px; border-top: 1px solid #e2e8f0; margin-top: 0; }
+.help-topic-body p { font-size: 0.9rem; color: #475569; margin: 12px 0 8px; line-height: 1.5; }
+.help-topic-body ul { margin: 0; padding-left: 18px; }
+.help-topic-body li { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; line-height: 1.5; }
 
 @media (max-width: 992px) {
   .stats-grid { grid-template-columns: 1fr; }

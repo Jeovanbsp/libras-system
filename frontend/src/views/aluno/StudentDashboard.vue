@@ -50,19 +50,110 @@
       </div>
 
     </div>
+
+    <!-- SUPORTE / AJUDA -->
+    <div class="help-section mt-4">
+      <div class="glass-card">
+        <div class="help-header" @click="mostrarAjuda = !mostrarAjuda">
+          <h3 class="section-title">
+            <HelpCircle :size="22" class="text-brand" /> Central de Suporte
+          </h3>
+          <button class="btn-toggle-help">
+            <ChevronDown :size="20" :class="{ 'rotated': mostrarAjuda }" />
+          </button>
+        </div>
+        <p class="section-desc">Aprenda a utilizar cada funcionalidade da sua área de estudos.</p>
+
+        <div v-if="mostrarAjuda" class="help-topics">
+          <div v-for="(topic, idx) in helpTopicsAluno" :key="idx" class="help-topic" @click="topic.open = !topic.open">
+            <div class="help-topic-header">
+              <component :is="topic.icon" :size="20" class="help-topic-icon" />
+              <span class="help-topic-title">{{ topic.title }}</span>
+              <ChevronDown :size="16" :class="['chevron', { rotated: topic.open }]" />
+            </div>
+            <div v-if="topic.open" class="help-topic-body">
+              <p>{{ topic.description }}</p>
+              <ul>
+                <li v-for="(step, i) in topic.steps" :key="i">{{ step }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </StudentLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { GraduationCap, ArrowRight } from 'lucide-vue-next'; // Ícones profissionais
+import { GraduationCap, ArrowRight, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, ShoppingBag, FileText, MessageSquare } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
 
 const router = useRouter();
 const totalCursos = ref(0);
 const totalMateriais = ref(0);
+const mostrarAjuda = ref(false);
+
+const helpTopicsAluno = reactive([
+  {
+    icon: LayoutDashboard,
+    title: 'Meu Painel',
+    description: 'Tela inicial com visão geral do seu progresso.',
+    steps: [
+      'Veja quantos cursos você está matriculado.',
+      'Confira quantas apostilas estão disponíveis para download.',
+      'Clique nos cards para acessar as páginas rapidamente.'
+    ],
+    open: false
+  },
+  {
+    icon: BookOpen,
+    title: 'Meus Cursos',
+    description: 'Acesse as salas de aula dos cursos em que você está matriculado.',
+    steps: [
+      'Clique em um curso para entrar na sala de aula.',
+      'Assista vídeos, leia materiais e marque aulas como concluídas.',
+      'Use o fórum do curso para tirar dúvidas com o professor.'
+    ],
+    open: false
+  },
+  {
+    icon: ShoppingBag,
+    title: 'Catálogo de Cursos',
+    description: 'Explore todos os cursos disponíveis e matricule-se.',
+    steps: [
+      'Navegue pelos cursos disponíveis.',
+      'Clique em "Matricular" para se inscrever em um novo curso.',
+      'Após a matrícula, o curso aparecerá em "Meus Cursos".'
+    ],
+    open: false
+  },
+  {
+    icon: FileText,
+    title: 'Materiais e PDFs',
+    description: 'Faça download de apostilas e materiais de apoio.',
+    steps: [
+      'Veja a lista de materiais disponíveis.',
+      'Clique no botão de download para baixar o PDF.',
+      'Use os materiais para complementar seus estudos.'
+    ],
+    open: false
+  },
+  {
+    icon: MessageSquare,
+    title: 'Fórum',
+    description: 'Espaço de comunicação dentro de cada curso.',
+    steps: [
+      'Acesse o fórum dentro da sala de aula do curso.',
+      'Envie mensagens de texto ou anexe arquivos.',
+      'Interaja com professores e colegas de turma.'
+    ],
+    open: false
+  }
+]);
 
 const carregarDados = async () => {
   try {
@@ -158,6 +249,28 @@ onMounted(carregarDados);
   .welcome-banner { flex-direction: column; text-align: center; padding: 30px 20px; }
   .banner-icon-wrapper { display: none; }
 }
+
+/* ESTILOS DA CENTRAL DE SUPORTE */
+.help-section { margin-top: 30px; }
+.section-title { font-size: 1.2rem; color: #1e293b; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.text-brand { color: #004aad; }
+.section-desc { font-size: 0.9rem; color: #64748b; margin-bottom: 10px; }
+.help-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.btn-toggle-help { background: transparent; border: none; cursor: pointer; color: #64748b; padding: 8px; border-radius: 8px; transition: 0.2s; }
+.btn-toggle-help:hover { background: #f1f5f9; }
+.chevron, .btn-toggle-help svg { transition: transform 0.3s ease; }
+.rotated { transform: rotate(180deg); }
+
+.help-topics { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+.help-topic { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0; overflow: hidden; cursor: pointer; transition: 0.2s; }
+.help-topic:hover { border-color: #bfdbfe; }
+.help-topic-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.help-topic-icon { color: #004aad; flex-shrink: 0; }
+.help-topic-title { flex: 1; font-weight: 700; font-size: 0.95rem; color: #1e293b; }
+.help-topic-body { padding: 0 20px 16px; border-top: 1px solid #e2e8f0; margin-top: 0; }
+.help-topic-body p { font-size: 0.9rem; color: #475569; margin: 12px 0 8px; line-height: 1.5; }
+.help-topic-body ul { margin: 0; padding-left: 18px; }
+.help-topic-body li { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; line-height: 1.5; }
 /* =========================================
    RESPONSIVIDADE MOBILE PARA AS TELAS
    ========================================= */

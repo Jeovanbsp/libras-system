@@ -115,11 +115,13 @@ exports.listarMensagensForum = async (req, res) => {
 
 exports.enviarMensagemForum = async (req, res) => {
   try {
-    const { texto } = req.body;
-    // Captura o caminho completo se vier arquivo do multer
+    const texto = req.body.texto || '';
     const caminhoImagem = req.file ? `/uploads/materiais/${req.file.filename}` : null; 
-    // Busca ID de maneira consistente
     const autorId = req.user?.id || req.user?._id || req.userId;
+
+    if (!texto.trim() && !caminhoImagem) {
+      return res.status(400).json({ message: "Envie uma mensagem ou anexo." });
+    }
 
     const novaMsg = await ForumMessage.create({
       curso: req.params.cursoId,
@@ -131,8 +133,8 @@ exports.enviarMensagemForum = async (req, res) => {
     await novaMsg.populate('autor', 'nome role');
     res.status(201).json(novaMsg);
   } catch (error) {
-    console.error(error); // Adicionado para debug interno caso falhe
-    res.status(500).json({ message: "Erro ao enviar." });
+    console.error('Erro ao enviar mensagem no fórum:', error);
+    res.status(500).json({ message: "Erro ao enviar mensagem." });
   }
 };
 

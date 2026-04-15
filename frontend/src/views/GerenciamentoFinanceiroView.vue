@@ -62,37 +62,37 @@
 
       <!-- CARDS DE RESUMO -->
       <div class="summary-cards-grid">
-        <div class="summary-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="summary-card card-blue">
           <DollarSign :size="28" />
           <span class="card-label">Preço Total</span>
           <span class="card-value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
         </div>
 
-        <div class="summary-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="summary-card card-slate">
           <Clock :size="28" />
           <span class="card-label">Horas Total</span>
           <span class="card-value">{{ somaHoras }}h</span>
         </div>
 
-        <div class="summary-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="summary-card card-blue-light">
           <Truck :size="28" />
           <span class="card-label">Transporte</span>
           <span class="card-value">R$ {{ formatarValor(somaTransporte) }}</span>
         </div>
 
-        <div class="summary-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+        <div class="summary-card card-amber">
           <AlertCircle :size="28" />
           <span class="card-label">Impostos</span>
           <span class="card-value">R$ {{ formatarValor(somaImpostos) }}</span>
         </div>
 
-        <div class="summary-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+        <div class="summary-card card-slate">
           <Users :size="28" />
           <span class="card-label">Pago Intérpretes</span>
           <span class="card-value">R$ {{ formatarValor(somaInterpretes) }}</span>
         </div>
 
-        <div class="summary-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+        <div class="summary-card card-green">
           <Briefcase :size="28" />
           <span class="card-label">Caixa Empresa</span>
           <span class="card-value">R$ {{ formatarValor(somaCaixa) }}</span>
@@ -165,72 +165,6 @@
         </div>
       </div>
 
-      <!-- RESUMO FINANCEIRO -->
-      <div class="financial-summary glass-card mt-6">
-        <h3 class="summary-title">
-          <BarChart3 :size="20" /> Resumo Financeiro - {{ mesAnoSelecionado }}
-        </h3>
-        
-        <div class="summary-details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Preço total:</span>
-            <span class="detail-value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Total de Horas:</span>
-            <span class="detail-value">{{ somaHoras }}h</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Transporte total:</span>
-            <span class="detail-value">R$ {{ formatarValor(somaTransporte) }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Impostos:</span>
-            <span class="detail-value">R$ {{ formatarValor(somaImpostos) }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Pago aos Intérpretes:</span>
-            <span class="detail-value">R$ {{ formatarValor(somaInterpretes) }}</span>
-          </div>
-          <div class="detail-item highlight">
-            <span class="detail-label">Caixa empresa:</span>
-            <span class="detail-value">R$ {{ formatarValor(somaCaixa) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- SEÇÃO DE PAGAMENTO -->
-      <div class="payment-section glass-card mt-6">
-        <h3 class="payment-title">
-          <CreditCard :size="20" /> PAGAMENTO - {{ mesAnoSelecionado.toUpperCase() }}
-        </h3>
-        <div class="payment-grid">
-          <div class="payment-item">
-            <span>Preço total:</span>
-            <span class="value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
-          </div>
-          <div class="payment-item">
-            <span>Horas Total:</span>
-            <span class="value">{{ somaHoras }}h</span>
-          </div>
-          <div class="payment-item">
-            <span>Transporte total:</span>
-            <span class="value">R$ {{ formatarValor(somaTransporte) }}</span>
-          </div>
-          <div class="payment-item">
-            <span>Impostos:</span>
-            <span class="value">R$ {{ formatarValor(somaImpostos) }}</span>
-          </div>
-          <div class="payment-item">
-            <span>Intérpretes:</span>
-            <span class="value">R$ {{ formatarValor(somaInterpretes) }}</span>
-          </div>
-          <div class="payment-item total">
-            <span>Caixa empresa:</span>
-            <span class="value">R$ {{ formatarValor(somaCaixa) }}</span>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- MODAL DE NOVO/EDITAR EVENTO -->
@@ -615,7 +549,12 @@ onMounted(async () => {
 .btn-add:hover { background: #047857; }
 
 .summary-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-.summary-card { padding: 20px; border-radius: 12px; color: white; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.summary-card { padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; border: 1px solid #e2e8f0; }
+.card-blue { background: #004aad; color: white; }
+.card-blue-light { background: #0369a1; color: white; }
+.card-slate { background: #1e293b; color: white; }
+.card-amber { background: #d97706; color: white; }
+.card-green { background: #059669; color: white; }
 .card-label { font-size: 0.8rem; opacity: 0.9; font-weight: 600; }
 .card-value { font-size: 1.4rem; font-weight: 800; }
 
@@ -623,7 +562,7 @@ onMounted(async () => {
 .table-title { margin: 0 0 20px 0; font-size: 1.2rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .table-responsive { overflow-x: auto; }
 .main-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-.header-row { background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%); }
+.header-row { background: #004aad; }
 .header-row th { padding: 12px; text-align: left; color: white; font-weight: 700; }
 .data-row { border-bottom: 1px solid #e2e8f0; }
 .data-row:hover { background: #f8fafc; }
@@ -715,4 +654,4 @@ onMounted(async () => {
   .main-table th, .main-table td { padding: 4px; }
   .modal-content { max-width: 98%; max-height: 98vh; }
 }
-</style>  
+</style>    
