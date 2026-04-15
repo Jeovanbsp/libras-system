@@ -107,10 +107,12 @@ const handleLogin = async () => {
 
     const { token, user } = response.data;
     
+    // ✅ CORRIGIDO: Guardando todos os dados necessários do usuário
     localStorage.setItem('token', token);
     localStorage.setItem('userRole', user.role);
     localStorage.setItem('userName', user.nome);
-    localStorage.setItem('userId', user._id); // GRAVAMOS O ID AQUI PARA O FÓRUM
+    localStorage.setItem('userId', user._id || user.id); // ← ESSENCIAL PARA O FÓRUM
+    localStorage.setItem('userEmail', user.email);
 
     if (rememberMe.value) {
       localStorage.setItem('rememberedEmail', email.value);
@@ -149,7 +151,7 @@ const handleLogin = async () => {
 .brand-phrase { color: #004aad; font-size: 1.1rem; font-weight: 600; font-style: italic; margin-bottom: 25px; }
 .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; }
 
-.feedback-toast { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 0.85rem; line-height: 1.4; animation: slideDown 0.3s ease-out; }
+.feedback-toast { display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 0.85rem; line-height: 1.4; }
 .feedback-toast.success { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .feedback-toast.error { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
 .feedback-toast.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
@@ -160,14 +162,20 @@ const handleLogin = async () => {
 .input-group { display: flex; flex-direction: column; gap: 8px; }
 .modern-form label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
 .modern-form input[type="email"], 
-.modern-form input[type="password"] { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 1rem; color: #1e293b; box-sizing: border-box; }
+.modern-form input[type="password"] { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 1rem; color: #1e293b; box-sizing: border-box; transition: all 0.2s; }
+.modern-form input[type="email"]:focus,
+.modern-form input[type="password"]:focus { background: white; border-color: #004aad; outline: none; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); }
+
 .options-row { display: flex; justify-content: space-between; align-items: center; margin-top: -5px; }
-.remember-me { display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none !important; color: #64748b !important; font-size: 0.85rem !important; font-weight: 500 !important; }
+.remember-me { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #64748b; font-size: 0.85rem; font-weight: 500; }
 .remember-me input { width: 16px; height: 16px; accent-color: #004aad; cursor: pointer; }
 .forgot-link { font-size: 0.8rem; color: #004aad; font-weight: 700; text-decoration: none; }
 .forgot-link:hover { text-decoration: underline; }
-.btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 10px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: all 0.3s; }
-.btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); }
+
+.btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 10px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: all 0.2s; }
+.btn-primary:hover:not(:disabled) { background: #003a8c; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 74, 173, 0.3); }
+.btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+
 .divider { height: 1px; background: #e2e8f0; margin: 30px 0 20px; }
 .social-footer { display: flex; justify-content: center; gap: 25px; }
 .social-link { color: #94a3b8; transition: all 0.3s ease; }
@@ -176,8 +184,6 @@ const handleLogin = async () => {
 .error-msg { color: #dc2626; background: #fef2f2; padding: 14px; border-radius: 12px; margin-top: 20px; font-size: 0.9rem; font-weight: 700; border: 1px solid #fecaca; }
 
 @media (max-width: 992px) {
-  .layout-split { grid-template-columns: 1fr; gap: 20px; }
-  .form-row { flex-direction: column; gap: 15px; }
   .glass-card { padding: 20px; }
 }
 </style>

@@ -264,7 +264,8 @@ const anexoFile = ref(null);
 const fileInputRef = ref(null);
 const messagesContainer = ref(null);
 
-const userIdLocal = ref(''); // Para saber qual é a mensagem "minha"
+// ✅ CORRIGIDO: Obter ID do localStorage (sem erro de sintaxe)
+const userIdLocal = ref(localStorage.getItem('userId') || localStorage.getItem('user_id') || '');
 
 const mensagemFeedback = ref('');
 const tipoFeedback = ref('');
@@ -274,24 +275,26 @@ const mostrarMensagem = (msg, tipo = 'success') => {
   setTimeout(() => { mensagemFeedback.value = ''; }, 4000);
 };
 
+// ✅ CORRIGIDO: Removida chamada a /auth/me
 const carregarDadosDoCurso = async () => {
   try {
     const cursoId = route.params.id;
-    const [cursoRes, progressoRes, userRes] = await Promise.all([
+    
+    // Apenas duas requisições (sem /auth/me)
+    const [cursoRes, progressoRes] = await Promise.all([
       api.get(`/cursos/${cursoId}`),
-      api.get('/cursos/progresso/aluno'),
-      api.get('/auth/me') // Para pegar o ID do aluno logado
+      api.get('/cursos/progresso/aluno')
     ]);
 
     curso.value = cursoRes.data;
     materiaisConcluidos.value = progressoRes.data || [];
-    userIdLocal.value = userRes.data._id || userRes.data.id;
 
     if (curso.value.modulos?.length > 0 && curso.value.modulos[0].aulas?.length > 0) {
       selecionarAula(curso.value.modulos[0].aulas[0]);
     }
   } catch (error) {
     console.error("Erro ao carregar curso:", error);
+    mostrarMensagem("Erro ao carregar o curso. Tente novamente.", "error");
     if (!curso.value) router.push('/aluno/cursos');
   }
 };
@@ -299,11 +302,19 @@ const carregarDadosDoCurso = async () => {
 // ==========================================
 // FUNÇÕES DO FÓRUM 
 // ==========================================
-const triggerFileInput = () => { fileInputRef.value.click(); };
+const triggerFileInput = () => {
+  fileInputRef.value.click();
+};
 
 const handleFileChange = (event) => {
   const file = event.target.files[0];
-  if (file) anexoFile.value = file;
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      mostrarMensagem("O arquivo é muito grande. O limite é 5MB.", "error");
+      return;
+    }
+    anexoFile.value = file;
+  }
 };
 
 const removerAnexo = () => {
@@ -360,11 +371,13 @@ const enviarMensagemForum = async () => {
       imagem: res.data.imagem
     });
     
+    mostrarMensagem("Mensagem enviada com sucesso!", "success");
     novaMensagem.value = '';
     removerAnexo();
     scrollToBottom();
   } catch (error) {
-    mostrarMensagem("Erro ao enviar mensagem.", "error");
+    console.error('Erro ao enviar mensagem:', error);
+    mostrarMensagem("Erro ao enviar mensagem. Tente novamente.", "error");
   }
 };
 
@@ -421,7 +434,11 @@ const marcarMaterialConcluido = async (matId) => {
   try {
     const res = await api.post('/cursos/concluir-aula', { materialId: matId });
     materiaisConcluidos.value = res.data.materiaisConcluidos;
-  } catch (err) { console.error("Erro ao salvar progresso", err); }
+    mostrarMensagem("Atividade marcada como concluída!", "success");
+  } catch (err) { 
+    console.error("Erro ao salvar progresso", err);
+    mostrarMensagem("Erro ao salvar progresso. Tente novamente.", "error");
+  }
 };
 
 const selecionarAula = (aula) => {
@@ -440,11 +457,9 @@ const obterUrlEmbed = (url) => {
   return url;
 };
 
-// Ajuste na função para lidar com o fato de a imagem já vir com barra no BD
 const obterUrlArquivoInteiro = (caminho) => {
   if(!caminho) return '#';
   const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
-  // Verifica se o caminho já começa com barra
   if (caminho.startsWith('/')) {
      return `${baseUrl}${caminho}`;
   }
@@ -498,7 +513,7 @@ onMounted(() => {
 
 /* Tabs de Navegação */
 .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; }
-.tab-btn { flex: 1; padding: 14px; background: white; border: 1px solid #e2e8f0; border-radius: 14px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+.tab-btn { flex: 1; padding: 14px; background: white; border: 1px solid #e2e8f0; border-radius: 14px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
 .tab-btn:hover { background: #f8fafc; color: #1e293b; }
 .tab-btn.active { background: #004aad; color: white; border-color: #004aad; }
 
@@ -511,8 +526,9 @@ onMounted(() => {
 .material-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
 .material-title-box { display: flex; align-items: center; gap: 10px; }
 .material-title-box h3 { font-size: 1.1rem; font-weight: 800; margin: 0; color: #1e293b; }
+.text-brand-color { color: #004aad; }
 
-.btn-check-atividade { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+.btn-check-atividade { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
 .btn-check-atividade:hover { background: #e2e8f0; color: #1e293b; }
 .btn-check-atividade.done { background: #ecfdf5; color: #059669; border-color: #a7f3d0; cursor: default; }
 
@@ -523,7 +539,7 @@ onMounted(() => {
 
 .pdf-box, .link-box, .text-box { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
 .pdf-box p, .link-box p, .text-box p { margin: 0 0 15px 0; color: #475569; font-size: 0.95rem; }
-.btn-download { display: inline-flex; align-items: center; gap: 8px; background: #004aad; color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: 0.2s; }
+.btn-download { display: inline-flex; align-items: center; gap: 8px; background: #004aad; color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; }
 .btn-download:hover { background: #003580; }
 .external-link { color: #004aad; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; word-break: break-all; }
 .external-link:hover { text-decoration: underline; }
@@ -535,12 +551,13 @@ onMounted(() => {
 .trophy-icon { color: #f59e0b; margin-bottom: 15px; display: inline-block; }
 .cert-content h3 { color: #065f46; font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; }
 .cert-content p { color: #047857; font-size: 0.95rem; margin-bottom: 25px; }
-.btn-whatsapp { display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: white; padding: 16px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; transition: 0.3s; box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2); }
+.btn-whatsapp { display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: white; padding: 16px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; transition: all 0.2s; }
 .btn-whatsapp:hover { background: #128c7e; transform: translateY(-3px); }
 
 /* Playlist Lateral */
 .playlist-section { max-height: 85vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: white; border-radius: 20px; }
 .playlist-header { padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; }
+.header-icon { color: #004aad; }
 .playlist-title { font-weight: 800; font-size: 1rem; margin: 0; color: #1e293b; }
 .modules-list { overflow-y: auto; flex: 1; }
 .module-header { padding: 14px 20px; background: #f1f5f9; color: #475569; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; }
@@ -550,6 +567,9 @@ onMounted(() => {
 .status-done { color: #059669; }
 .status-pending { color: #cbd5e1; }
 .lesson-name { font-weight: 700; color: #1e293b; display: block; font-size: 0.9rem; }
+.lesson-meta { font-size: 0.75rem; }
+.text-xs { font-size: 0.75rem; }
+.text-gray-400 { color: #cbd5e1; }
 
 /* =========================================
    ESTILOS DO FÓRUM (CHAT)
@@ -602,14 +622,23 @@ onMounted(() => {
 .btn-send:hover:not(:disabled) { background: #003a8c; transform: scale(1.05); }
 .btn-send:disabled { background: #cbd5e1; cursor: not-allowed; }
 
+/* Carregamento */
 .loading-state { text-align: center; padding: 100px; color: #64748b; }
 .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #004aad; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* Glass Card */
+.glass-card { background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; }
+
 @media (max-width: 1024px) {
   .classroom-layout { grid-template-columns: 1fr; }
   .playlist-section { max-height: none; }
+}
+
+@media (max-width: 600px) {
+  .classroom-layout { gap: 15px; }
+  .message { max-width: 95%; }
 }
 </style>

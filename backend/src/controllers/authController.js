@@ -4,10 +4,25 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const transporter = require('../config/mailer');
 
+// Retorna os dados do usuário autenticado
+exports.getMe = async (req, res) => {
+    try {
+        const userId = req.user?.id || req.user?._id || req.userId;
+        const user = await User.findById(userId).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ msg: "Utilizador não encontrado" });
+        }
+        
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: "Erro ao buscar dados do utilizador" });
+    }
+};
+
 exports.register = async (req, res) => {
     const { nome, email, password, role, turma } = req.body;
     
-    // Proteção: Admin restrito não pode criar Admin geral
     if (req.user && req.user.role === 'admin_restrito' && role === 'admin') {
         return res.status(403).json({ msg: "Operação não permitida para o seu nível de acesso." });
     }
