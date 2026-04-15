@@ -16,8 +16,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const apostilaRoutes = require('./routes/apostilaRoutes');
 const vendaRoutes = require('./routes/vendaRoutes');
 const servicoConfirmadoRoutes = require('./routes/servicoConfirmadoRoutes');
-// NOVA ROTA DE ESTOQUE:
 const estoqueRoutes = require('./routes/estoqueRoutes');
+const empresaSolicitanteRoutes = require('./routes/empresaSolicitanteRoutes');
 
 const app = express();
 
@@ -64,8 +64,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/apostilas', apostilaRoutes);
 app.use('/api/vendas', vendaRoutes);
 app.use('/api/servicos', servicoConfirmadoRoutes);
-// REGISTRO DA ROTA DE ESTOQUE:
 app.use('/api/estoque', estoqueRoutes);
+app.use('/api/empresas-solicitantes', empresaSolicitanteRoutes);
 
 // Rota de teste para confirmar que a API está online
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));

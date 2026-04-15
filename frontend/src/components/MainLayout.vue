@@ -51,6 +51,12 @@
             <Package :size="20" class="nav-icon" /> Controlo de Stock
           </li>
 
+          <!-- EMPRESAS - APENAS ADMIN FULL -->
+          <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/empresas' }" @click="navegar('/admin/empresas')">
+            <Building2 :size="20" class="nav-icon" /> Empresas
+          </li>
+
+          <!-- FINANCEIRO - APENAS ADMIN FULL -->
           <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/financeiro' }" @click="navegar('/admin/financeiro')">
             <BadgeDollarSign :size="20" class="nav-icon" /> Financeiro
           </li>
@@ -98,7 +104,6 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-// Importado o ícone MessageSquare
 import { 
   LayoutDashboard, BookOpen, HandMetal, Users, Building2,
   CalendarPlus, BadgeDollarSign, FileText, Package, LogOut,
@@ -127,32 +132,11 @@ const logout = () => {
 </script>
 
 <style scoped>
-/* ==========================================
-   LAYOUT GERAL
-   ========================================== */
-.app-container { 
-  display: flex; 
-  min-height: 100vh; 
-  background-color: #f8fafc; 
-  font-family: 'Inter', sans-serif; 
-  flex-direction: column; 
-}
+.app-container { display: flex; min-height: 100vh; background-color: #f8fafc; font-family: 'Inter', sans-serif; flex-direction: column; }
+.mobile-header { display: none; }
+.sidebar-overlay { display: none; }
+.btn-close-menu { display: none; }
 
-.mobile-header { 
-  display: none; 
-}
-
-.sidebar-overlay { 
-  display: none; 
-}
-
-.btn-close-menu { 
-  display: none; 
-}
-
-/* ==========================================
-   SIDEBAR - FIX PRINCIPAL
-   ========================================== */
 .sidebar { 
   width: 260px; 
   background: white; 
@@ -170,24 +154,11 @@ const logout = () => {
   box-sizing: border-box;
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* SIDEBAR HEADER */
 .sidebar-header { 
   display: flex;
   justify-content: center;
@@ -210,7 +181,6 @@ const logout = () => {
   object-fit: contain; 
 }
 
-/* SIDEBAR NAV */
 .sidebar-nav { 
   flex: 1;
   overflow-y: auto;
@@ -263,9 +233,6 @@ const logout = () => {
   color: white; 
 }
 
-/* ==========================================
-   SIDEBAR FOOTER - FIX PRINCIPAL ✅
-   ========================================== */
 .sidebar-footer { 
   margin-top: auto;
   padding-top: 20px;
@@ -299,9 +266,6 @@ const logout = () => {
   transform: scale(0.98);
 }
 
-/* ==========================================
-   MAIN CONTENT
-   ========================================== */
 .main-content { 
   flex: 1; 
   margin-left: 260px; 
@@ -410,9 +374,6 @@ const logout = () => {
   } 
 }
 
-/* ==========================================
-   RESPONSIVO - MOBILE
-   ========================================== */
 @media (max-width: 992px) {
   .mobile-header { 
     display: flex; 
@@ -426,23 +387,9 @@ const logout = () => {
     z-index: 999;
   }
 
-  .mobile-logo-box {
-    display: flex;
-    align-items: center;
-  }
-
-  .mobile-logo { 
-    height: 40px; 
-    object-fit: contain; 
-  }
-
-  .btn-mobile-menu { 
-    background: transparent; 
-    border: none; 
-    color: #004aad; 
-    cursor: pointer; 
-    padding: 0;
-  }
+  .mobile-logo-box { display: flex; align-items: center; }
+  .mobile-logo { height: 40px; object-fit: contain; }
+  .btn-mobile-menu { background: transparent; border: none; color: #004aad; cursor: pointer; padding: 0; }
 
   .sidebar { 
     transform: translateX(-100%); 
@@ -514,30 +461,11 @@ const logout = () => {
 }
 
 @media (max-width: 600px) {
-  .main-content {
-    padding: 20px 15px;
-  }
-
-  .content-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-info h1 {
-    font-size: 1.5rem;
-  }
-
-  .user-profile {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .user-text {
-    text-align: left;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
+  .main-content { padding: 20px 15px; }
+  .content-header { flex-direction: column; align-items: flex-start; }
+  .header-info h1 { font-size: 1.5rem; }
+  .user-profile { width: 100%; justify-content: space-between; }
+  .user-text { text-align: left; }
+  .sidebar { width: 100%; }
 }
 </style>

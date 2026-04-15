@@ -125,6 +125,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
+    path: '/admin/empresas',
+    name: 'GerenciarEmpresas',
+    component: () => import('../views/GerenciarEmpresasView.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
     path: '/admin/calculadora',
     name: 'Calculadora',
     component: () => import('../views/CalculadoraView.vue'),
@@ -169,13 +175,12 @@ router.beforeEach((to, from, next) => {
         return next('/aluno/dashboard');
       }
       
-      // Admin restrito: bloquear acesso a financeiro
-      if (to.path === '/admin/financeiro' && userRole === 'admin_restrito') {
+      // Admin restrito: bloquear acesso a financeiro e empresas
+      if ((to.path === '/admin/financeiro' || to.path === '/admin/empresas') && userRole === 'admin_restrito') {
         return next('/admin/dashboard'); 
       }
     } 
     else if (to.meta.role === 'aluno' && userRole !== 'aluno') {
-      // Aluno: redirecionar para admin se não for aluno
       return next('/admin/dashboard');
     }
   }
