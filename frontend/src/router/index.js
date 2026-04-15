@@ -121,7 +121,7 @@ const routes = [
   {
     path: '/admin/financeiro',
     name: 'AdminFinanceiro',
-    component: () => import('../views/GerenciamentoFinanceiroView.vue'),
+    component: () => import('../views/FinanceiroView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
