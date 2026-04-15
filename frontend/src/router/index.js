@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
-import AdminForunsView from '../views/AdminForunsView.vue'; // NOVO: Importação do Fórum Admin
+import AdminForunsView from '../views/AdminForunsView.vue';
 
 const routes = [
   { 
@@ -88,15 +88,12 @@ const routes = [
     component: () => import('../views/CursosView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
-  
-  // 👇 NOVA ROTA: Fórum do Administrador 👇
   {
     path: '/admin/forum',
     name: 'AdminForum',
     component: AdminForunsView,
     meta: { requiresAuth: true, role: 'admin' }
   },
-
   {
     path: '/admin/usuarios',
     name: 'AdminUsuarios',
@@ -124,7 +121,7 @@ const routes = [
   {
     path: '/admin/financeiro',
     name: 'AdminFinanceiro',
-    component: () => import('../views/FinanceiroView.vue'),
+    component: () => import('../views/GerenciamentoFinanceiroView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
@@ -152,26 +149,33 @@ const router = createRouter({
   routes
 });
 
-// Middleware de Segurança
+// ==========================================
+// MIDDLEWARE DE SEGURANÇA
+// ==========================================
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
+  // Verificar se a rota requer autenticação
   if (to.meta.requiresAuth && !token) {
     return next('/aluno/login');
   } 
   
+  // Verificar permissões de role (admin/aluno)
   if (to.meta.role) {
     if (to.meta.role === 'admin') {
+      // Admin: permitir 'admin' e 'admin_restrito'
       if (userRole !== 'admin' && userRole !== 'admin_restrito') {
         return next('/aluno/dashboard');
       }
       
+      // Admin restrito: bloquear acesso a financeiro
       if (to.path === '/admin/financeiro' && userRole === 'admin_restrito') {
         return next('/admin/dashboard'); 
       }
     } 
     else if (to.meta.role === 'aluno' && userRole !== 'aluno') {
+      // Aluno: redirecionar para admin se não for aluno
       return next('/admin/dashboard');
     }
   }
