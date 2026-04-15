@@ -74,7 +74,31 @@ app.use('/api/estoque', estoqueRoutes);
 
 // Rota de Stats
 app.get('/api/stats', async (req, res) => {
-  // ... seu código de stats (mantenha como está)
+  try {
+    const User = require('./models/User');
+    const Curso = require('./models/Curso');
+    const Financeiro = require('./models/Financeiro');
+    const ClienteB2B = require('./models/ClienteB2B');
+
+    const [totalAlunos, totalCursos, transacoes, totalB2B] = await Promise.all([
+      User.countDocuments({ role: 'aluno' }).catch(() => 0),
+      Curso.countDocuments().catch(() => 0),
+      Financeiro.find({ tipo: 'Entrada' }).catch(() => []),
+      ClienteB2B.countDocuments().catch(() => 0)
+    ]);
+
+    const somaVendas = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
+
+    res.json({
+      alunos: totalAlunos,
+      cursos: totalCursos,
+      clientesB2B: totalB2B,
+      vendas: somaVendas.toFixed(2)
+    });
+  } catch (error) {
+    console.error("Erro ao carregar stats:", error);
+    res.status(500).json({ message: "Erro ao buscar estatísticas" });
+  }
 });
 
 // Rota raiz (Deixe por último entre as rotas da API)
