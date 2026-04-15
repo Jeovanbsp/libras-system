@@ -24,6 +24,15 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: "Acesso negado." });
     }
 
+    // admin_restrito só pode editar alunos
+    if (userRole === 'admin_restrito') {
+      const alvo = await User.findById(req.params.id).select('role');
+      if (!alvo) return res.status(404).json({ error: "Usuário não encontrado." });
+      if (alvo.role === 'admin' || alvo.role === 'admin_restrito') {
+        return res.status(403).json({ error: "Você não tem permissão para editar este usuário." });
+      }
+    }
+
     const updateData = {};
     if (nome) updateData.nome = nome;
     if (email) {
