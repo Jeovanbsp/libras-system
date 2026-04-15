@@ -16,11 +16,27 @@ exports.liberarCursoManual = async (req, res) => {
     if (!jaTem) {
       aluno.cursosMatriculados.push(cursoId);
       await aluno.save();
+
+      // ============================================================
+      // LOGICA DE NOTIFICAÇÃO EM TEMPO REAL
+      // ============================================================
+      const io = req.app.get('io'); // Captura o Socket.io configurado no app.js
+      
+      // Verifica se quem está executando a ação é um Admin Restrito
+      if (req.user && req.user.role === 'admin-restrito') {
+        io.emit('adminLog', {
+          action: `Liberou o curso "${curso.nome}" para o aluno "${aluno.nome}"`,
+          userName: req.user.nome || 'Admin Restrito'
+        });
+      }
+      // ============================================================
+
       return res.status(200).json({ message: "Curso liberado com sucesso para o aluno!" });
     } else {
       return res.status(400).json({ message: "O aluno já possui acesso a este curso." });
     }
   } catch (error) {
+    console.error("Erro ao liberar curso:", error);
     res.status(500).json({ message: "Erro interno ao liberar curso." });
   }
 };

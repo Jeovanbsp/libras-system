@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const http = require('http'); // ADICIONADO: Necessário para o Socket.io
+const { Server } = require('socket.io'); // ADICIONADO: Socket.io
 const connectDB = require('./config/db');
 
 // IMPORTAÇÕES DE ROTAS
@@ -20,9 +22,10 @@ const estoqueRoutes = require('./routes/estoqueRoutes');
 const empresaSolicitanteRoutes = require('./routes/empresaSolicitanteRoutes');
 
 const app = express();
+const server = http.createServer(app); // ADICIONADO: Criando o servidor HTTP para o Socket.io
 
 // ==========================================
-// 1. CONFIGURAÇÃO DE CORS
+// 1. CONFIGURAÇÃO DE CORS E SOCKET.IO
 // ==========================================
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
@@ -34,6 +37,26 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   credentials: true
 }));
+
+// INICIALIZAÇÃO DO SOCKET.IO
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
+  }
+});
+
+// Tornar o "io" acessível em todas as rotas através do objeto "req"
+app.set('io', io);
+
+// Log de conexão do Socket
+io.on('connection', (socket) => {
+  console.log('🔌 Novo admin conectado para notificações:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Admin desconectado');
+  });
+});
 
 app.options('(.*)', cors());
 
@@ -57,7 +80,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ==========================================
 // 5. REGISTRO DE ROTAS DA API
 // ==========================================
-// Registre as rotas mais específicas primeiro
 app.use('/api/empresas-solicitantes', empresaSolicitanteRoutes); 
 app.use('/api/auth', authRoutes);
 app.use('/api/cursos', cursoRoutes);
@@ -101,23 +123,19 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Rota raiz (Deixe por último entre as rotas da API)
 app.get('/', (req, res) => res.send('API Libras Salvador rodando... 🚀'));
 
-// ==========================================
-// 6. TRATAMENTO DE ERRO 404 (OPCIONAL)
-// ==========================================
-// Se chegar aqui, nenhuma rota acima capturou a requisição
 app.use((req, res) => {
   res.status(404).json({ error: `Rota ${req.originalUrl} não encontrada no servidor.` });
 });
 
 // ==========================================
-// 7. EXPORTAÇÃO E INICIALIZAÇÃO
+// 6. INICIALIZAÇÃO (USANDO SERVER AO INVÉS DE APP)
 // ==========================================
 module.exports = app;
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// IMPORTANTE: server.listen e não app.listen para o socket funcionar
+server.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
