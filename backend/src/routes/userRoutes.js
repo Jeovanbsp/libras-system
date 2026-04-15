@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const auth = require('../middlewares/authMiddleware');
+const authorizeRoles = require('../middlewares/roleMiddleware');
 
-// GET: Listar todos os usuários (Alunos/Professores)
-router.get('/', async (req, res) => {
+// GET: Listar todos os usuários (Alunos/Professores) - admin only
+router.get('/', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
-    // Busca todos os usuários, mas não envia a senha por segurança
     const usuarios = await User.find().select('-password');
     res.json(usuarios);
   } catch (err) {
@@ -13,8 +14,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// DELETE: Remover um usuário (Opcional, mas útil)
-router.delete('/:id', async (req, res) => {
+// DELETE: Remover um usuário - admin only
+router.delete('/:id', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ msg: "Usuário removido com sucesso" });

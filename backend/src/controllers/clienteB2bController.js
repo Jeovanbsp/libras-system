@@ -1,4 +1,5 @@
 const ClienteB2B = require('../models/ClienteB2B');
+const { escapeRegex } = require('../utils/sanitize');
 
 // Criar um novo cliente B2B
 exports.criarCliente = async (req, res) => {
@@ -21,10 +22,11 @@ exports.listarClientes = async (req, res) => {
 
     // Se o usuário digitar algo na pesquisa, procura tanto na Razão Social quanto no CNPJ
     if (busca) {
+      const safeBusca = escapeRegex(busca);
       filtro = {
         $or: [
-          { razaoSocial: { $regex: new RegExp(busca, 'i') } },
-          { cnpj: { $regex: new RegExp(busca, 'i') } }
+          { razaoSocial: { $regex: new RegExp(safeBusca, 'i') } },
+          { cnpj: { $regex: new RegExp(safeBusca, 'i') } }
         ]
       };
     }

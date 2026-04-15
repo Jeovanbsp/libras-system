@@ -4,24 +4,39 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Material = require('../models/Material');
+const auth = require('../middlewares/authMiddleware');
+const authorizeRoles = require('../middlewares/roleMiddleware');
+
+// Allowed file extensions for upload
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.gif', '.mp4', '.mp3'];
 
 // Configuração do armazenamento do arquivo
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = './uploads/';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir); // Cria a pasta se não existir
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // Gera um nome único: data atual + nome original
-    cb(null, Date.now() + '-' + file.originalname);
+    // Sanitize filename: remove path traversal characters and use only the base name
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, Date.now() + '-' + safeName);
   }
 });
 
-const upload = multer({ storage });
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_EXTENSIONS.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de arquivo não permitido. Extensões aceitas: ' + ALLOWED_EXTENSIONS.join(', ')), false);
+  }
+};
 
-// POST: Upload de arquivo e dados
-router.post('/', upload.single('arquivo'), async (req, res) => {
+const upload = multer({ storage, fileFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+
+// POST: Upload de arquivo e dados - admin only
+router.post('/', auth, authorizeRoles('admin', 'admin_restrito'), upload.single('arquivo'), async (req, res) => {
   try {
     const { titulo, descricao } = req.body;
     const novoMaterial = new Material({
@@ -38,8 +53,8 @@ router.post('/', upload.single('arquivo'), async (req, res) => {
   }
 });
 
-// GET: Listar todos os materiais
-router.get('/', async (req, res) => {
+// GET: Listar todos os materiais - authenticated users
+router.get('/', auth, async (req, res) => {
   try {
     const materiais = await Material.find().sort({ dataUpload: -1 });
     res.json(materiais);
@@ -48,8 +63,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// DELETE: Remover material e arquivo físico
-router.delete('/:id', async (req, res) => {
+// DELETE: Remover material e arquivo físico - admin only
+router.delete('/:id', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
     if (material && fs.existsSync(material.caminho)) {

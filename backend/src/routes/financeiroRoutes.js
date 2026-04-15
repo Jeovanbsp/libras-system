@@ -1,20 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Financeiro = require('../models/Financeiro');
-
-// Middleware de autenticação (assume que existe)
-const auth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ error: 'Token não fornecido' });
-  }
-  next();
-};
+const auth = require('../middlewares/authMiddleware');
+const authorizeRoles = require('../middlewares/roleMiddleware');
 
 // ==========================================
 // GET: Listar todos os eventos financeiros
 // ==========================================
-router.get('/', async (req, res) => {
+router.get('/', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const { mes, ano, empresa, status } = req.query;
     let query = {};
@@ -47,7 +40,7 @@ router.get('/', async (req, res) => {
 // ==========================================
 // GET: Resumo do mês especificado
 // ==========================================
-router.get('/resumo/:mes/:ano', async (req, res) => {
+router.get('/resumo/:mes/:ano', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const { mes, ano } = req.params;
 
@@ -84,7 +77,7 @@ router.get('/resumo/:mes/:ano', async (req, res) => {
 // ==========================================
 // GET: Resumo do mês atual
 // ==========================================
-router.get('/resumo-mes-atual', async (req, res) => {
+router.get('/resumo-mes-atual', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const agora = new Date();
     const meses = [
@@ -118,7 +111,7 @@ router.get('/resumo-mes-atual', async (req, res) => {
 // ==========================================
 // GET: Detalhes de um evento específico
 // ==========================================
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const evento = await Financeiro.findById(req.params.id)
       .populate('criadoPor', 'nome email')
@@ -138,7 +131,7 @@ router.get('/:id', async (req, res) => {
 // ==========================================
 // POST: Criar novo evento financeiro
 // ==========================================
-router.post('/', async (req, res) => {
+router.post('/', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     const {
       empresa,
@@ -215,7 +208,7 @@ router.post('/', async (req, res) => {
 // ==========================================
 // PUT: Atualizar evento financeiro
 // ==========================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     const evento = await Financeiro.findByIdAndUpdate(
       req.params.id,
@@ -240,7 +233,7 @@ router.put('/:id', async (req, res) => {
 // ==========================================
 // DELETE: Remover evento financeiro
 // ==========================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     const evento = await Financeiro.findByIdAndDelete(req.params.id);
 
@@ -261,7 +254,7 @@ router.delete('/:id', async (req, res) => {
 // ==========================================
 // GET: Relatório por empresa
 // ==========================================
-router.get('/relatorio/empresa/:empresa', async (req, res) => {
+router.get('/relatorio/empresa/:empresa', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const { empresa } = req.params;
     const { mes, ano } = req.query;
@@ -299,7 +292,7 @@ router.get('/relatorio/empresa/:empresa', async (req, res) => {
 // ==========================================
 // PATCH: Atualizar status do pagamento
 // ==========================================
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', auth, authorizeRoles('admin'), async (req, res) => {
   try {
     const { status } = req.body;
 
@@ -333,7 +326,7 @@ router.patch('/:id/status', async (req, res) => {
 // ==========================================
 // GET: Relatório financeiro completo
 // ==========================================
-router.get('/relatorios/completo', async (req, res) => {
+router.get('/relatorios/completo', auth, authorizeRoles('admin', 'admin_restrito'), async (req, res) => {
   try {
     const { mesInicio, anoInicio, mesFim, anoFim } = req.query;
 
