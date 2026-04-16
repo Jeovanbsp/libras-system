@@ -1,1773 +1,502 @@
 <template>
-  <div class="sala-aula">
-    <!-- Header -->
-    <header class="sala-header">
-      <div class="header-content">
-        <button @click="goBack" class="btn-back">
-          <i class="fas fa-arrow-left"></i>
-          Voltar
-        </button>
-        <h1>{{ curso?.titulo || 'Sala de Aula' }}</h1>
-        <div class="header-info">
-          <span>
-            <i class="fas fa-book"></i>
-            {{ curso?.aulas?.length || 0 }} aulas
-          </span>
-        </div>
-      </div>
-    </header>
-
-    <!-- Container Principal -->
-    <div class="sala-container">
-      <!-- Sidebar de Navegação -->
-      <aside class="sala-sidebar">
-        <nav class="sidebar-nav">
-          <button 
-            @click="activeTab = 'aulas'"
-            :class="['nav-item', { active: activeTab === 'aulas' }]"
-          >
-            <i class="fas fa-play-circle"></i>
-            <span>Aulas</span>
-          </button>
-          <button 
-            @click="activeTab = 'materiais'"
-            :class="['nav-item', { active: activeTab === 'materiais' }]"
-          >
-            <i class="fas fa-file-pdf"></i>
-            <span>Materiais</span>
-          </button>
-          <button 
-            @click="activeTab = 'forum'"
-            :class="['nav-item', { active: activeTab === 'forum' }]"
-          >
-            <i class="fas fa-comments"></i>
-            <span>Fórum</span>
-            <span v-if="unreadMessages > 0" class="badge">{{ unreadMessages }}</span>
-          </button>
-          <button 
-            @click="activeTab = 'atividades'"
-            :class="['nav-item', { active: activeTab === 'atividades' }]"
-          >
-            <i class="fas fa-tasks"></i>
-            <span>Atividades</span>
-          </button>
-        </nav>
-
-        <!-- Progresso do Curso -->
-        <div class="course-progress">
-          <h3>Seu Progresso</h3>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+  <StudentLayout 
+    :pageTitle="curso ? curso.titulo : 'A carregar...'" 
+    :pageDescription="curso ? `Nível: ${curso.nivel} | Carga Horária: ${curso.cargaHoraria}h` : ''"
+  >
+    
+    <div class="classroom-layout" v-if="curso">
+      
+      <div class="player-section">
+        
+        <div class="progress-card glass-card mb-6">
+          <div class="progress-header">
+            <span class="progress-label">Progresso do Curso: {{ porcentagemProgresso }}%</span>
+            <span class="progress-count">{{ materiaisConcluidos.length }} de {{ totalMateriais }} concluídos</span>
           </div>
-          <span class="progress-text">{{ progressPercentage }}% completo</span>
+          <div class="progress-track">
+            <div class="progress-fill" :style="{ width: porcentagemProgresso + '%' }"></div>
+          </div>
         </div>
-      </aside>
 
-      <!-- Conteúdo Principal -->
-      <main class="sala-content">
-        <!-- Tab de Aulas -->
-        <div v-if="activeTab === 'aulas'" class="tab-content">
-          <div class="aulas-list">
-            <div v-if="curso?.aulas?.length === 0" class="empty-state">
-              <i class="fas fa-video fa-3x"></i>
-              <p>Nenhuma aula disponível ainda</p>
-            </div>
-            
-            <div 
-              v-for="(aula, index) in curso?.aulas" 
-              :key="aula._id"
-              class="aula-card"
-              @click="selectAula(aula)"
-              :class="{ active: selectedAula?._id === aula._id }"
-            >
-              <div class="aula-number">{{ index + 1 }}</div>
-              <div class="aula-info">
-                <h3>{{ aula.titulo }}</h3>
-                <p>{{ aula.descricao }}</p>
-                <div class="aula-meta">
-                  <span>
-                    <i class="fas fa-clock"></i>
-                    {{ aula.duracao || '10' }} min
-                  </span>
-                  <span v-if="aula.completed" class="completed">
-                    <i class="fas fa-check-circle"></i>
-                    Concluída
-                  </span>
+        <div class="tabs-container">
+          <button :class="['tab-btn', { active: abaAtiva === 'conteudo' }]" @click="abaAtiva = 'conteudo'">
+            <BookOpen :size="18" /> Conteúdo da Aula
+          </button>
+          <button :class="['tab-btn', { active: abaAtiva === 'forum' }]" @click="abaAtiva = 'forum'">
+            <MessageSquare :size="18" /> Fórum da Turma
+          </button>
+        </div>
+
+        <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
+          <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
+          <AlertCircle v-else :size="20" />
+          <p>{{ mensagemFeedback }}</p>
+        </div>
+
+        <div v-if="abaAtiva === 'conteudo'" class="lesson-content">
+          <div class="lesson-header glass-card mb-4">
+            <h2>{{ aulaAtual.titulo || 'Selecione uma aula' }}</h2>
+            <p v-if="aulaAtual.descricao" class="lesson-desc mt-2">{{ aulaAtual.descricao }}</p>
+          </div>
+
+          <div v-if="aulaAtual.materiais && aulaAtual.materiais.length > 0">
+            <div v-for="(mat, idx) in aulaAtual.materiais" :key="mat._id || idx" class="material-card glass-card mb-4">
+              <div class="material-header">
+                <div class="material-title-box">
+                  <Video v-if="mat.tipo === 'video'" :size="20" class="text-brand-color" />
+                  <FileText v-else-if="mat.tipo === 'pdf'" :size="20" class="text-brand-color" />
+                  <LinkIcon v-else-if="mat.tipo === 'link'" :size="20" class="text-brand-color" />
+                  <AlignLeft v-else :size="20" class="text-brand-color" />
+                  <h3>{{ mat.titulo || `Atividade ${idx + 1}` }}</h3>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Player de Vídeo -->
-          <div v-if="selectedAula" class="video-player">
-            <h2>{{ selectedAula.titulo }}</h2>
-            <div class="video-container">
-              <video 
-                v-if="selectedAula.videoUrl"
-                :src="selectedAula.videoUrl"
-                controls
-                class="video-element"
-              ></video>
-              <div v-else class="video-placeholder">
-                <i class="fas fa-play-circle fa-4x"></i>
-                <p>Vídeo em breve</p>
-              </div>
-            </div>
-            <div class="video-description">
-              <p>{{ selectedAula.descricao }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab de Materiais -->
-        <div v-if="activeTab === 'materiais'" class="tab-content">
-          <div class="materials-grid">
-            <div v-if="!curso?.materiais?.length" class="empty-state">
-              <i class="fas fa-file-pdf fa-3x"></i>
-              <p>Nenhum material disponível</p>
-            </div>
-            
-            <div 
-              v-for="material in curso?.materiais" 
-              :key="material._id"
-              class="material-card"
-            >
-              <div class="material-icon">
-                <i class="fas fa-file-pdf"></i>
-              </div>
-              <div class="material-info">
-                <h4>{{ material.titulo }}</h4>
-                <p>{{ material.descricao }}</p>
-              </div>
-              <button @click="downloadMaterial(material)" class="btn-download">
-                <i class="fas fa-download"></i>
-                Baixar
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab de Fórum - ATUALIZADA -->
-        <div v-if="activeTab === 'forum'" class="tab-content forum-tab">
-          <div class="forum-header">
-            <h2>Fórum de Discussão</h2>
-            <button @click="showNewTopicModal = true" class="btn-new-topic">
-              <i class="fas fa-plus"></i>
-              Novo Tópico
-            </button>
-          </div>
-
-          <div class="forum-container-inner">
-            <!-- Lista de Tópicos -->
-            <div class="topics-section">
-              <div v-if="forumTopics.length === 0" class="empty-state">
-                <i class="fas fa-comments fa-2x"></i>
-                <p>Nenhum tópico criado ainda</p>
-                <button @click="showNewTopicModal = true" class="btn-primary">
-                  Criar Primeiro Tópico
+                
+                <button :class="['btn-check-atividade', { done: estaConcluido(mat._id) }]" @click="marcarMaterialConcluido(mat._id)">
+                  <CheckCircle2 :size="18" />
+                  {{ estaConcluido(mat._id) ? 'Concluído' : 'Marcar como Feito' }}
                 </button>
               </div>
 
-              <div v-else class="topics-list">
-                <div 
-                  v-for="topic in forumTopics" 
-                  :key="topic._id"
-                  @click="selectForumTopic(topic)"
-                  class="forum-topic-card"
-                  :class="{ active: selectedForumTopic?._id === topic._id }"
-                >
-                  <div class="topic-header">
-                    <h4>{{ topic.title }}</h4>
-                    <span class="topic-date">{{ formatDate(topic.createdAt) }}</span>
-                  </div>
-                  
-                  <div class="topic-meta">
-                    <span>
-                      <i class="fas fa-user"></i>
-                      {{ topic.author?.name || 'Anônimo' }}
-                    </span>
-                    <span>
-                      <i class="fas fa-comment"></i>
-                      {{ topic.replies?.length || 0 }} respostas
-                    </span>
-                    <span v-if="topic.attachment" class="has-attachment">
-                      <i class="fas fa-paperclip"></i>
-                      PDF
-                    </span>
-                  </div>
-
-                  <!-- Ações do autor -->
-                  <div v-if="topic.author?._id === currentUserId" class="topic-actions">
-                    <button 
-                      @click.stop="editForumTopic(topic)" 
-                      class="btn-icon"
-                      title="Editar"
-                    >
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button 
-                      @click.stop="deleteForumTopic(topic._id)" 
-                      class="btn-icon btn-danger"
-                      title="Excluir"
-                    >
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
+              <div class="material-body">
+                <div v-if="mat.tipo === 'video'" class="video-embed">
+                  <iframe v-if="mat.url" :src="obterUrlEmbed(mat.url)" frameborder="0" allowfullscreen></iframe>
+                  <div v-else class="empty-media">URL de vídeo inválida.</div>
                 </div>
+
+                <div v-else-if="mat.tipo === 'pdf'" class="pdf-box">
+                  <p>Documento de apoio disponível.</p>
+                  <a :href="obterUrlArquivo(mat.url)" target="_blank" class="btn-download">
+                    <Download :size="18" /> Transferir PDF
+                  </a>
+                </div>
+
+                <div v-else-if="mat.tipo === 'link'" class="link-box">
+                  <a :href="mat.url" target="_blank" class="external-link">{{ mat.url }} <ExternalLink :size="14" /></a>
+                </div>
+
+                <div v-else-if="mat.tipo === 'texto'" class="text-box"><p>{{ mat.url }}</p></div>
               </div>
             </div>
+          </div>
 
-            <!-- Visualização do Tópico Selecionado -->
-            <div v-if="selectedForumTopic" class="topic-detail">
-              <div class="detail-header">
-                <h3>{{ selectedForumTopic.title }}</h3>
-                <button @click="selectedForumTopic = null" class="btn-close-topic">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
+          <div v-if="porcentagemProgresso === 100" class="certificate-banner mt-6">
+            <Trophy :size="48" class="trophy-icon" />
+            <h3>Parabéns! Você concluiu todos os requisitos.</h3>
+            <a :href="urlWhatsappCertificado" target="_blank" class="btn-whatsapp">
+              <MessageCircle :size="22" /> Solicitar Certificado via WhatsApp
+            </a>
+          </div>
+        </div>
 
-              <div class="detail-body">
-                <!-- Post Original -->
-                <div class="original-post">
-                  <div class="post-author">
-                    <i class="fas fa-user-circle fa-2x"></i>
-                    <div>
-                      <strong>{{ selectedForumTopic.author?.name }}</strong>
-                      <small>{{ formatDate(selectedForumTopic.createdAt) }}</small>
-                    </div>
-                  </div>
-                  <div class="post-content">
-                    <p>{{ selectedForumTopic.content }}</p>
-                    
-                    <!-- Visualização de PDF - MELHORADA -->
-                    <div v-if="selectedForumTopic.attachment" class="pdf-attachment">
-                      <div class="pdf-header">
-                        <i class="fas fa-file-pdf"></i>
-                        <span>{{ selectedForumTopic.attachment.originalname || 'Documento PDF' }}</span>
-                      </div>
-                      
-                      <!-- Visualizador de PDF -->
-                      <div class="pdf-viewer-wrapper">
-                        <iframe 
-                          v-if="selectedForumTopic.attachment.type === 'application/pdf'"
-                          :src="`${API_URL}/uploads/${selectedForumTopic.attachment.filename}`"
-                          class="pdf-iframe"
-                          frameborder="0"
-                        ></iframe>
-                        
-                        <div v-else class="file-preview">
-                          <i class="fas fa-file fa-3x"></i>
-                          <p>{{ selectedForumTopic.attachment.originalname }}</p>
-                        </div>
-                      </div>
-                      
-                      <!-- Ações do PDF -->
-                      <div class="pdf-actions">
-                        <a 
-                          :href="`${API_URL}/uploads/${selectedForumTopic.attachment.filename}`"
-                          target="_blank"
-                          class="btn-pdf-action"
-                        >
-                          <i class="fas fa-external-link-alt"></i>
-                          Abrir em Nova Aba
-                        </a>
-                        <a 
-                          :href="`${API_URL}/uploads/${selectedForumTopic.attachment.filename}`"
-                          :download="selectedForumTopic.attachment.originalname"
-                          class="btn-pdf-action btn-download-pdf"
-                        >
-                          <i class="fas fa-download"></i>
-                          Baixar PDF
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+        <div v-if="abaAtiva === 'forum'" class="forum-content glass-card chat-area">
+          <header class="chat-header">
+            <div class="chat-title">
+              <h3>Fórum de Discussão</h3>
+              <p>Tire dúvidas e interaja com a turma</p>
+            </div>
+          </header>
+
+          <div class="messages-container" ref="messagesContainer">
+            <div 
+              v-for="(msg, index) in mensagensForum" 
+              :key="msg._id || index" 
+              :class="['message', msg.isMinhaMensagem ? 'sent' : 'received']"
+            >
+              <div class="msg-header">
+                <div class="msg-meta">
+                  <span class="msg-name">{{ msg.autor }}</span>
+                  <span class="msg-time">{{ msg.data }}</span>
                 </div>
-
-                <!-- Respostas -->
-                <div class="replies-section">
-                  <h4>
-                    <i class="fas fa-comments"></i>
-                    Respostas ({{ selectedForumTopic.replies?.length || 0 }})
-                  </h4>
-
-                  <div v-if="!selectedForumTopic.replies?.length" class="no-replies">
-                    <p>Seja o primeiro a responder!</p>
-                  </div>
-
-                  <div v-else class="replies-list">
-                    <div 
-                      v-for="reply in selectedForumTopic.replies" 
-                      :key="reply._id"
-                      class="reply-item"
-                    >
-                      <div class="reply-header">
-                        <div class="reply-author">
-                          <i class="fas fa-user-circle"></i>
-                          <strong>{{ reply.author?.name }}</strong>
-                          <small>{{ formatDate(reply.createdAt) }}</small>
-                          <span v-if="reply.edited" class="edited-tag">(editado)</span>
-                        </div>
-                        
-                        <!-- Ações para o autor da resposta -->
-                        <div v-if="reply.author?._id === currentUserId" class="reply-actions">
-                          <button 
-                            @click="editReply(reply)" 
-                            class="btn-icon-small"
-                            title="Editar"
-                          >
-                            <i class="fas fa-edit"></i>
-                          </button>
-                          <button 
-                            @click="deleteReply(selectedForumTopic._id, reply._id)" 
-                            class="btn-icon-small btn-danger"
-                            title="Excluir"
-                          >
-                            <i class="fas fa-trash"></i>
-                          </button>
-                        </div>
-                      </div>
-
-                      <!-- Modo de Edição -->
-                      <div v-if="editingReply?._id === reply._id" class="reply-edit-mode">
-                        <textarea 
-                          v-model="editingReplyContent"
-                          class="edit-textarea"
-                          rows="3"
-                        ></textarea>
-                        <div class="edit-buttons">
-                          <button @click="cancelEditReply" class="btn-cancel">
-                            Cancelar
-                          </button>
-                          <button @click="saveEditReply" class="btn-save">
-                            <i class="fas fa-check"></i>
-                            Salvar
-                          </button>
-                        </div>
-                      </div>
-
-                      <!-- Conteúdo Normal -->
-                      <div v-else class="reply-content">
-                        <p>{{ reply.content }}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Formulário de Resposta -->
-                <div class="reply-form">
-                  <h4>Adicionar Resposta</h4>
-                  <textarea 
-                    v-model="newReply"
-                    placeholder="Digite sua resposta..."
-                    class="reply-textarea"
-                    rows="4"
-                  ></textarea>
-                  <button 
-                    @click="submitReply"
-                    :disabled="!newReply.trim()"
-                    class="btn-submit"
-                  >
-                    <i class="fas fa-paper-plane"></i>
-                    Enviar Resposta
+                <div v-if="msg.isMinhaMensagem" class="msg-actions">
+                  <button @click="deletarMensagem(msg._id, index)" class="btn-msg-action delete" title="Excluir">
+                    <Trash2 :size="14" />
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Tab de Atividades -->
-        <div v-if="activeTab === 'atividades'" class="tab-content">
-          <div class="activities-list">
-            <div v-if="!curso?.atividades?.length" class="empty-state">
-              <i class="fas fa-tasks fa-3x"></i>
-              <p>Nenhuma atividade disponível</p>
-            </div>
-            
-            <div 
-              v-for="atividade in curso?.atividades" 
-              :key="atividade._id"
-              class="activity-card"
-            >
-              <div class="activity-header">
-                <h3>{{ atividade.titulo }}</h3>
-                <span :class="['activity-status', atividade.status]">
-                  {{ atividade.status === 'completed' ? 'Concluída' : 'Pendente' }}
-                </span>
-              </div>
-              <p>{{ atividade.descricao }}</p>
-              <div class="activity-footer">
-                <span class="due-date">
-                  <i class="fas fa-calendar"></i>
-                  Prazo: {{ formatDate(atividade.prazo) }}
-                </span>
-                <button @click="startActivity(atividade)" class="btn-start">
-                  Iniciar
-                </button>
+              <div class="msg-bubble">
+                <p>{{ msg.texto }}</p>
+                <div v-if="msg.imagem" class="attachment-box">
+                  <a :href="obterUrlArquivoInteiro(msg.imagem)" target="_blank">
+                    <img v-if="isImage(msg.imagem)" :src="obterUrlArquivoInteiro(msg.imagem)" alt="Anexo" class="attachment-image"/>
+                    <div v-else class="btn-download-anexo">
+                      <FileText :size="16" /> Abrir Anexo
+                    </div>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
 
-    <!-- Modal Novo/Editar Tópico -->
-    <div v-if="showNewTopicModal || editingTopic" class="modal" @click.self="closeTopicModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>{{ editingTopic ? 'Editar Tópico' : 'Criar Novo Tópico' }}</h2>
-          <button @click="closeTopicModal" class="btn-modal-close">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+          <footer class="chat-input-wrapper">
+            <div v-if="anexoFile" class="attachment-preview">
+              <span class="file-name">{{ anexoFile.name }}</span>
+              <button @click="removerAnexo" type="button" class="btn-remove"><X :size="16" /></button>
+            </div>
 
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Título</label>
-            <input 
-              v-model="topicForm.title"
-              type="text"
-              placeholder="Digite o título do tópico"
-              class="form-input"
-            />
-          </div>
+            <form @submit.prevent="enviarMensagemForum" class="input-form">
+              <button type="button" class="btn-action btn-attach" @click="triggerFileInput">
+                <Paperclip :size="22" />
+              </button>
+              <input type="file" ref="fileInputRef" class="hidden-input" @change="handleFileChange" accept="image/*,.pdf" />
 
-          <div class="form-group">
-            <label>Conteúdo</label>
-            <textarea 
-              v-model="topicForm.content"
-              placeholder="Descreva o assunto..."
-              class="form-textarea"
-              rows="6"
-            ></textarea>
-          </div>
+              <textarea 
+                v-model="novaMensagem" 
+                placeholder="Escreva sua dúvida..." 
+                rows="1" 
+                @keydown.enter.exact.prevent="enviarMensagemForum" 
+                class="message-input"
+              ></textarea>
 
-          <div v-if="!editingTopic" class="form-group">
-            <label>Anexar PDF (opcional)</label>
-            <input 
-              type="file"
-              @change="handleFileUpload"
-              accept=".pdf"
-              class="file-input"
-            />
-            <small>Apenas arquivos PDF até 10MB</small>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button @click="closeTopicModal" class="btn-cancel">
-            Cancelar
-          </button>
-          <button 
-            @click="saveTopic"
-            :disabled="!topicForm.title || !topicForm.content"
-            class="btn-save"
-          >
-            <i class="fas fa-check"></i>
-            {{ editingTopic ? 'Salvar Alterações' : 'Criar Tópico' }}
-          </button>
+              <button type="submit" class="btn-action btn-send" :disabled="!novaMensagem.trim() && !anexoFile">
+                <Send :size="22" />
+              </button>
+            </form>
+          </footer>
         </div>
       </div>
+
+      <aside class="playlist-section glass-card">
+        <div class="playlist-header">
+          <ListVideo :size="20" class="header-icon" />
+          <h3 class="playlist-title">Conteúdo do Curso</h3>
+        </div>
+        <div class="modules-list">
+          <div v-for="(modulo, mIdx) in curso.modulos" :key="mIdx" class="module-group">
+            <div class="module-header">{{ modulo.titulo }}</div>
+            <div 
+              v-for="(aula, aIdx) in modulo.aulas" :key="aIdx"
+              @click="selecionarAula(aula)"
+              :class="['lesson-item', { 'active': aulaAtual._id === aula._id }]"
+            >
+              <CheckCircle2 v-if="aulaTotalmenteConcluida(aula)" :size="18" class="status-done" />
+              <Circle v-else :size="18" class="status-pending" />
+              <span class="lesson-name">{{ aula.titulo }}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
     </div>
-  </div>
+
+    <div v-else class="loading-state">
+      <div class="spinner"></div>
+      <p>A carregar o seu ambiente de estudos...</p>
+    </div>
+  </StudentLayout>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
-import { toast } from 'vue3-toastify';
+import { 
+  CheckCircle2, Circle, ListVideo, MessageCircle, FileText, Download, Trophy, 
+  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Paperclip, Send, X, Trash2, AlertCircle
+} from 'lucide-vue-next';
+import StudentLayout from '../../components/StudentLayout.vue';
+import api from '../../services/api';
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// Estados
+// Refs
 const curso = ref(null);
-const activeTab = ref('aulas');
-const selectedAula = ref(null);
-const forumTopics = ref([]);
-const selectedForumTopic = ref(null);
-const showNewTopicModal = ref(false);
-const newReply = ref('');
-const unreadMessages = ref(0);
-const progressPercentage = ref(0);
-const editingTopic = ref(null);
-const editingReply = ref(null);
-const editingReplyContent = ref('');
-const currentUserId = computed(() => localStorage.getItem('userId'));
+const aulaAtual = ref({ _id: '', titulo: '', descricao: '', materiais: [] });
+const materiaisConcluidos = ref([]); 
+const abaAtiva = ref('conteudo');
+const novaMensagem = ref('');
+const mensagensForum = ref([]);
+const anexoFile = ref(null);
+const fileInputRef = ref(null);
+const messagesContainer = ref(null);
+const userIdLocal = ref('');
+const mensagemFeedback = ref('');
+const tipoFeedback = ref('success');
 
-const topicForm = ref({
-  title: '',
-  content: '',
-  attachment: null
+// Métodos de Feedback
+const mostrarMensagem = (msg, tipo = 'success') => {
+  mensagemFeedback.value = msg;
+  tipoFeedback.value = tipo;
+  setTimeout(() => { mensagemFeedback.value = ''; }, 3000);
+};
+
+// Carregamento de Dados
+const carregarDadosDoCurso = async () => {
+  try {
+    const cursoId = route.params.id;
+    const [cursoRes, progressoRes, userRes] = await Promise.all([
+      api.get(`/cursos/${cursoId}`),
+      api.get('/cursos/progresso/aluno'),
+      api.get('/auth/me')
+    ]);
+
+    curso.value = cursoRes.data;
+    materiaisConcluidos.value = progressoRes.data || [];
+    userIdLocal.value = userRes.data._id || userRes.data.id;
+
+    if (curso.value.modulos?.[0]?.aulas?.[0]) {
+      selecionarAula(curso.value.modulos[0].aulas[0]);
+    }
+    carregarForum();
+  } catch (error) {
+    console.error("Erro ao carregar curso:", error);
+    router.push('/aluno/cursos');
+  }
+};
+
+const carregarForum = async () => {
+  try {
+    const res = await api.get(`/cursos/${route.params.id}/forum`);
+    mensagensForum.value = res.data.map(formatarMensagem);
+    scrollToBottom();
+  } catch (error) { console.error(error); }
+};
+
+const formatarMensagem = (m) => ({
+  _id: m._id,
+  autor: m.autor?.nome || 'Usuário',
+  isMinhaMensagem: (m.autor?._id === userIdLocal.value) || (m.autor === userIdLocal.value),
+  data: new Date(m.dataCriacao).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  texto: m.texto,
+  imagem: m.imagem
 });
 
-// Carregar dados do curso
-const loadCourse = async () => {
+// Ações do Fórum
+const enviarMensagemForum = async () => {
+  if (!novaMensagem.value.trim() && !anexoFile.value) return;
+  const formData = new FormData();
+  formData.append('texto', novaMensagem.value);
+  if (anexoFile.value) formData.append('anexo', anexoFile.value);
+
   try {
-    const response = await axios.get(`${API_URL}/api/cursos/${route.params.id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    curso.value = response.data;
-    calculateProgress();
-  } catch (error) {
-    toast.error('Erro ao carregar curso');
-    console.error(error);
+    const res = await api.post(`/cursos/${route.params.id}/forum`, formData);
+    mensagensForum.value.push(formatarMensagem(res.data));
+    novaMensagem.value = '';
+    removerAnexo();
+    scrollToBottom();
+  } catch (error) { mostrarMensagem("Erro ao enviar mensagem.", "error"); }
+};
+
+const deletarMensagem = async (msgId, index) => {
+  if (!confirm("Deseja realmente excluir esta mensagem?")) return;
+  try {
+    await api.delete(`/cursos/forum/mensagem/${msgId}`);
+    mensagensForum.value.splice(index, 1);
+    mostrarMensagem("Mensagem removida com sucesso.");
+  } catch (error) { mostrarMensagem("Erro ao excluir mensagem.", "error"); }
+};
+
+// Manipulação de Arquivos e URLs
+const triggerFileInput = () => fileInputRef.value.click();
+const handleFileChange = (e) => { anexoFile.value = e.target.files[0]; };
+const removerAnexo = () => { anexoFile.value = null; if (fileInputRef.value) fileInputRef.value.value = ''; };
+const isImage = (url) => url && /\.(jpg|jpeg|png|gif)$/i.test(url);
+
+const obterUrlArquivoInteiro = (caminho) => {
+  if (!caminho) return '#';
+  const baseUrl = api.defaults.baseURL.replace('/api', '');
+  const cleanPath = caminho.startsWith('/') ? caminho : `/${caminho}`;
+  return `${baseUrl}${cleanPath}`;
+};
+
+const obterUrlArquivo = (file) => {
+  return obterUrlArquivoInteiro(`/uploads/materiais/${file}`);
+};
+
+const obterUrlEmbed = (url) => {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]{11})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : url;
+};
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
   }
 };
 
-// Carregar tópicos do fórum
-const loadForumTopics = async () => {
+// Progresso e Seleção de Aula
+const selecionarAula = (aula) => { 
+  aulaAtual.value = aula; 
+  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+};
+
+const estaConcluido = (id) => materiaisConcluidos.value.includes(id?.toString());
+
+const aulaTotalmenteConcluida = (aula) => {
+  if (!aula.materiais || aula.materiais.length === 0) return false;
+  return aula.materiais.every(m => estaConcluido(m._id));
+};
+
+const marcarMaterialConcluido = async (id) => {
+  if (estaConcluido(id)) return;
   try {
-    const response = await axios.get(`${API_URL}/api/forum/curso/${route.params.id}/topics`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    forumTopics.value = response.data;
-  } catch (error) {
-    console.error('Erro ao carregar fórum:', error);
+    const res = await api.post('/cursos/concluir-aula', { materialId: id });
+    materiaisConcluidos.value = res.data.materiaisConcluidos;
+    mostrarMensagem("Atividade concluída!");
+  } catch (err) { 
+    console.error(err);
+    mostrarMensagem("Erro ao salvar progresso.", "error");
   }
 };
 
-// Selecionar tópico do fórum
-const selectForumTopic = async (topic) => {
-  try {
-    const response = await axios.get(`${API_URL}/api/forum/topics/${topic._id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    selectedForumTopic.value = response.data;
-  } catch (error) {
-    toast.error('Erro ao carregar tópico');
-  }
-};
+// Computed Properties
+const totalMateriais = computed(() => {
+  if (!curso.value) return 0;
+  return curso.value.modulos.reduce((acc, m) => {
+    return acc + (m.aulas.reduce((a, l) => a + (l.materiais?.length || 0), 0));
+  }, 0);
+});
 
-// Criar/Editar tópico
-const saveTopic = async () => {
-  try {
-    if (editingTopic.value) {
-      // Editar tópico
-      await axios.put(
-        `${API_URL}/api/forum/topics/${editingTopic.value._id}`,
-        {
-          title: topicForm.value.title,
-          content: topicForm.value.content
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      toast.success('Tópico atualizado!');
-    } else {
-      // Criar novo tópico
-      const formData = new FormData();
-      formData.append('title', topicForm.value.title);
-      formData.append('content', topicForm.value.content);
-      formData.append('cursoId', route.params.id);
-      
-      if (topicForm.value.attachment) {
-        formData.append('attachment', topicForm.value.attachment);
-      }
-      
-      await axios.post(`${API_URL}/api/forum/topics`, formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      toast.success('Tópico criado!');
-    }
-    
-    closeTopicModal();
-    loadForumTopics();
-  } catch (error) {
-    toast.error('Erro ao salvar tópico');
-  }
-};
-
-// Editar tópico
-const editForumTopic = (topic) => {
-  editingTopic.value = topic;
-  topicForm.value = {
-    title: topic.title,
-    content: topic.content,
-    attachment: null
-  };
-};
-
-// Excluir tópico
-const deleteForumTopic = async (topicId) => {
-  if (!confirm('Deseja realmente excluir este tópico?')) return;
-  
-  try {
-    await axios.delete(`${API_URL}/api/forum/topics/${topicId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    toast.success('Tópico excluído!');
-    if (selectedForumTopic.value?._id === topicId) {
-      selectedForumTopic.value = null;
-    }
-    loadForumTopics();
-  } catch (error) {
-    toast.error('Erro ao excluir tópico');
-  }
-};
-
-// Enviar resposta
-const submitReply = async () => {
-  if (!newReply.value.trim()) return;
-  
-  try {
-    await axios.post(
-      `${API_URL}/api/forum/topics/${selectedForumTopic.value._id}/replies`,
-      { content: newReply.value },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
+const porcentagemProgresso = computed(() => {
+  if (totalMateriais.value === 0) return 0;
+  // Filtramos os materiais concluídos que pertencem a este curso específico
+  const concluidosDesteCurso = materiaisConcluidos.value.filter(id => {
+    return curso.value.modulos.some(m => 
+      m.aulas.some(l => l.materiais.some(mat => mat._id === id))
     );
-    
-    toast.success('Resposta enviada!');
-    newReply.value = '';
-    selectForumTopic(selectedForumTopic.value);
-  } catch (error) {
-    toast.error('Erro ao enviar resposta');
-  }
-};
-
-// Editar resposta
-const editReply = (reply) => {
-  editingReply.value = reply;
-  editingReplyContent.value = reply.content;
-};
-
-// Salvar edição da resposta
-const saveEditReply = async () => {
-  try {
-    await axios.put(
-      `${API_URL}/api/forum/topics/${selectedForumTopic.value._id}/replies/${editingReply.value._id}`,
-      { content: editingReplyContent.value },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
-    
-    toast.success('Resposta atualizada!');
-    cancelEditReply();
-    selectForumTopic(selectedForumTopic.value);
-  } catch (error) {
-    toast.error('Erro ao atualizar resposta');
-  }
-};
-
-// Cancelar edição
-const cancelEditReply = () => {
-  editingReply.value = null;
-  editingReplyContent.value = '';
-};
-
-// Excluir resposta
-const deleteReply = async (topicId, replyId) => {
-  if (!confirm('Deseja realmente excluir esta resposta?')) return;
-  
-  try {
-    await axios.delete(
-      `${API_URL}/api/forum/topics/${topicId}/replies/${replyId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
-    
-    toast.success('Resposta excluída!');
-    selectForumTopic(selectedForumTopic.value);
-  } catch (error) {
-    toast.error('Erro ao excluir resposta');
-  }
-};
-
-// Fechar modal
-const closeTopicModal = () => {
-  showNewTopicModal.value = false;
-  editingTopic.value = null;
-  topicForm.value = {
-    title: '',
-    content: '',
-    attachment: null
-  };
-};
-
-// Upload de arquivo
-const handleFileUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 10MB');
-      return;
-    }
-    topicForm.value.attachment = file;
-  }
-};
-
-// Selecionar aula
-const selectAula = (aula) => {
-  selectedAula.value = aula;
-};
-
-// Download material
-const downloadMaterial = async (material) => {
-  try {
-    window.open(`${API_URL}/uploads/${material.filename}`, '_blank');
-  } catch (error) {
-    toast.error('Erro ao baixar material');
-  }
-};
-
-// Iniciar atividade
-const startActivity = (atividade) => {
-  toast.info('Funcionalidade em desenvolvimento');
-};
-
-// Calcular progresso
-const calculateProgress = () => {
-  if (!curso.value?.aulas?.length) {
-    progressPercentage.value = 0;
-    return;
-  }
-  const completed = curso.value.aulas.filter(a => a.completed).length;
-  progressPercentage.value = Math.round((completed / curso.value.aulas.length) * 100);
-};
-
-// Formatar data
-const formatDate = (date) => {
-  return new Date(date).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
   });
-};
-
-// Voltar
-const goBack = () => {
-  router.push('/aluno/cursos');
-};
-
-onMounted(() => {
-  loadCourse();
-  loadForumTopics();
+  return Math.round((concluidosDesteCurso.length / totalMateriais.value) * 100);
 });
+
+const urlWhatsappCertificado = computed(() => {
+  const texto = encodeURIComponent(`Olá! Concluí o curso "${curso.value?.titulo}" e gostaria de solicitar meu certificado.`);
+  return `https://wa.me/5571988361371?text=${texto}`;
+});
+
+onMounted(carregarDadosDoCurso);
 </script>
 
 <style scoped>
-.sala-aula {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* Header */
-.sala-header {
-  background: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
+/* ESTRUTURA PRINCIPAL */
+.classroom-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-.btn-back {
-  padding: 8px 16px;
-  background: #f8f9fa;
-  color: #495057;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
-}
-
-.btn-back:hover {
-  background: #e9ecef;
-}
-
-.header-info {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  color: #6c757d;
-}
-
-/* Container */
-.sala-container {
-  max-width: 1400px;
-  margin: 20px auto;
-  padding: 0 20px;
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 20px;
-}
-
-/* Sidebar */
-.sala-sidebar {
+.glass-card {
   background: white;
-  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   padding: 20px;
-  height: fit-content;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 30px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  color: #495057;
-  text-align: left;
-}
-
-.nav-item:hover {
-  background: #f8f9fa;
-}
-
-.nav-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.badge {
-  margin-left: auto;
-  background: #ff4757;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-}
-
-/* Progress */
-.course-progress {
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-}
-
-.course-progress h3 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #495057;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #e9ecef;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  transition: width 0.3s;
-}
-
-.progress-text {
-  font-size: 12px;
-  color: #6c757d;
-}
-
-/* Content */
-.sala-content {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  min-height: 600px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.tab-content {
-  animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #adb5bd;
-}
-
-.empty-state i {
-  margin-bottom: 20px;
-}
-
-/* Aulas */
-.aulas-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.aula-card {
-  display: flex;
-  gap: 15px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: 2px solid transparent;
-}
-
-.aula-card:hover {
-  background: #f0f2ff;
-  border-color: #667eea;
-}
-
-.aula-card.active {
-  background: #f0f2ff;
-  border-color: #667eea;
-}
-
-.aula-number {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-}
-
-.aula-info h3 {
-  margin: 0 0 8px 0;
-  color: #2c3e50;
-}
-
-.aula-info p {
-  color: #6c757d;
-  font-size: 14px;
-  margin: 0 0 10px 0;
-}
-
-.aula-meta {
-  display: flex;
-  gap: 15px;
-  font-size: 12px;
-  color: #6c757d;
-}
-
-.completed {
-  color: #28a745;
-}
-
-/* Video Player */
-.video-player {
-  margin-top: 30px;
-  padding-top: 30px;
-  border-top: 2px solid #eee;
-}
-
-.video-container {
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 20px 0;
-}
-
-.video-element {
-  width: 100%;
-  height: auto;
-}
-
-.video-placeholder {
-  padding: 100px 20px;
-  text-align: center;
-  color: #fff;
-}
-
-/* Forum Tab - ATUALIZADA */
-.forum-tab {
-  padding: 0;
-}
-
-.forum-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.forum-header h2 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.btn-new-topic {
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
-}
-
-.btn-new-topic:hover {
-  background: #5a67d8;
-}
-
-.forum-container-inner {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 30px;
-}
-
-.topics-section {
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.topics-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.forum-topic-card {
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: 2px solid transparent;
-  position: relative;
-}
-
-.forum-topic-card:hover {
-  background: #f0f2ff;
-  border-color: #667eea;
-}
-
-.forum-topic-card.active {
-  background: #f0f2ff;
-  border-color: #667eea;
-}
-
-.topic-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.topic-header h4 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 16px;
-}
-
-.topic-date {
-  font-size: 12px;
-  color: #6c757d;
-}
-
-.topic-meta {
-  display: flex;
-  gap: 15px;
-  font-size: 12px;
-  color: #6c757d;
-}
-
-.topic-meta span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.has-attachment {
-  color: #667eea;
-  font-weight: 600;
-}
-
-.topic-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 5px;
-}
-
-.btn-icon {
-  background: white;
-  border: 1px solid #dee2e6;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-  color: #6c757d;
-}
-
-.btn-icon:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-.btn-icon.btn-danger:hover {
-  background: #ff4757;
-  border-color: #ff4757;
-}
-
-/* Topic Detail */
-.topic-detail {
-  max-height: 600px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #eee;
-}
-
-.detail-header h3 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.btn-close-topic {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  color: #6c757d;
-  cursor: pointer;
-}
-
-.btn-close-topic:hover {
-  color: #ff4757;
-}
-
-.detail-body {
-  padding-top: 20px;
-}
-
-.original-post {
-  margin-bottom: 30px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid #eee;
-}
-
-.post-author {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.post-author i {
-  color: #667eea;
-}
-
-.post-content {
-  color: #495057;
-  line-height: 1.6;
-}
-
-/* PDF Attachment - MELHORADA */
-.pdf-attachment {
-  margin-top: 20px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
-  border: 1px solid #dee2e6;
-}
-
-.pdf-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  padding: 10px;
-  background: white;
-  border-radius: 8px;
-}
-
-.pdf-header i {
-  color: #dc3545;
-  font-size: 24px;
-}
-
-.pdf-header span {
-  font-weight: 600;
-  color: #495057;
-}
-
-.pdf-viewer-wrapper {
-  margin-bottom: 15px;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.pdf-iframe {
-  width: 100%;
-  height: 600px;
-  border: none;
-}
-
-.file-preview {
-  padding: 60px 20px;
-  text-align: center;
-  color: #6c757d;
-}
-
-.pdf-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.btn-pdf-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  color: #495057;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.btn-pdf-action:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  transform: translateY(-2px);
-}
-
-.btn-download-pdf {
-  background: #28a745;
-  color: white;
-  border-color: #28a745;
-}
-
-.btn-download-pdf:hover {
-  background: #218838;
-  border-color: #218838;
-}
-
-/* Replies */
-.replies-section {
-  margin-bottom: 30px;
-}
-
-.replies-section h4 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.no-replies {
-  text-align: center;
-  padding: 30px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #6c757d;
-}
-
-.replies-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.reply-item {
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 3px solid #667eea;
-}
-
-.reply-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.reply-author {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #495057;
-}
-
-.reply-author strong {
-  color: #2c3e50;
-}
-
-.edited-tag {
-  font-size: 11px;
-  color: #6c757d;
-  font-style: italic;
-}
-
-.reply-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.btn-icon-small {
-  background: white;
-  border: 1px solid #dee2e6;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6c757d;
-  font-size: 12px;
-  transition: all 0.3s;
-}
-
-.btn-icon-small:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-}
-
-.btn-icon-small.btn-danger:hover {
-  background: #ff4757;
-  border-color: #ff4757;
-}
-
-.reply-content {
-  color: #495057;
-  line-height: 1.5;
-}
-
-/* Edit Mode */
-.reply-edit-mode {
-  margin-top: 10px;
-}
-
-.edit-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;
-}
-
-.edit-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 10px;
-}
-
-/* Reply Form */
-.reply-form {
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-}
-
-.reply-form h4 {
-  color: #2c3e50;
-  margin-bottom: 15px;
-}
-
-.reply-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.3s;
-}
-
-.reply-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.btn-submit {
-  margin-top: 10px;
-  padding: 10px 20px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
-}
-
-.btn-submit:hover:not(:disabled) {
-  background: #5a67d8;
-}
-
-.btn-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Modal */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.btn-modal-close {
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  color: #999;
-  cursor: pointer;
-}
-
-.btn-modal-close:hover {
-  color: #ff4757;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #495057;
-  font-weight: 500;
-}
-
-.form-input,
-.form-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.file-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-}
-
-.modal-footer {
-  padding: 20px;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.btn-cancel,
-.btn-save {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-cancel {
-  background: #e9ecef;
-  color: #495057;
-}
-
-.btn-cancel:hover {
-  background: #dee2e6;
-}
-
-.btn-save {
-  background: #667eea;
-  color: white;
-}
-
-.btn-save:hover:not(:disabled) {
-  background: #5a67d8;
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Materials */
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.material-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
-
-.material-card:hover {
-  background: #f0f2ff;
-  transform: translateY(-2px);
-}
-
-.material-icon {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-}
-
-.material-info {
-  flex: 1;
-}
-
-.material-info h4 {
-  margin: 0 0 8px 0;
-  color: #2c3e50;
-}
-
-.material-info p {
-  margin: 0;
-  color: #6c757d;
-  font-size: 14px;
-}
-
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* PROGRESSO */
+.progress-card { padding: 16px 24px; }
+.progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.progress-label { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
+.progress-count { font-size: 0.85rem; color: #64748b; }
+.progress-track { height: 10px; background: #f1f5f9; border-radius: 20px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #004aad, #00c6ff); transition: width 0.5s ease; }
+
+/* TABS */
+.tabs-container { display: flex; gap: 12px; margin-bottom: 20px; }
+.tab-btn {
+  display: flex; align-items: center; gap: 8px; padding: 12px 20px;
+  border: none; background: #f1f5f9; color: #64748b; border-radius: 10px;
+  font-weight: 600; cursor: pointer; transition: 0.3s;
+}
+.tab-btn.active { background: #004aad; color: white; box-shadow: 0 4px 12px rgba(0, 74, 173, 0.2); }
+
+/* CONTEÚDO */
+.lesson-header h2 { font-size: 1.5rem; color: #0f172a; margin: 0; }
+.lesson-desc { color: #64748b; line-height: 1.6; }
+.material-card { border-left: 5px solid #004aad; }
+.material-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.material-title-box { display: flex; align-items: center; gap: 10px; }
+.material-title-box h3 { font-size: 1.1rem; margin: 0; color: #1e293b; }
+
+.btn-check-atividade {
+  display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border-radius: 8px; border: 1px solid #e2e8f0; background: white;
+  color: #64748b; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+}
+.btn-check-atividade.done { background: #ecfdf5; border-color: #10b981; color: #059669; }
+
+/* MEDIA */
+.video-embed { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
+.video-embed iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.pdf-box, .link-box, .text-box { background: #f8fafc; padding: 15px; border-radius: 10px; }
 .btn-download {
-  padding: 8px 16px;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s;
+  display: inline-flex; align-items: center; gap: 8px; background: #004aad;
+  color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 10px;
 }
 
-.btn-download:hover {
-  background: #218838;
+/* FÓRUM (CHAT) */
+.chat-area { display: flex; flex-direction: column; height: 600px; padding: 0; overflow: hidden; }
+.chat-header { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; background: white; }
+.messages-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; }
+.message { max-width: 80%; display: flex; flex-direction: column; }
+.message.sent { align-self: flex-end; }
+.message.received { align-self: flex-start; }
+
+.msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.msg-meta { display: flex; gap: 8px; align-items: center; }
+.msg-name { font-size: 0.75rem; font-weight: 700; color: #475569; }
+.msg-time { font-size: 0.7rem; color: #94a3b8; }
+.msg-actions { opacity: 0; transition: 0.2s; }
+.message:hover .msg-actions { opacity: 1; }
+.btn-msg-action { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px; }
+.btn-msg-action.delete:hover { color: #ef4444; }
+
+.msg-bubble { padding: 12px 16px; border-radius: 14px; font-size: 0.95rem; line-height: 1.4; }
+.sent .msg-bubble { background: #004aad; color: white; border-bottom-right-radius: 2px; }
+.received .msg-bubble { background: white; color: #1e293b; border-bottom-left-radius: 2px; border: 1px solid #e2e8f0; }
+
+.attachment-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
+
+.chat-input-wrapper { padding: 15px; background: white; border-top: 1px solid #e2e8f0; }
+.input-form { display: flex; gap: 10px; align-items: center; }
+.message-input { flex: 1; border: 1px solid #e2e8f0; border-radius: 20px; padding: 10px 15px; resize: none; outline: none; }
+.btn-action { background: none; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; }
+.btn-send { color: #004aad; }
+.btn-send:disabled { color: #cbd5e1; }
+.hidden-input { display: none; }
+.attachment-preview { background: #f1f5f9; padding: 5px 12px; border-radius: 8px; display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem; }
+
+/* PLAYLIST */
+.playlist-section { height: fit-content; position: sticky; top: 24px; }
+.playlist-header { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+.playlist-title { font-size: 1.1rem; margin: 0; }
+.module-header { background: #f1f5f9; padding: 6px 10px; font-size: 0.75rem; font-weight: 700; color: #475569; border-radius: 4px; margin: 15px 0 5px 0; }
+.lesson-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+.lesson-item:hover { background: #f8fafc; }
+.lesson-item.active { background: #e0e7ff; color: #004aad; }
+.status-done { color: #10b981; }
+.status-pending { color: #cbd5e1; }
+.lesson-name { font-size: 0.85rem; font-weight: 500; }
+
+/* CERTIFICADO */
+.certificate-banner { 
+  background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 16px; padding: 25px; 
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 15px;
+}
+.trophy-icon { color: #f59e0b; }
+.btn-whatsapp { 
+  background: #25d366; color: white; padding: 12px 20px; border-radius: 10px; 
+  text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 8px; 
 }
 
-/* Activities */
-.activities-list {
-  display: grid;
-  gap: 20px;
-}
+/* LOADING */
+.loading-state { text-align: center; padding: 100px 20px; color: #64748b; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #004aad; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.activity-card {
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
+/* FEEDBACK */
+.feedback-toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; display: flex; align-items: center; gap: 10px; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.feedback-toast.success { background: #10b981; }
+.feedback-toast.error { background: #ef4444; }
 
-.activity-card:hover {
-  background: #f0f2ff;
-  transform: translateY(-2px);
+/* RESPONSIVIDADE */
+@media (max-width: 1024px) {
+  .classroom-layout { grid-template-columns: 1fr; }
+  .playlist-section { position: static; order: -1; margin-bottom: 20px; }
 }
-
-.activity-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.activity-header h3 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.activity-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.activity-status.completed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.activity-status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.activity-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 15px;
-}
-
-.due-date {
-  color: #6c757d;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.btn-start {
-  padding: 8px 16px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-start:hover {
-  background: #5a67d8;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .sala-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .sala-sidebar {
-    position: sticky;
-    top: 70px;
-  }
-  
-  .forum-container-inner {
-    grid-template-columns: 1fr;
-  }
-  
-  .pdf-iframe {
-    height: 400px;
-  }
+@media (max-width: 640px) {
+  .material-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .btn-check-atividade { width: 100%; justify-content: center; }
 }
 </style>
