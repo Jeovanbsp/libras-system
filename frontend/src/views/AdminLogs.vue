@@ -1,108 +1,306 @@
 <template>
-  <div class="p-6 bg-[#f0f2f5] min-h-screen">
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      
-      <!-- Cabeçalho -->
-      <div class="flex justify-between items-center mb-8">
+  <MainLayout pageTitle="Logs de Auditoria" pageDescription="Monitoramento em tempo real das ações dos administradores restritos.">
+    
+    <div class="glass-card">
+      <div class="header-row">
         <div>
-          <h1 class="text-2xl font-bold text-gray-800">Logs de Auditoria</h1>
-          <p class="text-sm text-gray-500">Monitoramento de ações dos administradores restritos</p>
+          <h3 class="section-title"><ClipboardList :size="20" class="text-brand" /> Registro de Atividades</h3>
+          <p class="section-desc">Todas as ações de escrita realizadas pelo Admin Restrito são registradas aqui.</p>
         </div>
-        <button @click="fetchLogs" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-          Atualizar
+        <button @click="fetchLogs" class="btn-refresh" :disabled="carregando">
+          <RefreshCw :size="16" :class="{ spin: carregando }" /> Atualizar
         </button>
       </div>
 
-      <!-- Tabela -->
-      <div class="overflow-hidden border border-gray-100 rounded-lg">
-        <table class="w-full text-left border-collapse">
+      <div v-if="carregando" class="loading-state">
+        <RefreshCw :size="24" class="spin" /> Carregando logs...
+      </div>
+
+      <div v-else-if="logs.length === 0" class="empty-state">
+        <ClipboardList :size="48" class="opacity-20" />
+        <p>Nenhuma atividade registrada ainda.</p>
+        <span>As ações do Admin Restrito aparecerão aqui automaticamente.</span>
+      </div>
+
+      <div v-else class="logs-table-wrapper">
+        <table class="logs-table">
           <thead>
-            <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
-              <th class="p-4 font-semibold">Data e Hora</th>
-              <th class="p-4 font-semibold">Usuário</th>
-              <th class="p-4 font-semibold">Ação</th>
-              <th class="p-4 font-semibold">Módulo/Detalhes</th>
+            <tr>
+              <th>Data e Hora</th>
+              <th>Usuário</th>
+              <th>Ação</th>
+              <th>Detalhes</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="log in logs" :key="log._id" class="hover:bg-gray-50 transition-colors">
-              <td class="p-4 text-sm text-gray-600">
+          <tbody>
+            <tr v-for="log in logs" :key="log._id" class="log-row">
+              <td class="td-date">
+                <Clock :size="14" class="icon-inline" />
                 {{ formatDate(log.timestamp) }}
               </td>
-              <td class="p-4">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 uppercase">
-                    {{ log.userId?.name?.charAt(0) || 'S' }}
-                  </div>
-                  <span class="text-sm font-medium text-gray-700">{{ log.userId?.name || 'Sistema' }}</span>
+              <td class="td-user">
+                <div class="user-chip">
+                  <div class="user-avatar">{{ (log.userId?.nome || 'S')[0].toUpperCase() }}</div>
+                  <span>{{ log.userId?.nome || 'Sistema' }}</span>
                 </div>
               </td>
-              <td class="p-4">
-                <span :class="getActionBadge(log.action)" class="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight">
-                  {{ log.action }}
+              <td class="td-action">
+                <span :class="['action-badge', getActionClass(log.action)]">
+                  {{ getActionLabel(log.action) }}
                 </span>
+                <span class="action-path">{{ getActionPath(log.action) }}</span>
               </td>
-              <td class="p-4">
-                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                  <code class="break-all">{{ formatDetails(log.details) }}</code>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="logs.length === 0">
-              <td colspan="4" class="p-12 text-center text-gray-400">
-                Nenhuma atividade registrada no momento.
+              <td class="td-details">
+                <code class="details-code">{{ formatDetails(log.details) }}</code>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-  </div>
+
+  </MainLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { ClipboardList, RefreshCw, Clock } from 'lucide-vue-next';
+import MainLayout from '../components/MainLayout.vue';
+import api from '../services/api';
 
 const logs = ref([]);
+const carregando = ref(false);
 
 const fetchLogs = async () => {
+  carregando.value = true;
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get('http://localhost:3000/api/admin/logs', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    logs.value = response.data;
+    const res = await api.get('/admin/logs');
+    logs.value = res.data;
   } catch (error) {
     console.error("Erro ao carregar logs:", error);
+  } finally {
+    carregando.value = false;
   }
 };
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString('pt-BR');
+const formatDate = (d) => {
+  if (!d) return '-';
+  return new Date(d).toLocaleString('pt-BR');
 };
 
 const formatDetails = (details) => {
   if (!details) return '-';
-  // Simplifica o objeto para mostrar apenas o que importa (ex: nome do curso editado)
   const content = details.body || details;
-  return JSON.stringify(content).substring(0, 100) + (JSON.stringify(content).length > 100 ? '...' : '');
+  const str = JSON.stringify(content);
+  return str.length > 120 ? str.substring(0, 120) + '...' : str;
 };
 
-const getActionBadge = (action) => {
-  if (action.includes('POST')) return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-  if (action.includes('PUT') || action.includes('PATCH')) return 'bg-amber-100 text-amber-700 border border-amber-200';
-  if (action.includes('DELETE')) return 'bg-rose-100 text-rose-700 border border-rose-200';
-  return 'bg-slate-100 text-slate-700 border border-slate-200';
+const getActionClass = (action) => {
+  if (!action) return 'badge-default';
+  if (action.includes('DELETE')) return 'badge-delete';
+  if (action.includes('PUT') || action.includes('PATCH')) return 'badge-update';
+  if (action.includes('POST')) return 'badge-create';
+  return 'badge-default';
+};
+
+const getActionLabel = (action) => {
+  if (!action) return '?';
+  if (action.includes('DELETE')) return 'Excluiu';
+  if (action.includes('PUT') || action.includes('PATCH')) return 'Editou';
+  if (action.includes('POST')) return 'Criou';
+  return 'Acessou';
+};
+
+const getActionPath = (action) => {
+  if (!action) return '';
+  const parts = action.split(' ');
+  return parts[1] || '';
 };
 
 onMounted(fetchLogs);
 </script>
 
 <style scoped>
-/* Estilo para simular o padrão do seu dashboard */
-table {
-  font-feature-settings: "tnum" on, "lnum" on;
+.glass-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  padding: 30px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 25px;
+  gap: 20px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px 0;
+}
+
+.text-brand { color: #004aad; }
+.section-desc { font-size: 0.85rem; color: #64748b; margin: 0; }
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #004aad;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s;
+  flex-shrink: 0;
+}
+.btn-refresh:hover:not(:disabled) { background: #003a8c; }
+.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 50px;
+  color: #94a3b8;
+  text-align: center;
+}
+.empty-state p { font-size: 1rem; font-weight: 600; margin: 0; color: #64748b; }
+.empty-state span { font-size: 0.85rem; }
+.opacity-20 { opacity: 0.2; }
+
+.logs-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.logs-table thead tr {
+  background: #f8fafc;
+}
+
+.logs-table th {
+  padding: 12px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.log-row { border-bottom: 1px solid #f1f5f9; transition: 0.15s; }
+.log-row:last-child { border-bottom: none; }
+.log-row:hover { background: #f8fafc; }
+
+.logs-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+.td-date {
+  color: #64748b;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.icon-inline { color: #94a3b8; }
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  background: #004aad;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.td-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.badge-create { background: #dcfce7; color: #166534; }
+.badge-update { background: #fef3c7; color: #92400e; }
+.badge-delete { background: #fee2e2; color: #991b1b; }
+.badge-default { background: #f1f5f9; color: #475569; }
+
+.action-path {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.details-code {
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  font-family: 'Courier New', monospace;
+}
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .header-row { flex-direction: column; }
+  .logs-table { font-size: 0.8rem; }
 }
 </style>

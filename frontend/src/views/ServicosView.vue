@@ -30,7 +30,7 @@
               <input v-model="form.dataEvento" type="date" required />
             </div>
             <div class="form-group-col">
-              <label>Data Fim <span class="text-xs font-normal text-gray-400">- Opcional</span></label>
+              <label>Data Fim <span class="text-xs">- Opcional</span></label>
               <input v-model="form.dataFim" type="date" />
             </div>
           </div>
@@ -80,6 +80,41 @@
             </div>
           </div>
 
+          <!-- MÓDULO FINANCEIRO (apenas para admin full) -->
+          <div v-if="userRole === 'admin'" class="financeiro-module">
+            <h4><DollarSign :size="16" /> Informações Financeiras</h4>
+            <div class="form-row" style="margin-top: 15px;">
+              <div class="form-group-col">
+                <label>Valor Total (R$)</label>
+                <input v-model.number="form.precoTotal" type="number" step="0.01" placeholder="0.00" @input="calcularCaixa" />
+              </div>
+              <div class="form-group-col">
+                <label>Status Pagamento</label>
+                <select v-model="form.statusPagamento" class="modern-select status-select">
+                  <option value="Pendente">Pendente</option>
+                  <option value="Pago">Pago</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group-col">
+                <label>Logística (R$)</label>
+                <input v-model.number="form.valorLogistica" type="number" step="0.01" placeholder="0.00" @input="calcularCaixa" />
+              </div>
+              <div class="form-group-col">
+                <label>Impostos (R$)</label>
+                <input v-model.number="form.impostos" type="number" step="0.01" placeholder="0.00" @input="calcularCaixa" />
+              </div>
+              <div class="form-group-col">
+                <label>Intérpretes (R$)</label>
+                <input v-model.number="form.valorInterpretes" type="number" step="0.01" placeholder="0.00" @input="calcularCaixa" />
+              </div>
+            </div>
+            <div class="caixa-empresa-box">
+              <span>Caixa da Empresa</span>
+              <strong>R$ {{ (form.caixaEmpresa || 0).toFixed(2) }}</strong>
+            </div>
+          </div>
 
           <div class="form-group mt-4">
             <label>Observações</label>
@@ -93,7 +128,6 @@
       </div>
 
       <div class="list-section">
-        
 
         <div class="glass-card search-bar mt-2">
           <div class="form-row" style="margin-bottom: 0; align-items: flex-end;">
@@ -146,7 +180,7 @@
                 <div class="interpretes-tags">
                   <Users :size="14" class="text-gray-400" />
                   <span v-for="pro in servico.interpretes" :key="pro._id" class="pro-tag">{{ pro.nome }}</span>
-                  <span v-if="!servico.interpretes.length" class="text-xs text-gray-400">Nenhum intérprete</span>
+                  <span v-if="!servico.interpretes?.length" class="text-xs text-gray-400">Nenhum intérprete</span>
                 </div>
                 <div class="duration-info">
                   <Clock :size="14" /> 
@@ -155,10 +189,35 @@
                 </div>
               </div>
 
+              <!-- Informações Financeiras no Card (apenas admin full) -->
+              <div v-if="userRole === 'admin' && (servico.precoTotal > 0 || servico.caixaEmpresa > 0)" class="servico-financeiro">
+                <div class="fin-item">
+                  <span>Valor Total</span>
+                  <strong>R$ {{ (servico.precoTotal || 0).toFixed(2) }}</strong>
+                </div>
+                <div class="fin-item">
+                  <span>Logística</span>
+                  <strong>R$ {{ (servico.valorLogistica || 0).toFixed(2) }}</strong>
+                </div>
+                <div class="fin-item">
+                  <span>Intérpretes</span>
+                  <strong>R$ {{ (servico.valorInterpretes || 0).toFixed(2) }}</strong>
+                </div>
+                <div class="fin-item success">
+                  <span>Caixa</span>
+                  <strong>R$ {{ (servico.caixaEmpresa || 0).toFixed(2) }}</strong>
+                </div>
+              </div>
+
               <div class="servico-footer">
-                <button @click="remover(servico._id)" class="btn-del-mini" title="Excluir">
-                  <Trash2 :size="18" />
-                </button>
+                <div v-if="servico.observacoes" class="obs-text">
+                  <span>{{ servico.observacoes }}</span>
+                </div>
+                <div class="footer-actions">
+                  <button @click="remover(servico._id)" class="btn-del-mini" title="Excluir">
+                    <Trash2 :size="18" />
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -200,11 +259,6 @@ const form = ref({
   precoTotal: 0, valorLogistica: 0, impostos: 0, valorInterpretes: 0, caixaEmpresa: 0, observacoes: ''
 });
 
-// LÓGICA DO DASHBOARD
-const totalFaturado = computed(() => servicos.value.reduce((acc, curr) => acc + (curr.precoTotal || 0), 0));
-const totalCaixa = computed(() => servicos.value.reduce((acc, curr) => acc + (curr.caixaEmpresa || 0), 0));
-const totalPendente = computed(() => servicos.value.filter(s => s.statusPagamento === 'Pendente').reduce((acc, curr) => acc + (curr.precoTotal || 0), 0));
-
 const calcularCaixa = () => {
   const total = form.value.precoTotal || 0;
   const logistica = form.value.valorLogistica || 0;
@@ -237,7 +291,6 @@ const cadastrar = async () => {
     await api.post('/servicos', form.value);
     alert('Serviço lançado com sucesso!');
     
-    // Reseta o formulário
     form.value = {
       cliente: '', solicitante: '', interpretes: [], dataEvento: '', dataFim: '', horaInicio: '', horaTermino: '',
       quantidadeHoras: null, tipoEvento: 'Conferência', modalidade: 'Presencial', statusPagamento: 'Pendente',
@@ -286,7 +339,7 @@ const gerarRelatorioPDF = () => {
     const cliente = servico.cliente?.razaoSocial || 'N/A';
     const evento = servico.tipoEvento;
     const status = servico.statusPagamento || 'Pendente';
-    const nomeInterpretes = servico.interpretes.map(i => i.nome).join(', ') || '-';
+    const nomeInterpretes = (servico.interpretes || []).map(i => i.nome).join(', ') || '-';
     const valor = `R$ ${(servico.precoTotal || 0).toFixed(2)}`;
     
     totalGeral += (servico.precoTotal || 0);
@@ -319,49 +372,50 @@ onMounted(() => { carregarDadosBase(); carregarServicos(); });
 </script>
 
 <style scoped>
-.layout-split { display: grid; grid-template-columns: 400px 1fr; gap: 30px; align-items: start; }
+.layout-split { display: grid; grid-template-columns: 420px 1fr; gap: 30px; align-items: start; }
 .list-section { display: flex; flex-direction: column; gap: 15px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
-
-/* DASHBOARD MINIATURA */
-.mini-dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.dash-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.dash-card.success { border-left: 4px solid #10b981; }
-.dash-card.warning { border-left: 4px solid #f59e0b; }
-.dash-title { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
-.dash-value { font-size: 1.5rem; font-weight: 900; color: #0f172a; }
 
 .form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
 .text-brand { color: #004aad; }
 
-.modern-form label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin: 15px 0 8px; text-transform: uppercase; }
-.modern-form input, .modern-form textarea, .modern-select, .search-bar input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; font-family: inherit; }
+.modern-form label { display: block; font-size: 0.72rem; font-weight: 700; color: #64748b; margin: 15px 0 8px; text-transform: uppercase; }
+.modern-form input, .modern-form textarea, .modern-select, .search-bar input { width: 100%; padding: 13px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; font-family: inherit; }
 .modern-form input:focus, .modern-select:focus, .search-bar input:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1); background: white; }
 
 .form-row { display: flex; gap: 15px; width: 100%; align-items: flex-end; margin-bottom: 10px; }
+.form-group { display: flex; flex-direction: column; }
 .form-group-col { flex: 1; display: flex; flex-direction: column; }
+
+.text-xs { font-size: 0.72rem; color: #94a3b8; font-weight: 400; }
 
 .interpretes-box { max-height: 100px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
 .interprete-label { display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; font-size: 0.85rem; }
 
 .financeiro-module { background: #eff6ff; border: 1px dashed #bfdbfe; padding: 20px; border-radius: 16px; margin-top: 15px; }
 .financeiro-module h4 { margin: 0; color: #1e40af; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; font-weight: 800; }
-.status-select { padding: 6px 12px; border-radius: 8px; border: 1px solid #bfdbfe; font-weight: 700; font-size: 0.8rem; background: white; outline: none; cursor: pointer;}
+.status-select { padding: 6px 12px; border-radius: 8px; border: 1px solid #bfdbfe; font-weight: 700; font-size: 0.8rem; background: white; outline: none; cursor: pointer; height: auto; }
 .caixa-empresa-box { margin-top: 15px; background: #dcfce7; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; color: #166534; }
 .caixa-empresa-box span { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
 .caixa-empresa-box strong { font-size: 1.2rem; }
 
-.btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
+.mt-4 { margin-top: 15px; }
+
+.btn-primary { width: 100%; background: #004aad; color: white; border: none; padding: 16px; border-radius: 14px; margin-top: 25px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; font-family: inherit; }
 .btn-primary:hover { background: #003a8c; transform: translateY(-2px); }
 
+.btn-secondary { background: white; border: 1px solid #e2e8f0; color: #475569; padding: 10px 16px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+.btn-secondary:hover { background: #f8fafc; border-color: #004aad; color: #004aad; }
+
 .servico-card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; transition: 0.2s; background: white; }
+.servico-card:hover { border-color: #bfdbfe; }
 .servico-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
-.client-info strong { font-size: 1.1rem; color: #1e293b; display: block; margin-bottom: 5px; }
+.client-info strong { font-size: 1rem; color: #1e293b; display: block; margin-bottom: 6px; }
 .badge { font-size: 0.65rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; margin-right: 5px; }
 .type-badge { background: #f3e8ff; color: #6d28d9; }
 .mode-badge { background: #e0f2fe; color: #1d4ed8; }
-.status-pago { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;}
-.status-pendente { background: #fef3c7; color: #b45309; border: 1px solid #fde68a;}
+.status-pago { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.status-pendente { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
 .date-info { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; font-weight: 600; color: #64748b; background: #f8fafc; padding: 6px 12px; border-radius: 8px; }
 
 .servico-body { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -369,20 +423,37 @@ onMounted(() => { carregarDadosBase(); carregarServicos(); });
 .pro-tag { font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 .duration-info { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: #64748b; font-weight: 600; }
 
-.servico-footer { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 15px; border-radius: 12px; }
-.financial-summary { display: flex; gap: 20px; }
-.fin-item { display: flex; flex-direction: column; font-size: 0.75rem; color: #64748b; }
-.fin-item strong { font-size: 0.95rem; color: #0f172a; margin-top: 2px; }
-.text-green-600 { color: #16a34a !important; }
-.btn-del-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
+.servico-financeiro {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 15px;
+}
+.fin-item { display: flex; flex-direction: column; align-items: center; }
+.fin-item span { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.fin-item strong { font-size: 0.95rem; color: #0f172a; font-weight: 800; }
+.fin-item.success strong { color: #16a34a; }
+
+.servico-footer { display: flex; justify-content: space-between; align-items: center; }
+.obs-text { font-size: 0.8rem; color: #64748b; font-style: italic; max-width: 70%; }
+.footer-actions { display: flex; gap: 8px; margin-left: auto; }
+.btn-del-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; }
 .btn-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
 
-.scrollable-form { max-height: 80vh; overflow-y: auto; padding-right: 10px; }
+.scrollable-form { max-height: 85vh; overflow-y: auto; padding-right: 10px; }
 .scrollable-form::-webkit-scrollbar { width: 5px; }
 .scrollable-form::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
+.empty-msg { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px; color: #94a3b8; }
+.opacity-20 { opacity: 0.2; }
+
 @media (max-width: 992px) {
   .layout-split { grid-template-columns: 1fr; gap: 20px; }
-  .mini-dashboard { grid-template-columns: 1fr; }
+  .form-row { flex-wrap: wrap; }
+  .servico-financeiro { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

@@ -1,6 +1,7 @@
 <template>
   <div class="app-container">
-    
+    <AdminNotification />
+
     <div class="mobile-header">
       <div class="mobile-logo-box">
         <img src="@/assets/logo.png" alt="Libras System" class="mobile-logo" />
@@ -51,18 +52,20 @@
             <Package :size="20" class="nav-icon" /> Controlo de Stock
           </li>
 
-          <!-- EMPRESAS - APENAS ADMIN FULL -->
           <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/empresas' }" @click="navegar('/admin/empresas')">
             <Building2 :size="20" class="nav-icon" /> Empresas
           </li>
 
-          <!-- FINANCEIRO - APENAS ADMIN FULL -->
           <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/financeiro' }" @click="navegar('/admin/financeiro')">
             <BadgeDollarSign :size="20" class="nav-icon" /> Financeiro
           </li>
 
           <li :class="{ active: $route.path === '/admin/materiais' }" @click="navegar('/admin/materiais')">
             <FileText :size="20" class="nav-icon" /> Apostilas
+          </li>
+
+          <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/logs' }" @click="navegar('/admin/logs')">
+            <ClipboardList :size="20" class="nav-icon" /> Logs de Auditoria
           </li>
         </ul>
       </nav>
@@ -90,7 +93,6 @@
           <button @click="logout" class="btn-header-logout" title="Sair do Sistema">
             <LogOut :size="22" />
           </button>
-
         </div>
       </header>
 
@@ -107,8 +109,9 @@ import { useRouter } from 'vue-router';
 import { 
   LayoutDashboard, BookOpen, HandMetal, Users, Building2,
   CalendarPlus, BadgeDollarSign, FileText, Package, LogOut,
-  Menu as MenuIcon, X, MessageSquare
+  Menu as MenuIcon, X, MessageSquare, ClipboardList
 } from 'lucide-vue-next';
+import AdminNotification from './AdminNotification.vue';
 
 const router = useRouter();
 defineProps(['pageTitle', 'pageDescription']);
@@ -273,10 +276,6 @@ const logout = () => {
   border-color: #fca5a5;
 }
 
-.btn-logout:active {
-  transform: scale(0.98);
-}
-
 .main-content { 
   flex: 1; 
   margin-left: 260px; 
@@ -366,23 +365,13 @@ const logout = () => {
   transform: scale(1.05); 
 }
 
-.btn-header-logout:active {
-  transform: scale(0.98);
-}
-
 .page-body { 
   animation: fadeIn 0.4s ease-out; 
 }
 
 @keyframes fadeIn { 
-  from { 
-    opacity: 0; 
-    transform: translateY(10px); 
-  } 
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  } 
+  from { opacity: 0; transform: translateY(10px); } 
+  to { opacity: 1; transform: translateY(0); } 
 }
 
 @media (max-width: 992px) {

@@ -66,6 +66,12 @@ const routes = [
     component: () => import('../views/aluno/SalaAulaView.vue'),
     meta: { requiresAuth: true, role: 'aluno' }
   },
+  {
+    path: '/aluno/forum',
+    name: 'AlunoForum',
+    component: () => import('../views/aluno/ForumView.vue'),
+    meta: { requiresAuth: true, role: 'aluno' }
+  },
 
   // ==========================================
   // ROTAS DO ADMINISTRADOR

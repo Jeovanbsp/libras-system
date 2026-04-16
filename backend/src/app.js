@@ -20,6 +20,8 @@ const vendaRoutes = require('./routes/vendaRoutes');
 const servicoConfirmadoRoutes = require('./routes/servicoConfirmadoRoutes');
 const estoqueRoutes = require('./routes/estoqueRoutes');
 const empresaSolicitanteRoutes = require('./routes/empresaSolicitanteRoutes');
+const forumRoutes = require('./routes/forumRoutes');
+const auditMiddleware = require('./middlewares/auditMiddleware');
 
 const app = express();
 const server = http.createServer(app); // ADICIONADO: Criando o servidor HTTP para o Socket.io
@@ -66,6 +68,9 @@ app.options('(.*)', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware de auditoria para rastrear ações de admin_restrito
+app.use(auditMiddleware);
+
 // ==========================================
 // 3. CONEXÃO COM BANCO (ASSÍNCRONA)
 // ==========================================
@@ -93,6 +98,7 @@ app.use('/api/apostilas', apostilaRoutes);
 app.use('/api/vendas', vendaRoutes);
 app.use('/api/servicos', servicoConfirmadoRoutes);
 app.use('/api/estoque', estoqueRoutes);
+app.use('/api/forum', forumRoutes);
 
 // Rota de Stats
 app.get('/api/stats', async (req, res) => {

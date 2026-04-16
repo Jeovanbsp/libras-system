@@ -112,11 +112,42 @@
       </div>
     </div>
 
+    <!-- CENTRAL DE SUPORTE -->
+    <div class="help-section">
+      <div class="glass-card">
+        <div class="help-header" @click="mostrarAjuda = !mostrarAjuda">
+          <h3 class="section-title-help">
+            <HelpCircle :size="22" class="text-brand" /> Central de Suporte
+          </h3>
+          <button class="btn-toggle-help">
+            <ChevronDown :size="20" :class="{ rotated: mostrarAjuda }" />
+          </button>
+        </div>
+        <p class="section-desc">Aprenda a utilizar cada funcionalidade do painel administrativo.</p>
+
+        <div v-if="mostrarAjuda" class="help-topics">
+          <div v-for="(topic, idx) in helpTopicsAdmin" :key="idx" class="help-topic" @click="topic.open = !topic.open">
+            <div class="help-topic-header">
+              <component :is="topic.icon" :size="20" class="help-topic-icon" />
+              <span class="help-topic-title">{{ topic.title }}</span>
+              <ChevronDown :size="16" :class="['chevron', { rotated: topic.open }]" />
+            </div>
+            <div v-if="topic.open" class="help-topic-body">
+              <p>{{ topic.description }}</p>
+              <ul>
+                <li v-for="(step, i) in topic.steps" :key="i">{{ step }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   Activity, 
@@ -129,7 +160,14 @@ import {
   MessageSquare,
   Users,
   BookOpen,
-  Zap
+  Zap,
+  HelpCircle,
+  ChevronDown,
+  LayoutDashboard,
+  CalendarPlus,
+  FileText,
+  Package,
+  ClipboardList
 } from 'lucide-vue-next'; 
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
@@ -137,6 +175,87 @@ import api from '../services/api';
 const router = useRouter();
 const stats = ref({ alunos: 0, cursos: 0, clientesB2B: 0, vendas: '0.00' });
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
+const mostrarAjuda = ref(false);
+
+const helpTopicsAdmin = reactive([
+  {
+    icon: LayoutDashboard,
+    title: 'Painel de Controle',
+    description: 'Visão geral do sistema com métricas de alunos, cursos e parceiros corporativos.',
+    steps: [
+      'Visualize o total de alunos ativos, cursos cadastrados e parceiros B2B.',
+      'Clique nos cards para aceder rapidamente a cada seção.',
+      'Use as Ações Rápidas para navegar para as tarefas mais comuns.'
+    ],
+    open: false
+  },
+  {
+    icon: Users,
+    title: 'Gestão de Alunos',
+    description: 'Cadastre, edite e libere acesso a cursos para os seus alunos.',
+    steps: [
+      'Acesse "Alunos" no menu lateral ou no botão de Ação Rápida.',
+      'Cadastre novos alunos com nome, e-mail e senha inicial.',
+      'Use "Liberar Acesso" para associar alunos a cursos específicos.'
+    ],
+    open: false
+  },
+  {
+    icon: BookOpen,
+    title: 'Gestão de Cursos',
+    description: 'Crie e gerencie cursos de Libras com aulas, materiais e vídeos.',
+    steps: [
+      'Em "Cursos", adicione um novo curso com título, descrição e carga horária.',
+      'Adicione aulas com links de vídeo (YouTube/Vimeo).',
+      'Faça upload de apostilas e materiais de apoio na seção "Apostilas".'
+    ],
+    open: false
+  },
+  {
+    icon: CalendarPlus,
+    title: 'Serviços e Eventos',
+    description: 'Registre eventos de interpretação, aloque intérpretes e acompanhe o status.',
+    steps: [
+      'Acesse "Serviços / Eventos" no menu lateral.',
+      'Preencha os dados do cliente B2B, data, horário e intérpretes.',
+      'Acompanhe o status de pagamento e exporte relatórios em PDF.'
+    ],
+    open: false
+  },
+  {
+    icon: Calculator,
+    title: 'Calculadora de Orçamentos',
+    description: 'Gere orçamentos com margem de lucro, impostos e logística calculados automaticamente.',
+    steps: [
+      'Informe a duração do serviço e o valor da hora.',
+      'Adicione custos de logística, imposto e margem de lucro.',
+      'Copie ou exporte o orçamento gerado em PDF.'
+    ],
+    open: false
+  },
+  {
+    icon: MessageSquare,
+    title: 'Fórum dos Alunos',
+    description: 'Interaja com os alunos, responda dúvidas e crie tópicos de discussão.',
+    steps: [
+      'Acesse o fórum no menu lateral.',
+      'Crie novos tópicos e responda às mensagens dos alunos.',
+      'Use @nome para mencionar alguém diretamente numa mensagem.'
+    ],
+    open: false
+  },
+  {
+    icon: ClipboardList,
+    title: 'Logs de Auditoria',
+    description: 'Monitore todas as ações realizadas pelo Admin Restrito em tempo real.',
+    steps: [
+      'Acesse "Logs de Auditoria" no menu lateral (visível apenas para Admin Full).',
+      'Veja as ações de criação, edição e exclusão com data e hora.',
+      'Receba notificações automáticas quando o Admin Restrito realizar ações.'
+    ],
+    open: false
+  }
+]);
 
 onMounted(async () => {
   try {
@@ -220,6 +339,27 @@ onMounted(async () => {
 .icon-companies { color: #f97316; }
 .icon-financial { color: #f59e0b; }
 .icon-forum { color: #14b8a6; }
+
+/* CENTRAL DE SUPORTE */
+.help-section { margin-top: 30px; }
+.section-title-help { font-size: 1.1rem; color: #1e293b; font-weight: 800; display: flex; align-items: center; gap: 8px; margin: 0; }
+.text-brand { color: #004aad; }
+.section-desc { font-size: 0.85rem; color: #64748b; margin: 5px 0 0; }
+.help-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.btn-toggle-help { background: transparent; border: none; cursor: pointer; color: #64748b; padding: 8px; border-radius: 8px; transition: 0.2s; }
+.btn-toggle-help:hover { background: #f1f5f9; }
+.chevron, .btn-toggle-help svg { transition: transform 0.3s ease; }
+.rotated { transform: rotate(180deg); }
+.help-topics { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+.help-topic { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+.help-topic:hover { border-color: #bfdbfe; }
+.help-topic-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.help-topic-icon { color: #004aad; flex-shrink: 0; }
+.help-topic-title { flex: 1; font-weight: 700; font-size: 0.95rem; color: #1e293b; }
+.help-topic-body { padding: 0 20px 16px; border-top: 1px solid #e2e8f0; }
+.help-topic-body p { font-size: 0.9rem; color: #475569; margin: 12px 0 8px; line-height: 1.5; }
+.help-topic-body ul { margin: 0; padding-left: 18px; }
+.help-topic-body li { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; line-height: 1.5; }
 
 @media (max-width: 768px) {
   .welcome-banner { flex-direction: column; text-align: center; padding: 25px; }

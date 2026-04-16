@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Curso = require('../models/Curso');
+const AuditLog = require('../models/AuditLog');
 
 exports.liberarCursoManual = async (req, res) => {
   try {
@@ -17,19 +18,14 @@ exports.liberarCursoManual = async (req, res) => {
       aluno.cursosMatriculados.push(cursoId);
       await aluno.save();
 
-      // ============================================================
-      // LOGICA DE NOTIFICAÇÃO EM TEMPO REAL
-      // ============================================================
-      const io = req.app.get('io'); // Captura o Socket.io configurado no app.js
-      
-      // Verifica se quem está executando a ação é um Admin Restrito
-      if (req.user && req.user.role === 'admin-restrito') {
-        io.emit('adminLog', {
-          action: `Liberou o curso "${curso.nome}" para o aluno "${aluno.nome}"`,
-          userName: req.user.nome || 'Admin Restrito'
+      // Notificação em tempo real para o aluno
+      const io = req.app.get('io');
+      if (io) {
+        io.emit(`aluno:${alunoId}:novoCurso`, {
+          cursoNome: curso.nome || curso.titulo,
+          cursoId: cursoId
         });
       }
-      // ============================================================
 
       return res.status(200).json({ message: "Curso liberado com sucesso para o aluno!" });
     } else {
@@ -41,7 +37,6 @@ exports.liberarCursoManual = async (req, res) => {
   }
 };
 
-// UTILIZADO PELO MODAL DE LIBERAR CURSOS (Traz apenas Alunos)
 exports.listarAlunos = async (req, res) => {
   try {
     const alunos = await User.find({ role: 'aluno' }).select('-password').sort({ createdAt: -1 });
@@ -51,7 +46,6 @@ exports.listarAlunos = async (req, res) => {
   }
 };
 
-// NOVA FUNÇÃO: Traz TODOS os utilizadores para a Tabela de Gestão (Admins e Alunos)
 exports.listarTodosUsuarios = async (req, res) => {
   try {
     const { busca, dataInicio, dataFim } = req.query;
@@ -78,5 +72,19 @@ exports.listarTodosUsuarios = async (req, res) => {
     res.json(usuarios);
   } catch (error) {
     res.status(500).json({ message: "Erro ao listar todos os utilizadores." });
+  }
+};
+
+exports.getLogs = async (req, res) => {
+  try {
+    const logs = await AuditLog.find()
+      .populate('userId', 'nome role')
+      .sort({ timestamp: -1 })
+      .limit(200)
+      .lean();
+    res.json(logs);
+  } catch (error) {
+    console.error("Erro ao buscar logs:", error);
+    res.status(500).json({ message: "Erro ao buscar logs de auditoria." });
   }
 };

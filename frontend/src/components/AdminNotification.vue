@@ -1,5 +1,4 @@
 <template>
-  <!-- Componente lógico, não renderiza HTML direto -->
   <div style="display: none;"></div>
 </template>
 
@@ -8,34 +7,38 @@ import { onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { toast } from 'vue3-toastify';
 import { useRouter } from 'vue-router';
-import 'vue3-toastify/dist/index.css'; // GARANTE QUE O ESTILO DA NOTIFICAÇÃO APAREÇA
+import 'vue3-toastify/dist/index.css';
 
 const router = useRouter();
 let socket = null;
 
-// Pega a URL do backend da variável de ambiente ou usa o localhost como padrão
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
 onMounted(() => {
-  // Conexão com o backend usando a URL dinâmica
-  socket = io(API_URL); 
+  const userRole = localStorage.getItem('userRole');
+  if (userRole !== 'admin') return;
+
+  socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
 
   socket.on('adminLog', (log) => {
-    // Notificação formatada para o sistema
-    toast.info(`NOTIFICAÇÃO DE SISTEMA: ${log.action}`, {
-      // Concatenando a descrição para aparecer no corpo da notificação
-      autoClose: 8000,
+    const acao = log.action || 'Ação desconhecida';
+    const usuario = log.userName || 'Admin Restrito';
+    
+    toast.info(`🔔 ${usuario} realizou: ${acao}`, {
+      autoClose: 10000,
       position: 'top-right',
-      closeOnClick: true,
+      closeOnClick: false,
       pauseOnHover: true,
-      // Ao clicar na notificação, leva para a página de logs
+      style: {
+        background: '#1e293b',
+        color: 'white',
+        borderLeft: '4px solid #f59e0b',
+        fontSize: '0.85rem'
+      },
       onClick: () => {
         router.push('/admin/logs');
       }
     });
-    
-    // Opcional: Log no console para debug
-    console.log("Nova atividade detectada:", log);
   });
 });
 

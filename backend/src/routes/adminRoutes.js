@@ -7,13 +7,14 @@ const auth = require('../middlewares/authMiddleware');
 router.get('/alunos', auth, adminController.listarAlunos);
 router.post('/liberar-curso', auth, adminController.liberarCursoManual);
 
-// NOVA ROTA: Busca todos os utilizadores (Admins e Alunos) para a listagem
 router.get('/usuarios', auth, adminController.listarTodosUsuarios);
 
-// ROTA DE UPLOAD DE MATERIAL
 router.post('/upload-material', auth, upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ message: "Arquivo não enviado." });
-    res.json({ fileName: req.file.filename });
+  if (!req.file) return res.status(400).json({ message: "Arquivo não enviado." });
+  res.json({ fileName: req.file.filename });
 });
+
+// Rota de Logs de Auditoria - apenas admin full
+router.get('/logs', auth, adminController.getLogs);
 
 module.exports = router;
