@@ -53,7 +53,7 @@ const buscarMateriais = async () => {
 const obterUrlArquivo = (caminho) => {
   if (!caminho) return '#';
   const caminhoLimpo = caminho.replace(/\\/g, '/');
-  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
+  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'https://libras-system.onrender.com';
   return `${baseUrl}/${caminhoLimpo}`;
 };
 

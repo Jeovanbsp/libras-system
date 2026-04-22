@@ -10,7 +10,7 @@ import 'vue3-toastify/dist/index.css';
 
 let socket = null;
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://libras-system.onrender.com';
 
 onMounted(() => {
   const userId = localStorage.getItem('userId');
