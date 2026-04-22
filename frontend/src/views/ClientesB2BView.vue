@@ -45,7 +45,8 @@
             </div>
           </div>
 
-          <div class="form-group">
+          <!-- Preço por Hora - Apenas para admin completo -->
+          <div v-if="userRole === 'admin'" class="form-group">
             <label>Preço por Hora Praticado (R$)</label>
             <input v-model.number="form.precoHora" type="number" step="0.01" placeholder="0.00" />
           </div>
@@ -102,7 +103,8 @@
                       <MessageCircle :size="14" /> WhatsApp
                   </a>
                   <span class="info-tag"><FileSpreadsheet :size="14" /> {{ cliente.cnpj }}</span>
-                  <span v-if="cliente.precoHora" class="info-tag font-bold text-brand-color ml-2">
+                  <!-- Preço por Hora - Apenas para admin completo -->
+                  <span v-if="userRole === 'admin' && cliente.precoHora" class="info-tag font-bold text-brand-color ml-2">
                     R$ {{ cliente.precoHora.toFixed(2) }}/h
                   </span>
                 </div>
@@ -150,6 +152,7 @@ import {
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
+const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 const clientes = ref([]);
 const listaServicos = ['Eventos Presenciais', 'Eventos Virtuais', 'Tradução Audiovisual', 'Legendagem', 'Consultoria'];
 

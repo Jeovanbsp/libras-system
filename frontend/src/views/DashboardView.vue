@@ -77,7 +77,18 @@
         <h3 class="section-title">
           <FileText :size="22" class="text-brand" /> Ferramenta Rápida: Gerar Orçamento B2B
         </h3>
-        <p class="section-desc">Preencha os dados abaixo para gerar um PDF padronizado da Libras Salvador.</p>
+        <p class="section-desc">Preencha os dados abaixo ou selecione um serviço já cadastrado para gerar um PDF padronizado da Libras Salvador.</p>
+
+        <!-- Seletor de serviço existente -->
+        <div v-if="servicos.length > 0" class="selector-box mb-4">
+          <label class="selector-label">Selecionar Serviço Cadastrado:</label>
+          <select v-model="servicoSelecionado" @change="preencherDoServico" class="modern-select">
+            <option value="">Selecione um serviço...</option>
+            <option v-for="s in servicos" :key="s._id" :value="s._id">
+              {{ s.cliente?.razaoSocial || 'Empresa' }} - {{ s.tipoEvento }} ({{ formatarData(s.dataEvento) }})
+            </option>
+          </select>
+        </div>
 
         <form @submit.prevent="gerarOrcamentoPDF" class="modern-form mt-4">
           <div class="form-row">
@@ -256,6 +267,8 @@ onMounted(async () => {
   } catch (err) { 
     console.error("Erro ao carregar estatísticas:", err); 
   }
+  // Carregar serviços para o orçamento
+  carregarServicos();
 });
 
 // -----------------------------------------------------
@@ -467,4 +480,10 @@ const gerarOrcamentoPDF = () => {
   .form-row { flex-direction: column; gap: 5px; }
   .glass-card { padding: 20px; }
 }
+
+/* ESTILOS DO SELETOR DE SERVIÇO */
+.selector-box { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.selector-label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
+.mb-4 { margin-bottom: 1rem; }
+.modern-select { width: 100%; padding: 13px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; font-family: inherit; }
 </style>

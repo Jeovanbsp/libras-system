@@ -69,7 +69,7 @@ exports.atualizarServico = async (req, res) => {
 
 exports.listarServicos = async (req, res) => {
   try {
-    const { dataInicio, dataFim, clienteId, interpreteId } = req.query;
+    const { dataInicio, dataFim, clienteId, interpreteId, status } = req.query;
     let filtro = {};
 
     if (dataInicio || dataFim) {
@@ -79,6 +79,7 @@ exports.listarServicos = async (req, res) => {
     }
     if (clienteId) filtro.cliente = clienteId;
     if (interpreteId) filtro.interpretes = interpreteId;
+    if (status) filtro.statusPagamento = status;
 
     const servicos = await ServicoConfirmado.find(filtro)
       .populate('cliente', 'razaoSocial cnpj')

@@ -6,18 +6,39 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // GET: Listar todos os usuários (Alunos/Professores)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    // Busca todos os usuários, mas não envia a senha por segurança
-    const usuarios = await User.find().select('-password');
+    const { busca, turma, modalidade, dataInicio, dataFim } = req.query;
+    let filtro = {};
+
+    if (busca) {
+      filtro.$or = [
+        { nome: { $regex: new RegExp(busca, 'i') } },
+        { email: { $regex: new RegExp(busca, 'i') } }
+      ];
+    }
+    if (turma) filtro.turma = { $regex: new RegExp(turma, 'i') };
+    if (modalidade) filtro.modalidade = modalidade;
+    
+    if (dataInicio || dataFim) {
+      filtro.createdAt = {};
+      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
+      if (dataFim) {
+        let fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999);
+        filtro.createdAt.$lte = fim;
+      }
+    }
+
+    const usuarios = await User.find(filtro).select('-password');
     res.json(usuarios);
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar usuários" });
   }
 });
 
-// PUT: Atualizar nome e email de um usuário (Admin)
+// PUT: Atualizar nome, email e senha de um usuário (Admin)
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { nome, email } = req.body;
+    const { nome, email, password, statusPagamento } = req.body;
     const userRole = req.user?.role;
     
     if (userRole !== 'admin' && userRole !== 'admin_restrito') {
@@ -40,6 +61,16 @@ router.put('/:id', authMiddleware, async (req, res) => {
       if (existente) return res.status(400).json({ error: "Este e-mail já está em uso por outro usuário." });
       updateData.email = email;
     }
+    
+    // Admin pode alterar senha
+    if (password && password.length >= 6) {
+      const bcrypt = require('bcryptjs');
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    // Status pagamento
+    if (statusPagamento) updateData.statusPagamento = statusPagamento;
 
     const usuario = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
     if (!usuario) return res.status(404).json({ error: "Usuário não encontrado." });

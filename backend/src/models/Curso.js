@@ -9,9 +9,9 @@ const materialSchema = new mongoose.Schema({
 
 const aulaSchema = new mongoose.Schema({
   titulo: { type: String, required: true },
-  descricao: { type: String },
+  descricao: { type: String },  // Descrição breve da atividade
   duracao: { type: Number },
-  materiais: [materialSchema] // Modificado: agora é um array de materiais
+  materiais: [materialSchema]
 });
 
 const moduloSchema = new mongoose.Schema({

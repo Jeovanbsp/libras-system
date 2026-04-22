@@ -1,17 +1,24 @@
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Definindo o servidor expressamente
+  host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // Usa conexão SSL
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  // A MÁGICA ESTÁ AQUI:
-  // Essa configuração extra contorna os bloqueios e problemas de rota/IPv6 do Render
   tls: {
     rejectUnauthorized: false
+  }
+});
+
+// Verificar conexão ao iniciar
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ Erro ao configurar email:", error);
+  } else {
+    console.log("✅ Servidor de email pronto");
   }
 });
 

@@ -22,6 +22,11 @@ const routes = [
     component: () => import('../views/ForgotPasswordView.vue')
   },
   {
+    path: '/solicitar-senha',
+    name: 'SolicitarSenha',
+    component: () => import('../views/SolicitarSenhaView.vue')
+  },
+  {
     path: '/reset-password/:token',
     name: 'ResetPasswordToken',
     component: () => import('../views/ResetPasswordView.vue')
@@ -159,6 +164,13 @@ const routes = [
     path: '/admin/logs',
     name: 'AdminLogs',
     component: () => import('../views/AdminLogs.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  // NOVA ROTA DE SOLICITAÇÕES DE SENHA
+  {
+    path: '/admin/solicitacoes-senha',
+    name: 'SolicitacoesSenha',
+    component: () => import('../views/SolicitacoesSenhaView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
   }
 ];
