@@ -513,13 +513,21 @@ onMounted(carregarUsuarios);
 /* INVESTIMENTO */
 .investimento-info { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .investimento-info span { font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
-.badge-modalidade { background: #e0e7ff; color: #4338ca; }
+.badge-modalidade, .badge-valor, .badge-apostila, .badge-combo, .badge-pagamento { 
+  background: #f1f5f9; color: #475569; font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; }
+.badge-modalidade { background: #e0f2fe; color: #0369a1; }
 .badge-valor { background: #dcfce7; color: #166534; }
 .badge-apostila { background: #fef3c7; color: #92400e; }
 .badge-combo { background: #fce7f3; color: #9d174d; }
-.badge-pagamento { background: #fee2e2; color: #dc2626; }
 .badge-pagamento.pago { background: #dcfce7; color: #166534; }
 .badge-pagamento.pendente { background: #fef3c7; color: #92400e; }
+
+/* Uniformizar selects do investimento */
+.investimento-box select {
+  width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; 
+  background: white; color: #1e293b; font-size: 0.9rem;
+}
+.investimento-box select:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0,74,173,0.1); }
 
 .investimento-box { background: #f8fafc; padding: 20px; border-radius: 14px; margin-top: 20px; border: 1px solid #e2e8f0; }
 .investimento-box h4 { display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 0.9rem; margin-bottom: 15px; }
