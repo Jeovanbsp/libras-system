@@ -260,6 +260,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { jsPDF } from 'jspdf';
 import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
@@ -292,7 +293,7 @@ const mostrarMensagem = (msg, tipo = 'success') => {
 
 const carregarUsuarios = async () => {
   try {
-    const res = await api.get('/admin/usuarios', { params: filtros.value });
+    const res = await api.get('/usuarios', { params: filtros.value });
     usuarios.value = res.data;
   } catch (error) {
     console.error('Erro ao carregar usuários');
@@ -403,26 +404,47 @@ const formatarData = (dataIso) => {
 
 // Gerar PDF dos alunos
 const gerarPDF = () => {
-  const conteudo = usuarios.value.map(user => `
-${user.nome}
-E-mail: ${user.email}
-Turma: ${user.turma || 'Não definida'}
-Modalidade: ${user.modalidade || 'Não definida'}
-Valor do Curso: R$ ${user.valorTotalCurso || '0,00'}
-Apostila: ${user.apostila || 'Nenhuma'}
-Combo: ${user.combo ? 'Sim' : 'Não'}
-Status Pagamento: ${user.statusPagamento || 'Não definido'}
-Cadastrado em: ${formatarData(user.createdAt)}
-${'='.repeat(40)}
-`).join('\n');
-
-  const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `alunos_${new Date().toISOString().split('T')[0]}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const doc = new jsPDF();
+  const brandColor = [0, 74, 173];
+  
+  // Cabeçalho
+  doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
+  doc.rect(0, 0, 210, 25, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text('Relatório de Alunos - Libras Salvador', 105, 10, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 105, 18, { align: 'center' });
+  
+  let y = 35;
+  
+  // Lista de alunos
+  usuarios.value.forEach((user, index) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${index + 1}. ${user.nome}`, 14, y);
+    y += 6;
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`E-mail: ${user.email}`, 14, y);
+    y += 5;
+    doc.text(`Turma: ${user.turma || 'Não definida'} | Modalidade: ${user.modalidade || 'Não definida'}`, 14, y);
+    y += 5;
+    doc.text(`Valor: R$ ${(user.valorTotalCurso || 0).toFixed(2)} | Apostila: ${user.apostila || 'Nenhuma'} | Combo: ${user.combo ? 'Sim' : 'Não'}`, 14, y);
+    y += 5;
+    doc.text(`Status Pagamento: ${user.statusPagamento || 'Não definido'} | Cadastrado: ${formatarData(user.createdAt)}`, 14, y);
+    y += 10;
+  });
+  
+  doc.save(`alunos_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
 onMounted(carregarUsuarios);
