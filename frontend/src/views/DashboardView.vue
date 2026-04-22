@@ -41,6 +41,44 @@
 
     </div>
 
+    <!-- Detalhamento financeiro -->
+    <div class="financeiro-detalhes mt-4">
+      <div class="glass-card">
+        <h3 class="section-title">
+          <PieChart :size="22" class="text-brand" /> Detalhamento Financeiro
+        </h3>
+        
+        <div class="filtros-financeiros mb-4">
+          <label class="filtro-label">Filtrar por origem:</label>
+          <div class="filtro-opcoes">
+            <button 
+              v-for="f in filtrosFinanceiros" 
+              :key="f.valor"
+              @click="filtroAtual = f.valor"
+              :class="['filtro-btn', { active: filtroAtual === f.valor }]"
+            >
+              {{ f.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="valores-grid">
+          <div class="valor-card" :class="{ active: filtroAtual === 'todos' }">
+            <span class="valor-label">Total Geral</span>
+            <span class="valor-amount">R$ {{ stats.vendas }}</span>
+          </div>
+          <div class="valor-card" :class="{ active: filtroAtual === 'alunos' }">
+            <span class="valor-label">Alunos (Investimento)</span>
+            <span class="valor-amount text-green">R$ {{ stats.valorAlunos }}</span>
+          </div>
+          <div class="valor-card" :class="{ active: filtroAtual === 'servicos' }">
+            <span class="valor-label">Eventos/Serviços</span>
+            <span class="valor-amount text-blue">R$ {{ stats.valorServicos }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SUPORTE / AJUDA -->
     <div class="help-section mt-4">
       <div class="glass-card">
@@ -205,15 +243,22 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowRight, FileText, Download, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, Users, CalendarPlus, Building2, BadgeDollarSign, Package, MessageSquare, HandMetal } from 'lucide-vue-next';
+import { ArrowRight, FileText, Download, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, Users, CalendarPlus, Building2, BadgeDollarSign, Package, MessageSquare, HandMetal, PieChart } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 const router = useRouter();
-const stats = ref({ alunos: 0, cursos: 0, vendas: '0.00' });
+const stats = ref({ alunos: 0, cursos: 0, vendas: '0.00', valorAlunos: '0.00', valorServicos: '0.00' });
 const mostrarAjuda = ref(false);
+const filtroAtual = ref('todos');
+
+const filtrosFinanceiros = [
+  { label: 'Todos', valor: 'todos' },
+  { label: 'Alunos', valor: 'alunos' },
+  { label: 'Eventos/Serviços', valor: 'servicos' }
+];
 
 const helpTopicsAdmin = reactive([
   {
@@ -663,4 +708,21 @@ const gerarOrcamentoPDF = () => {
 .selector-label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
 .mb-4 { margin-bottom: 1rem; }
 .modern-select { width: 100%; padding: 13px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; font-size: 0.95rem; color: #1e293b; box-sizing: border-box; font-family: inherit; }
+
+/* Detalhamento Financeiro */
+.financeiro-detalhes { max-width: 800px; margin: 0 auto; }
+.filtros-financeiros { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+.filtro-label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+.filtro-opcoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.filtro-btn { padding: 8px 16px; border: 1px solid #e2e8f0; background: white; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
+.filtro-btn:hover { border-color: #004aad; color: #004aad; }
+.filtro-btn.active { background: #004aad; color: white; border-color: #004aad; }
+
+.valores-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+.valor-card { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; text-align: center; transition: all 0.2s; }
+.valor-card.active { border-color: #004aad; background: #eff6ff; }
+.valor-label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px; }
+.valor-amount { font-size: 1.3rem; font-weight: 800; color: #1e293b; }
+.valor-amount.text-green { color: #16a34a; }
+.valor-amount.text-blue { color: #2563eb; }
 </style>

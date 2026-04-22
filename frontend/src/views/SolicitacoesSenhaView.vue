@@ -43,16 +43,75 @@
       </div>
     </div>
 
+  <div v-if="mostrarModal" class="modal-overlay" @click.self="fecharModal">
+      <div class="modal-popup">
+        <div class="modal-icon" :class="modalTipo">
+          <CheckCircle2 v-if="modalTipo === 'success'" :size="48" />
+          <AlertCircle v-else :size="48" />
+        </div>
+        <h3>{{ modalTitulo }}</h3>
+        <p>{{ modalMensagem }}</p>
+        <div class="modal-actions">
+          <button @click="fecharModal" class="btn-modal btn-cancel">Fechar</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal de Confirmação -->
+    <div v-if="mostrarConfirm" class="modal-overlay" @click.self="fecharConfirm">
+      <div class="modal-popup confirm-popup">
+        <div class="modal-icon warning">
+          <HelpCircle :size="48" />
+        </div>
+        <h3>{{ confirmTitulo }}</h3>
+        <p>{{ confirmMensagem }}</p>
+        <div class="modal-actions">
+          <button @click="fecharConfirm" class="btn-modal btn-cancel">Cancelar</button>
+          <button @click="executarConfirm" class="btn-modal btn-confirm" :class="confirmTipo">{{ confirmBtnText }}</button>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { KeyRound, User, Check, X, Inbox } from 'lucide-vue-next';
+import { KeyRound, User, Check, X, Inbox, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const solicitacoes = ref([]);
+
+// Modal states
+const mostrarModal = ref(false);
+const modalTipo = ref('success');
+const modalTitulo = ref('');
+const modalMensagem = ref('');
+
+const mostrarConfirm = ref(false);
+const confirmTitulo = ref('');
+const confirmMensagem = ref('');
+const confirmTipo = ref('success');
+const confirmBtnText = ref('');
+const confirmCallback = ref(null);
+
+const fecharModal = () => { mostrarModal.value = false; };
+
+const abrirConfirm = (titulo, mensagem, tipo, btnText, callback) => {
+  confirmTitulo.value = titulo;
+  confirmMensagem.value = mensagem;
+  confirmTipo.value = tipo;
+  confirmBtnText.value = btnText;
+  confirmCallback.value = callback;
+  mostrarConfirm.value = true;
+};
+
+const fecharConfirm = () => { mostrarConfirm.value = false; };
+const executarConfirm = () => {
+  if (confirmCallback.value) confirmCallback.value();
+  fecharConfirm();
+};
 
 const carregarSolicitacoes = async () => {
   try {
@@ -64,19 +123,32 @@ const carregarSolicitacoes = async () => {
 };
 
 const responder = async (id, action) => {
-  const confirmMsg = action === 'aprovar' 
-    ? "Aprovar esta solicitação?\n\nA senha do aluno será alterada para a nova senha." 
-    : "Rejeitar esta solicitação?\n\nO aluno continuará com a senha atual.";
-  
-  if (!confirm(confirmMsg)) return;
-  
-  try {
-    await api.put(`/solicitacoes-senha/${id}/responder`, { action });
-    alert(action === 'aprovar' ? 'Senha atualizada com sucesso!' : 'Solicitação rejeitada.');
-    carregarSolicitacoes();
-  } catch (err) {
-    alert('Erro ao processar solicitação.');
-  }
+  const isAprovar = action === 'aprovar';
+  abrirConfirm(
+    isAprovar ? 'Aprovar Solicitação?' : 'Rejeitar Solicitação?',
+    isAprovar 
+      ? 'A senha do aluno será alterada para a nova senha solicitada.' 
+      : 'O aluno continuará com a senha atual. A solicitação será removida.',
+    isAprovar ? 'success' : 'error',
+    isAprovar ? 'Aprovar' : 'Rejeitar',
+    async () => {
+      try {
+        await api.put(`/solicitacoes-senha/${id}/responder`, { action });
+        modalTitulo.value = isAprovar ? 'Senha Atualizada!' : 'Solicitação Rejeitada';
+        modalMensagem.value = isAprovar 
+          ? 'A nova senha foi aplicada com sucesso para o aluno.' 
+          : 'A solicitação de senha foi rejeitada.';
+        modalTipo.value = 'success';
+        mostrarModal.value = true;
+        carregarSolicitacoes();
+      } catch (err) {
+        modalTitulo.value = 'Erro';
+        modalMensagem.value = 'Não foi possível processar a solicitação.';
+        modalTipo.value = 'error';
+        mostrarModal.value = true;
+      }
+    }
+  );
 };
 
 const formatarData = (data) => {
@@ -135,4 +207,23 @@ onMounted(carregarSolicitacoes);
 .btn-approve:hover { background: #047857; }
 .btn-reject { background: #f1f5f9; color: #64748b; }
 .btn-reject:hover { background: #e2e8f0; }
+
+/* Modal Popup */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-popup { background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.modal-icon.success { background: #dcfce7; color: #059669; }
+.modal-icon.error { background: #fee2e2; color: #dc2626; }
+.modal-icon.warning { background: #fef3c7; color: #d97706; }
+.modal-popup h3 { margin: 0 0 10px; font-size: 1.4rem; color: #1e293b; }
+.modal-popup p { color: #64748b; margin: 0 0 25px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.btn-modal { padding: 12px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+.btn-modal.btn-cancel { background: #f1f5f9; color: #64748b; }
+.btn-modal.btn-cancel:hover { background: #e2e8f0; }
+.btn-modal.btn-confirm { color: white; }
+.btn-modal.btn-confirm.success { background: #059669; }
+.btn-modal.btn-confirm.success:hover { background: #047857; }
+.btn-modal.btn-confirm.error { background: #dc2626; }
+.btn-modal.btn-confirm.error:hover { background: #b91c1c; }
 </style>
