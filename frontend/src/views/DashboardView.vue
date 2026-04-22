@@ -91,35 +91,104 @@
         </div>
 
         <form @submit.prevent="gerarOrcamentoPDF" class="modern-form mt-4">
+          <!-- Dados do Cliente -->
+          <h4 class="form-subtitle">Dados do Cliente</h4>
           <div class="form-row">
             <div class="form-group-col" style="flex: 2;">
               <label>Nome da Empresa / Solicitante</label>
               <input v-model="orcamento.nomeEmpresa" placeholder="Ex: Petrobras S.A." required />
             </div>
-            <div class="form-group-col" style="flex: 2;">
-              <label>Nome do Evento</label>
-              <input v-model="orcamento.nomeEvento" placeholder="Ex: Simpósio de Tecnologia" required />
+            <div class="form-group-col">
+              <label>CNPJ</label>
+              <input v-model="orcamento.cnpj" placeholder="Ex: 12.345.678/0001-90" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group-col">
+              <label>Nome do Responsável</label>
+              <input v-model="orcamento.nomeResponsavel" placeholder="Ex: João Silva" />
+            </div>
+            <div class="form-group-col">
+              <label>Setor</label>
+              <input v-model="orcamento.setorResponsavel" placeholder="Ex: Recursos Humanos" />
+            </div>
+          </div>
+
+          <!-- Dados do Evento -->
+          <h4 class="form-subtitle mt-4">Dados do Evento</h4>
+          <div class="form-row">
+            <div class="form-group-col" style="flex: 2;">
+              <label>Nome do Evento</label>
+              <input v-model="orcamento.nomeEvento" placeholder="Ex: Simpósio de Tecnologia" required />
+            </div>
+            <div class="form-group-col">
               <label>Período do Evento</label>
               <input v-model="orcamento.periodo" placeholder="Ex: 12 a 15 de Outubro de 2024" required />
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group-col">
               <label>Carga Horária Estimada</label>
               <input v-model="orcamento.cargaHoraria" placeholder="Ex: 16 horas" required />
             </div>
+            <div class="form-group-col">
+              <label>Endereço / Local</label>
+              <input v-model="orcamento.endereco" placeholder="Ex: Centro de Convenções, Salvador - BA" required />
+            </div>
+          </div>
+
+          <!-- Descrição dos Serviços -->
+          <div class="form-group mt-2">
+            <label>Descrição Detalhada dos Serviços</label>
+            <textarea v-model="orcamento.descricaoServicos" rows="3" placeholder="Descreva os serviços que serão prestados..."></textarea>
+          </div>
+
+          <!-- Condições Financeiras -->
+          <h4 class="form-subtitle mt-4">Condições Financeiras</h4>
+          <div class="form-row">
+            <div class="form-group-col">
+              <label>Prazo de Pagamento</label>
+              <input v-model="orcamento.prazoPagamento" placeholder="Ex: 30 dias após execução" />
+            </div>
+            <div class="form-group-col">
+              <label>Forma de Pagamento</label>
+              <input v-model="orcamento.formaPagamento" placeholder="Ex: Pix, boleto, transferência" />
+            </div>
           </div>
 
           <div class="form-group mt-2">
-            <label>Endereço / Local</label>
-            <input v-model="orcamento.endereco" placeholder="Ex: Centro de Convenções, Salvador - BA" required />
+            <label>Dados Bancários</label>
+            <input v-model="orcamento.dadosBancarios" placeholder="Banco: ... | Agência: ... | Conta: ..." />
           </div>
-          
+
+          <div class="form-row">
+            <div class="form-group-col">
+              <label>Prazo de Entrega/Execução</label>
+              <input v-model="orcamento.prazoEntrega" placeholder="Ex: Conforme cronograma do evento" />
+            </div>
+            <div class="form-group-col">
+              <label>Validade da Proposta (dias)</label>
+              <input v-model="orcamento.validadeProposta" type="number" placeholder="Ex: 10" />
+            </div>
+          </div>
+
+          <!-- Termos e Condições -->
+          <h4 class="form-subtitle mt-4">Termos e Condições</h4>
           <div class="form-group mt-2">
-            <label>Valor Total (R$) <span class="text-xs text-gray-400 font-normal">- Opcional</span></label>
+            <label>Política de Cancelamento</label>
+            <textarea v-model="orcamento.politicaCancelamento" rows="2" placeholder="Descreva a política de cancelamento..."></textarea>
+          </div>
+
+          <div class="form-group mt-2">
+            <label>Requisitos / O que o cliente precisa fornecer</label>
+            <textarea v-model="orcamento.requisitos" rows="2" placeholder="Ex: Lista de presença, material de apoio, acesso ao local..."></textarea>
+          </div>
+
+          <!-- Valor -->
+          <div class="form-group mt-4">
+            <label>Valor Total (R$)</label>
             <input v-model.number="orcamento.valor" type="number" step="0.01" placeholder="Ex: 2500.00" />
           </div>
 
@@ -253,11 +322,22 @@ const helpTopicsAdmin = reactive([
 // Estado para o formulário de orçamento
 const orcamento = ref({
   nomeEmpresa: '',
+  cnpj: '',
+  nomeResponsavel: '',
+  setorResponsavel: '',
   nomeEvento: '',
   periodo: '',
   cargaHoraria: '',
   endereco: '',
-  valor: null
+  valor: null,
+  descricaoServicos: '',
+  prazoPagamento: '',
+  formaPagamento: '',
+  dadosBancarios: '',
+  prazoEntrega: '',
+  validadeProposta: '',
+  politicaCancelamento: '',
+  requisitos: ''
 });
 
 onMounted(async () => {
@@ -272,110 +352,206 @@ onMounted(async () => {
 });
 
 // -----------------------------------------------------
-// FUNÇÃO: GERAR PDF DO ORÇAMENTO
+// FUNÇÃO: GERAR PDF DO ORÇAMENTO (Novo Modelo)
 // -----------------------------------------------------
 const gerarOrcamentoPDF = () => {
   const doc = new jsPDF();
   const dataHoje = new Date().toLocaleDateString('pt-BR');
-  const brandColor = [0, 74, 173]; // Azul padrão Libras Salvador
+  const brandColor = [0, 74, 173];
 
-  // 1. Cabeçalho Principal
+  let y = 10;
+
+  // 1. Cabeçalho com Dados da Libras Salvador
   doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
-  doc.rect(0, 0, 210, 40, 'F'); 
+  doc.rect(0, 0, 210, 45, 'F');
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text('LIBRAS SALVADOR', 105, 20, { align: 'center' });
-  
+  doc.text('LIBRAS SALVADOR LTDA', 105, 15, { align: 'center' });
+
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text('Soluções em Acessibilidade e Inclusão', 105, 28, { align: 'center' });
+  doc.text('CNPJ: 34.989.801/0001-43', 105, 23, { align: 'center' });
+  doc.text('Rua Alceu Amoroso Lima, 786, Edf. Tancredo Neves Trade Center, Sala 312', 105, 30, { align: 'center' });
+  doc.text('Caminho das Árvores, Salvador/BA – CEP: 41.820-770', 105, 36, { align: 'center' });
+  doc.text('Contato: (71) 98836-1371 | E-mail: contato@librasalvador.com', 105, 42, { align: 'center' });
 
-  // 2. Título do Documento
+  y = 55;
+
+  // 2. Título
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text('PROPOSTA COMERCIAL DE PRESTAÇÃO DE SERVIÇOS', 105, 55, { align: 'center' });
-  
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Data de emissão: ${dataHoje}`, 195, 65, { align: 'right' });
+  doc.text('PROPOSTA COMERCIAL', 105, y, { align: 'center' });
 
-  // 3. Dados do Solicitante
-  doc.setFillColor(245, 245, 245);
-  doc.rect(14, 70, 182, 45, 'F');
-  
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text('DADOS DO CLIENTE / EVENTO', 18, 78);
-  
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Empresa Solicitante: ${orcamento.value.nomeEmpresa || 'Não informado'}`, 18, 86);
-  doc.text(`Nome do Evento: ${orcamento.value.nomeEvento || 'Não informado'}`, 18, 93);
-  doc.text(`Período de Realização: ${orcamento.value.periodo || 'Não informado'}`, 18, 100);
-  doc.text(`Carga Horária Estimada: ${orcamento.value.cargaHoraria || 'Não informado'}`, 18, 107);
-  doc.text(`Local / Endereço: ${orcamento.value.endereco || 'Não informado'}`, 18, 114);
+  y += 15;
 
-  // 4. Descrição dos Serviços (Tabela de Escopo)
+  // 3. Dados do Cliente
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text('ESCOPO DOS SERVIÇOS', 14, 130);
+  doc.text('1. IDENTIFICAÇÃO', 14, y);
+  y += 8;
 
-  const escopoRows = [
-    ["Serviço de Tradução e Interpretação", "Atuação de intérpretes profissionais de Libras garantindo a acessibilidade comunicacional durante todo o evento descrito."],
-    ["Logística e Gerenciamento", "Gestão de escala, revezamento e coordenação da equipe de intérpretes pela Libras Salvador."],
-    ["Equipamentos (Se aplicável)", "Utilização de equipamentos próprios ou adaptação ao sistema de transmissão do local."]
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  // Dados do Prestador
+  doc.setFillColor(245, 245, 245);
+  doc.rect(14, y, 182, 25, 'F');
+  doc.setFont("helvetica", "bold");
+  doc.text('DADOS DO PRESTADOR:', 18, y + 7);
+  doc.setFont("helvetica", "normal");
+  doc.text('LIBRAS SALVADOR LTDA', 18, y + 14);
+  doc.text(`CNPJ: 34.989.801/0001-43 | Contato: (71) 98836-1371`, 18, y + 20);
+
+  y += 30;
+
+  // Dados do Cliente
+  doc.setFillColor(245, 245, 245);
+  doc.rect(14, y, 182, 30, 'F');
+  doc.setFont("helvetica", "bold");
+  doc.text('DADOS DO CLIENTE:', 18, y + 7);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Empresa: ${orcamento.value.nomeEmpresa || 'Não informado'}`, 18, y + 14);
+  doc.text(`CNPJ: ${orcamento.value.cnpj || 'Não informado'}`, 18, y + 20);
+  doc.text(`Responsável: ${orcamento.value.nomeResponsavel || 'Não informado'} | Setor: ${orcamento.value.setorResponsavel || 'Não informado'}`, 18, y + 26);
+
+  y += 40;
+
+  // 4. Descrição dos Serviços
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('2. DESCRIÇÃO DETALHADA DOS SERVIÇOS', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setFillColor(255, 255, 255);
+  doc.rect(14, y, 182, 35, 'F');
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(14, y, 182, 35, 'S');
+
+  const descricaoServicos = orcamento.value.descricaoServicos || 'Serviço de Tradução e Interpretação em Libras para o evento descrito, com atuação de intérpretes profissionais garantindo a acessibilidade comunicacional.';
+  const descricaoLines = doc.splitTextToSize(descricaoServicos, 175);
+  doc.text(descricaoLines, 18, y + 8);
+
+  doc.text('O preço da hora/interpretação leva em conta a lista de referência da FEBRAPILS.', 18, y + 28);
+  doc.text('Para atividades com até uma hora de duração, será necessária a atuação de um intérprete de Libras.', 18, y + 33);
+
+  y += 45;
+
+  // 5. Detalhamento do Evento
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('3. DETALHAMENTO', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  const detalhes = [
+    ['Nome do Evento', orcamento.value.nomeEvento || 'Não informado'],
+    ['Período de Realização', orcamento.value.periodo || 'Não informado'],
+    ['Carga Horária Estimada', orcamento.value.cargaHoraria || 'Não informado'],
+    ['Local / Endereço', orcamento.value.endereco || 'Não informado']
   ];
 
   doc.autoTable({
-    startY: 135,
+    startY: y,
     head: [['Item', 'Descrição']],
-    body: escopoRows,
+    body: detalhes,
     theme: 'grid',
     headStyles: { fillColor: brandColor, textColor: 255 },
-    styles: { fontSize: 9, cellPadding: 5 }
+    styles: { fontSize: 9, cellPadding: 4 }
   });
 
-  let finalY = doc.lastAutoTable.finalY || 135;
+  y = doc.lastAutoTable.finalY + 10;
 
-  // 5. Bloco de Valor (Se preenchido)
+  // 6. Condições Financeiras
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('4. CONDIÇÕES FINANCEIRAS', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  doc.text(`Prazo de Pagamento: ${orcamento.value.prazoPagamento || 'A combinar'}`, 14, y);
+  y += 6;
+  doc.text(`Forma de Pagamento: ${orcamento.value.formaPagamento || 'Pix, boleto, transferência ou cartão'}`, 14, y);
+  y += 6;
+  doc.text(`Dados Bancários: ${orcamento.value.dadosBancarios || 'A fornecer mediante aprovação'}`, 14, y);
+  y += 15;
+
+  // Valor
   if (orcamento.value.valor) {
-    // Formata o número para o padrão de moeda brasileiro (R$)
-    const valorFormatado = new Intl.NumberFormat('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    }).format(orcamento.value.valor);
-
-    doc.setFillColor(239, 246, 255); 
-    doc.rect(14, finalY + 10, 182, 20, 'F');
-    
+    const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orcamento.value.valor);
+    doc.setFillColor(239, 246, 255);
+    doc.rect(14, y, 182, 15, 'F');
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text('INVESTIMENTO TOTAL:', 20, finalY + 23);
-    
+    doc.text('INVESTIMENTO TOTAL:', 20, y + 10);
     doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
-    doc.setFontSize(14);
-    doc.text(valorFormatado, 190, finalY + 23, { align: 'right' });
-    doc.setTextColor(0, 0, 0); 
-
-    finalY += 30;
+    doc.text(valorFormatado, 190, y + 10, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    y += 25;
   }
 
-  // 6. Rodapé e Assinaturas
+  // 7. Prazos e Validade
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('5. PRAZOS E VALIDADE', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Prazo de Entrega/Execução: ${orcamento.value.prazoEntrega || 'Conforme cronograma do evento'}`, 14, y);
+  y += 6;
+  const validade = orcamento.value.validadeProposta ? `${orcamento.value.validadeProposta} dias` : '10 dias';
+  doc.text(`Validade da Proposta: Este orçamento é válido por ${validade}.`, 14, y);
+  y += 15;
+
+  // 8. Termos e Condições
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text('6. TERMOS E CONDIÇÕES', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  doc.text(`Política de Cancelamento: ${orcamento.value.politicaCancelamento || 'A combinar entre as partes.'}`, 14, y);
+  y += 6;
+  doc.text(`Requisitos: ${orcamento.value.requisitos || 'O cliente deve fornecer lista de presença, material de apoio e acesso ao local.'}`, 14, y);
+  y += 20;
+
+  // 9. Diferencial
+  doc.setFillColor(245, 247, 250);
+  doc.rect(14, y, 182, 40, 'F');
+  doc.setFont("helvetica", "bold");
+  doc.text('POR QUE CONTRATAR A LIBRAS SALVADOR?', 18, y + 8);
+  doc.setFont("helvetica", "normal");
+  doc.text('• Empresa especializada em tradução e interpretação em Libras.', 18, y + 15);
+  doc.text('• Equipe de intérpretes qualificados para atendimento em vários estados.', 18, y + 21);
+  doc.text('• Mais de 300 avaliações 5 estrelas no Google.', 18, y + 27);
+  doc.text('• Emitimos Nota Fiscal como Tradução e Interpretação (não como MEI).', 18, y + 33);
+
+  y += 50;
+
+  // 10. Assinaturas
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text('Condições de pagamento e validade desta proposta a serem acordadas mediante aprovação.', 14, finalY + 20);
+  doc.text('Ficamos no aguardo de retorno da proposta e agradecemos pela oportunidade de apresentá-la.', 105, y, { align: 'center' });
 
-  doc.line(65, finalY + 50, 145, finalY + 50); // Linha de assinatura
-  doc.setFont("helvetica", "bold");
-  doc.text('Libras Salvador', 105, finalY + 55, { align: 'center' });
-  doc.setFont("helvetica", "normal");
-  doc.text('CNPJ: XX.XXX.XXX/0001-XX | contato@librassalvador.com.br', 105, finalY + 60, { align: 'center' });
+  y += 15;
+  doc.line(40, y, 100, y);
+  doc.text('Libras Salvador', 70, y + 5, { align: 'center' });
 
-  // 7. Sanitização e Download
-  // Substitui espaços e caracteres especiais do nome da empresa para usar no nome do arquivo
+  doc.line(110, y, 170, y);
+  doc.text(orcamento.value.nomeResponsavel || 'Cliente', 140, y + 5, { align: 'center' });
+
+  // Salvar PDF
   const safeName = (orcamento.value.nomeEmpresa || 'Avulso').replace(/[^a-z0-9]/gi, '_');
   doc.save(`Orcamento_${safeName}.pdf`);
 };
@@ -383,6 +559,7 @@ const gerarOrcamentoPDF = () => {
 
 <style scoped>
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+.form-subtitle { color: #004aad; font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
 
 .glass-card {
   background: white; 
