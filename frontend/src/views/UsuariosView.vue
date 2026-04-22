@@ -147,13 +147,13 @@
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
                 <!-- Campos de investimento - só mostrar se existirem dados -->
-                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || user.certificado" class="investimento-info">
+                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || (user.certificados && user.certificados.length > 0)" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
                   <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
                   <span v-if="user.combo" class="badge-combo">Combo</span>
                   <span v-if="user.statusPagamento" :class="['badge-pagamento', user.statusPagamento === 'Pago' ? 'pago' : 'pendente']">{{ user.statusPagamento }}</span>
-                  <span v-if="user.certificado" class="badge-certificado">Certificado</span>
+                  <span v-if="user.certificados && user.certificados.length > 0" class="badge-certificado">Certificados ({{ user.certificados.length }})</span>
                 </div>
               </div>
               <div class="item-actions">
@@ -285,13 +285,26 @@
           
           <!-- Certificado do Aluno -->
           <div v-if="userParaEditar?.role === 'aluno'" class="investimento-box">
-            <h4><Award :size="16" /> Certificado</h4>
+            <h4><Award :size="16" /> Certificados ({{ editForm.certificados?.length || 0 }})</h4>
             
-            <div v-if="editForm.certificado" class="certificado-atual">
-              <span class="badge-certificado"><CheckCircle2 :size="14" /> Certificado: {{ editForm.certificado }}</span>
-              <button @click="removerCertificado" class="btn-remove-cert" title="Remover certificado">
-                <Trash2 :size="14" />
-              </button>
+            <!-- Lista de certificados -->
+            <div v-if="editForm.certificados && editForm.certificados.length > 0" class="certificados-list">
+              <div v-for="(cert, idx) in editForm.certificados" :key="idx" class="cert-item">
+                <div class="cert-info">
+                  <CheckCircle2 :size="16" class="text-green-600" />
+                  <span class="cert-nome">{{ cert.nome }}</span>
+                  <span class="cert-data">{{ formatarData(cert.dataUpload) }}</span>
+                </div>
+                <button @click="removerCertificado(idx)" class="btn-remove-cert" title="Remover certificado">
+                  <Trash2 :size="14" />
+                </button>
+              </div>
+            </div>
+            
+            <!-- Adicionar novo certificado -->
+            <div class="form-group">
+              <label>Nome do Certificado</label>
+              <input v-model="nomeCertificado" placeholder="Ex: Curso de Libras Intermediário" class="form-input" />
             </div>
             
             <div class="form-group">
@@ -396,7 +409,8 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, certificado: '' });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, certificados: [] });
+const nomeCertificado = ref('');
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
 
@@ -411,8 +425,9 @@ const abrirModalEdicao = (user) => {
     valorTotalCurso: user.valorTotalCurso || 0,
     apostila: user.apostila || '',
     combo: user.combo || false,
-    certificado: user.certificado || ''
+    certificados: user.certificados || []
   };
+  nomeCertificado.value = '';
   editFeedback.value = '';
   mostrarModalEdicao.value = true;
 };
@@ -522,11 +537,11 @@ const handleCertificado = (event) => {
   certificadoFile.value = event.target.files[0];
 };
 
-const removerCertificado = async () => {
-  if (!userParaEditar.value?.certificado) return;
+const removerCertificado = async (index) => {
+  if (!userParaEditar.value) return;
   try {
-    await api.delete(`/certificados/${userParaEditar.value._id}`);
-    editForm.value.certificado = '';
+    await api.delete(`/certificados/${userParaEditar.value._id}/${index}`);
+    editForm.value.certificados.splice(index, 1);
     editFeedback.value = 'Certificado removido com sucesso!';
     editFeedbackTipo.value = 'success';
     carregarUsuarios();
@@ -540,9 +555,14 @@ const uploadCertificado = async (alunoId) => {
   if (!certificadoFile.value) return;
   const formData = new FormData();
   formData.append('certificado', certificadoFile.value);
+  if (nomeCertificado.value) {
+    formData.append('nomeCertificado', nomeCertificado.value);
+  }
   await api.post(`/certificados/${alunoId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
+  certificadoFile.value = null;
+  nomeCertificado.value = '';
 };
 
 onMounted(carregarUsuarios);

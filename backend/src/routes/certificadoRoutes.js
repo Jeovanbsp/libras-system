@@ -31,10 +31,11 @@ const upload = multer({
   }
 });
 
-// POST: Upload certificado para um aluno específico
+// POST: Adicionar novo certificado para um aluno
 router.post('/:alunoId', upload.single('certificado'), async (req, res) => {
   try {
     const { alunoId } = req.params;
+    const { nomeCertificado } = req.body;
     const aluno = await User.findById(alunoId);
     
     if (!aluno) {
@@ -45,23 +46,23 @@ router.post('/:alunoId', upload.single('certificado'), async (req, res) => {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
     
-    // Remove certificado anterior se existir
-    if (aluno.certificado) {
-      const caminhoAntigo = path.join(__dirname, '../../uploads/certificados/', aluno.certificado);
-      if (fs.existsSync(caminhoAntigo)) {
-        fs.unlinkSync(caminhoAntigo);
-      }
-    }
+    // Adiciona novo certificado ao array
+    const novoCertificado = {
+      nome: nomeCertificado || `Certificado ${(aluno.certificados?.length || 0) + 1}`,
+      arquivo: req.file.filename,
+      dataUpload: new Date()
+    };
     
-    // Salva o caminho do certificado
-    const nomeArquivo = req.file.filename;
-    aluno.certificado = nomeArquivo;
+    if (!aluno.certificados) {
+      aluno.certificados = [];
+    }
+    aluno.certificados.push(novoCertificado);
     await aluno.save();
     
     res.json({ 
-      message: 'Certificado enviado com sucesso',
-      certificado: nomeArquivo,
-      aluno: aluno.nome
+      message: 'Certificado adicionado com sucesso',
+      certificado: novoCertificado,
+      total: aluno.certificados.length
     });
   } catch (err) {
     console.error(err);
@@ -69,7 +70,7 @@ router.post('/:alunoId', upload.single('certificado'), async (req, res) => {
   }
 });
 
-// GET: Ver certificado de um aluno
+// GET: Listar todos os certificados de um aluno
 router.get('/:alunoId', async (req, res) => {
   try {
     const { alunoId } = req.params;
@@ -79,39 +80,41 @@ router.get('/:alunoId', async (req, res) => {
       return res.status(404).json({ error: 'Aluno não encontrado' });
     }
     
-    if (!aluno.certificado) {
-      return res.json({ certificado: null, message: 'Nenhum certificado encontrado' });
-    }
-    
     res.json({ 
-      certificado: aluno.certificado,
-      aluno: aluno.nome
+      certificados: aluno.certificados || [],
+      total: aluno.certificados?.length || 0
     });
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao buscar certificado' });
+    res.status(500).json({ error: 'Erro ao buscar certificados' });
   }
 });
 
-// DELETE: Remover certificado de um aluno
-router.delete('/:alunoId', async (req, res) => {
+// DELETE: Remover um certificado específico
+router.delete('/:alunoId/:certificadoIndex', async (req, res) => {
   try {
-    const { alunoId } = req.params;
+    const { alunoId, certificadoIndex } = req.params;
     const aluno = await User.findById(alunoId);
     
     if (!aluno) {
       return res.status(404).json({ error: 'Aluno não encontrado' });
     }
     
-    if (aluno.certificado) {
-      const caminhoArquivo = path.join(__dirname, '../../uploads/certificados/', aluno.certificado);
-      if (fs.existsSync(caminhoArquivo)) {
-        fs.unlinkSync(caminhoArquivo);
-      }
-      aluno.certificado = '';
-      await aluno.save();
+    if (!aluno.certificados || !aluno.certificados[certificadoIndex]) {
+      return res.status(404).json({ error: 'Certificado não encontrado' });
     }
     
-    res.json({ message: 'Certificado removido com sucesso' });
+    // Remove arquivo físico
+    const arquivo = aluno.certificados[certificadoIndex].arquivo;
+    const caminhoArquivo = path.join(__dirname, '../../uploads/certificados/', arquivo);
+    if (fs.existsSync(caminhoArquivo)) {
+      fs.unlinkSync(caminhoArquivo);
+    }
+    
+    // Remove do array
+    aluno.certificados.splice(certificadoIndex, 1);
+    await aluno.save();
+    
+    res.json({ message: 'Certificado removido com sucesso', total: aluno.certificados.length });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao remover certificado' });
   }

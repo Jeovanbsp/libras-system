@@ -51,17 +51,28 @@
 
     </div>
 
-    <!-- CERTIFICADO DO ALUNO -->
-    <div v-if="certificado" class="mt-4">
+    <!-- CERTIFICADOS DO ALUNO -->
+    <div v-if="certificados.length > 0" class="mt-4">
       <div class="glass-card cert-card">
         <div class="cert-header">
           <Award :size="28" class="text-brand" />
-          <h3>Seu Certificado</h3>
+          <h3>Meus Certificados ({{ certificados.length }})</h3>
         </div>
-        <p class="cert-desc">Parabéns! Seu certificado está disponível para download.</p>
-        <a :href="certificadoUrl" download class="btn-cert">
-          <Download :size="18" /> Baixar Certificado PDF
-        </a>
+        
+        <div class="certificados-grid">
+          <div v-for="(cert, idx) in certificados" :key="idx" class="cert-item-aluno">
+            <div class="cert-info">
+              <Award :size="20" class="text-green-600" />
+              <div>
+                <strong>{{ cert.nome }}</strong>
+                <span class="cert-data">Recebido em: {{ formatarData(cert.dataUpload) }}</span>
+              </div>
+            </div>
+            <a :href="getCertificadoUrl(cert.arquivo)" download class="btn-cert">
+              <Download :size="16" /> Baixar
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -110,22 +121,26 @@ const router = useRouter();
 const totalCursos = ref(0);
 const totalMateriais = ref(0);
 const mostrarAjuda = ref(false);
-const certificado = ref('');
+const certificados = ref([]);
 const usuarioId = localStorage.getItem('userId');
 
-const certificadoUrl = () => {
-  if (!certificado.value) return '';
-  return `/uploads/certificados/${certificado.value}`;
+const getCertificadoUrl = (arquivo) => {
+  return `/uploads/certificados/${arquivo}`;
+};
+
+const formatarData = (data) => {
+  if (!data) return '';
+  return new Date(data).toLocaleDateString('pt-BR');
 };
 
 onMounted(async () => {
   try {
     const userRes = await api.get(`/usuarios/${usuarioId}`);
-    if (userRes.data.certificado) {
-      certificado.value = userRes.data.certificado;
+    if (userRes.data.certificados && userRes.data.certificados.length > 0) {
+      certificados.value = userRes.data.certificados;
     }
   } catch (err) {
-    console.log('Erro ao carregar certificado');
+    console.log('Erro ao carregar certificados');
   }
 });
 
@@ -341,9 +356,22 @@ onMounted(carregarDados);
 
 /* Certificado */
 .cert-card { border-left: 4px solid #22c55e; }
-.cert-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.cert-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
 .cert-header h3 { margin: 0; color: #1e293b; font-size: 1.2rem; }
 .cert-desc { color: #64748b; margin-bottom: 15px; }
-.btn-cert { display: inline-flex; align-items: center; gap: 8px; background: #22c55e; color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+.btn-cert { display: inline-flex; align-items: center; gap: 8px; background: #22c55e; color: white; padding: 10px 16px; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
 .btn-cert:hover { background: #16a34a; transform: translateY(-2px); }
+
+.certificados-grid { display: flex; flex-direction: column; gap: 12px; }
+.cert-item-aluno { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+.cert-item-aluno .cert-info { display: flex; align-items: center; gap: 12px; }
+.cert-item-aluno .cert-info > div { display: flex; flex-direction: column; }
+.cert-item-aluno .cert-data { font-size: 0.8rem; color: #64748b; }
+
+/* Admin: Lista certificados */
+.certificados-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.cert-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac; }
+.cert-info { display: flex; align-items: center; gap: 8px; }
+.cert-nome { font-weight: 600; color: #1e293b; font-size: 0.9rem; }
+.cert-data { font-size: 0.75rem; color: #64748b; margin-left: 8px; }
 </style>

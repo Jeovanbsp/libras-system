@@ -38,10 +38,11 @@ const UserSchema = new mongoose.Schema({
     enum: ['Pendente', 'Pago', ''],
     default: '' 
   },
-  certificado: {
-    type: String,
-    default: ''
-  },
+  certificados: [{
+    nome: { type: String, default: '' },
+    arquivo: { type: String, default: '' },
+    dataUpload: { type: Date, default: Date.now }
+  }],
   
   primeiroAcesso: { type: Boolean, default: true },
   resetPasswordToken: String,
