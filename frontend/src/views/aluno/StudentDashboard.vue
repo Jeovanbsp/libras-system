@@ -42,7 +42,7 @@
           <span class="tag gold">CONQUISTAS</span>
           <h3>Certificados Emitidos</h3>
         </div>
-        <div class="card-value">0</div>
+        <div class="card-value">{{ certificados.length }}</div>
         <div class="card-footer">
           <span>Ver as minhas conquistas</span>
           <ArrowRight :size="18" class="arrow-icon" />
@@ -136,8 +136,13 @@ const formatarData = (data) => {
 onMounted(async () => {
   try {
     const userRes = await api.get(`/usuarios/${usuarioId}`);
-    if (userRes.data.certificados && userRes.data.certificados.length > 0) {
-      certificados.value = userRes.data.certificados;
+    const user = userRes.data;
+    // Handle both old (certificado) and new (certificados) fields
+    if (user.certificados && user.certificados.length > 0) {
+      certificados.value = user.certificados;
+    } else if (user.certificado) {
+      // Migrate old single certificate to new array format
+      certificados.value = [{ nome: 'Certificado', arquivo: user.certificado, dataUpload: new Date() }];
     }
   } catch (err) {
     console.log('Erro ao carregar certificados');

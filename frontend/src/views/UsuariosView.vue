@@ -147,13 +147,14 @@
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
                 <!-- Campos de investimento - só mostrar se existirem dados -->
-                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || (user.certificados && user.certificados.length > 0)" class="investimento-info">
+                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || (user.certificados && user.certificados.length > 0) || user.certificado" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
                   <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
                   <span v-if="user.combo" class="badge-combo">Combo</span>
                   <span v-if="user.statusPagamento" :class="['badge-pagamento', user.statusPagamento === 'Pago' ? 'pago' : 'pendente']">{{ user.statusPagamento }}</span>
                   <span v-if="user.certificados && user.certificados.length > 0" class="badge-certificado">Certificados ({{ user.certificados.length }})</span>
+                  <span v-if="!user.certificados?.length && user.certificado" class="badge-certificado">Certificado</span>
                 </div>
               </div>
               <div class="item-actions">
@@ -416,6 +417,11 @@ const editFeedbackTipo = ref('');
 
 const abrirModalEdicao = (user) => {
   userParaEditar.value = user;
+  // Handle both old (certificado) and new (certificados) fields
+  let certs = user.certificados || [];
+  if (!certs.length && user.certificado) {
+    certs = [{ nome: 'Certificado', arquivo: user.certificado, dataUpload: user.updatedAt || new Date() }];
+  }
   editForm.value = { 
     nome: user.nome, 
     email: user.email, 
@@ -425,7 +431,7 @@ const abrirModalEdicao = (user) => {
     valorTotalCurso: user.valorTotalCurso || 0,
     apostila: user.apostila || '',
     combo: user.combo || false,
-    certificados: user.certificados || []
+    certificados: certs
   };
   nomeCertificado.value = '';
   editFeedback.value = '';
