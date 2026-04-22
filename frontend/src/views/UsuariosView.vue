@@ -146,8 +146,8 @@
                 <span class="text-xs text-gray-400 block mt-1">
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
-                <!-- Campos de investimento -->
-                <div v-if="user.modalidade || user.valorTotalCurso" class="investimento-info">
+                <!-- Campos de investimento - sempre mostrar para alunos -->
+                <div v-if="user.role === 'aluno'" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
                   <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
@@ -247,6 +247,41 @@
             </select>
           </div>
           
+          <!-- Dados do Investimento - apenas para alunos -->
+          <div v-if="userParaEditar?.role === 'aluno'" class="investimento-box">
+            <h4><DollarSign :size="16" /> Dados do Investimento</h4>
+            
+            <div class="form-group">
+              <label>Modalidade</label>
+              <select v-model="editForm.modalidade" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Virtual">Virtual</option>
+                <option value="Presencial">Presencial</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Valor Total do Curso (R$)</label>
+              <input v-model.number="editForm.valorTotalCurso" type="number" step="0.01" placeholder="0.00" class="form-input" />
+            </div>
+            
+            <div class="form-group">
+              <label>Apostila</label>
+              <select v-model="editForm.apostila" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Digital">Digital</option>
+                <option value="Impressa">Impressa</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input v-model="editForm.combo" type="checkbox" />
+                <span>Adquiriu Combo (Conversação + Oficina)</span>
+              </label>
+            </div>
+          </div>
+          
           <div class="modal-actions-row mt-4">
             <button type="button" @click="fecharModalEdicao" class="btn-cancel flex-1">Cancelar</button>
             <button type="submit" class="btn-primary btn-save flex-1">Salvar Alterações</button>
@@ -343,7 +378,7 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '' });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false });
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
 
@@ -353,7 +388,11 @@ const abrirModalEdicao = (user) => {
     nome: user.nome, 
     email: user.email, 
     novaSenha: '',
-    statusPagamento: user.statusPagamento || ''
+    statusPagamento: user.statusPagamento || '',
+    modalidade: user.modalidade || '',
+    valorTotalCurso: user.valorTotalCurso || 0,
+    apostila: user.apostila || '',
+    combo: user.combo || false
   };
   editFeedback.value = '';
   mostrarModalEdicao.value = true;
@@ -375,9 +414,13 @@ const salvarEdicao = async () => {
       dados.password = editForm.value.novaSenha;
     }
     
-    // Status pagamento - apenas para alunos
-    if (userParaEditar.value.role === 'aluno' && editForm.value.statusPagamento) {
-      dados.statusPagamento = editForm.value.statusPagamento;
+    // Status pagamento e investimento - apenas para alunos
+    if (userParaEditar.value.role === 'aluno') {
+      if (editForm.value.statusPagamento) dados.statusPagamento = editForm.value.statusPagamento;
+      if (editForm.value.modalidade) dados.modalidade = editForm.value.modalidade;
+      if (editForm.value.valorTotalCurso) dados.valorTotalCurso = editForm.value.valorTotalCurso;
+      if (editForm.value.apostila) dados.apostila = editForm.value.apostila;
+      dados.combo = editForm.value.combo || false;
     }
     
     await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
