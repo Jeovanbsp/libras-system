@@ -7,7 +7,7 @@
         <div class="glass-card">
           <div class="col-header">
             <h3 class="section-title"><MessageSquare :size="20" class="text-brand" /> Tópicos</h3>
-            <button @click="abrirNovoTopico" class="btn-primary-sm">
+            <button v-if="userRole === 'admin' || userRole === 'admin_restrito'" @click="abrirNovoTopico" class="btn-primary-sm">
               <Plus :size="16" /> Novo
             </button>
           </div>
