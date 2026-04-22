@@ -282,6 +282,15 @@
                 <span>Adquiriu Combo (Conversação + Oficina)</span>
               </label>
             </div>
+
+            <div class="form-group">
+              <label>Status do Pagamento</label>
+              <select v-model="editForm.statusPagamento" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Pago">Pago</option>
+              </select>
+            </div>
           </div>
           
           <!-- Certificado do Aluno -->
@@ -456,10 +465,10 @@ const salvarEdicao = async () => {
     
     // Status pagamento e investimento - apenas para alunos
     if (userParaEditar.value.role === 'aluno') {
-      if (editForm.value.statusPagamento) dados.statusPagamento = editForm.value.statusPagamento;
-      if (editForm.value.modalidade) dados.modalidade = editForm.value.modalidade;
-      if (editForm.value.valorTotalCurso) dados.valorTotalCurso = editForm.value.valorTotalCurso;
-      if (editForm.value.apostila) dados.apostila = editForm.value.apostila;
+      dados.statusPagamento = editForm.value.statusPagamento || '';
+      dados.modalidade = editForm.value.modalidade || '';
+      dados.valorTotalCurso = editForm.value.valorTotalCurso || 0;
+      dados.apostila = editForm.value.apostila || '';
       dados.combo = editForm.value.combo || false;
     }
     
