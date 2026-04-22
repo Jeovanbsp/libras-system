@@ -51,6 +51,20 @@
 
     </div>
 
+    <!-- CERTIFICADO DO ALUNO -->
+    <div v-if="certificado" class="mt-4">
+      <div class="glass-card cert-card">
+        <div class="cert-header">
+          <Award :size="28" class="text-brand" />
+          <h3>Seu Certificado</h3>
+        </div>
+        <p class="cert-desc">Parabéns! Seu certificado está disponível para download.</p>
+        <a :href="certificadoUrl" download class="btn-cert">
+          <Download :size="18" /> Baixar Certificado PDF
+        </a>
+      </div>
+    </div>
+
     <!-- SUPORTE / AJUDA -->
     <div class="help-section mt-4">
       <div class="glass-card">
@@ -88,7 +102,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { GraduationCap, ArrowRight, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, ShoppingBag, FileText, MessageSquare } from 'lucide-vue-next';
+import { GraduationCap, ArrowRight, HelpCircle, ChevronDown, LayoutDashboard, BookOpen, ShoppingBag, FileText, MessageSquare, Award, Download } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
 
@@ -96,6 +110,24 @@ const router = useRouter();
 const totalCursos = ref(0);
 const totalMateriais = ref(0);
 const mostrarAjuda = ref(false);
+const certificado = ref('');
+const usuarioId = localStorage.getItem('userId');
+
+const certificadoUrl = () => {
+  if (!certificado.value) return '';
+  return `/uploads/certificados/${certificado.value}`;
+};
+
+onMounted(async () => {
+  try {
+    const userRes = await api.get(`/usuarios/${usuarioId}`);
+    if (userRes.data.certificado) {
+      certificado.value = userRes.data.certificado;
+    }
+  } catch (err) {
+    console.log('Erro ao carregar certificado');
+  }
+});
 
 const helpTopicsAluno = reactive([
   {
@@ -306,4 +338,12 @@ onMounted(carregarDados);
     width: 100%;
   }
 }
+
+/* Certificado */
+.cert-card { border-left: 4px solid #22c55e; }
+.cert-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.cert-header h3 { margin: 0; color: #1e293b; font-size: 1.2rem; }
+.cert-desc { color: #64748b; margin-bottom: 15px; }
+.btn-cert { display: inline-flex; align-items: center; gap: 8px; background: #22c55e; color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+.btn-cert:hover { background: #16a34a; transform: translateY(-2px); }
 </style>

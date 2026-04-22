@@ -147,12 +147,13 @@
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
                 <!-- Campos de investimento - só mostrar se existirem dados -->
-                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento" class="investimento-info">
+                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || user.certificado" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
                   <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
                   <span v-if="user.combo" class="badge-combo">Combo</span>
                   <span v-if="user.statusPagamento" :class="['badge-pagamento', user.statusPagamento === 'Pago' ? 'pago' : 'pendente']">{{ user.statusPagamento }}</span>
+                  <span v-if="user.certificado" class="badge-certificado">Certificado</span>
                 </div>
               </div>
               <div class="item-actions">
@@ -282,6 +283,23 @@
             </div>
           </div>
           
+          <!-- Certificado do Aluno -->
+          <div v-if="userParaEditar?.role === 'aluno'" class="investimento-box">
+            <h4><Award :size="16" /> Certificado</h4>
+            
+            <div v-if="editForm.certificado" class="certificado-atual">
+              <span class="badge-certificado"><CheckCircle2 :size="14" /> Certificado: {{ editForm.certificado }}</span>
+              <button @click="removerCertificado" class="btn-remove-cert" title="Remover certificado">
+                <Trash2 :size="14" />
+              </button>
+            </div>
+            
+            <div class="form-group">
+              <label>Enviar Certificado (PDF)</label>
+              <input type="file" @change="handleCertificado" accept=".pdf" class="form-input" />
+            </div>
+          </div>
+          
           <div class="modal-actions-row mt-4">
             <button type="button" @click="fecharModalEdicao" class="btn-cancel flex-1">Cancelar</button>
             <button type="submit" class="btn-primary btn-save flex-1">Salvar Alterações</button>
@@ -296,7 +314,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { jsPDF } from 'jspdf';
-import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText } from 'lucide-vue-next';
+import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText, Award } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
@@ -378,7 +396,7 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, certificado: '' });
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
 
@@ -392,7 +410,8 @@ const abrirModalEdicao = (user) => {
     modalidade: user.modalidade || '',
     valorTotalCurso: user.valorTotalCurso || 0,
     apostila: user.apostila || '',
-    combo: user.combo || false
+    combo: user.combo || false,
+    certificado: user.certificado || ''
   };
   editFeedback.value = '';
   mostrarModalEdicao.value = true;
@@ -424,6 +443,12 @@ const salvarEdicao = async () => {
     }
     
     await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
+    
+    // Upload do certificado se existir
+    if (certificadoFile.value && userParaEditar.value.role === 'aluno') {
+      await uploadCertificado(userParaEditar.value._id);
+      certificadoFile.value = null;
+    }
     
     if (editForm.value.novaSenha) {
       editFeedback.value = 'Usuário e senha atualizados com sucesso!';
@@ -488,6 +513,36 @@ const gerarPDF = () => {
   });
   
   doc.save(`alunos_${new Date().toISOString().split('T')[0]}.pdf`);
+};
+
+// Upload do certificado
+const certificadoFile = ref(null);
+
+const handleCertificado = (event) => {
+  certificadoFile.value = event.target.files[0];
+};
+
+const removerCertificado = async () => {
+  if (!userParaEditar.value?.certificado) return;
+  try {
+    await api.delete(`/certificados/${userParaEditar.value._id}`);
+    editForm.value.certificado = '';
+    editFeedback.value = 'Certificado removido com sucesso!';
+    editFeedbackTipo.value = 'success';
+    carregarUsuarios();
+  } catch (err) {
+    editFeedback.value = 'Erro ao remover certificado';
+    editFeedbackTipo.value = 'error';
+  }
+};
+
+const uploadCertificado = async (alunoId) => {
+  if (!certificadoFile.value) return;
+  const formData = new FormData();
+  formData.append('certificado', certificadoFile.value);
+  await api.post(`/certificados/${alunoId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 };
 
 onMounted(carregarUsuarios);
@@ -564,6 +619,12 @@ onMounted(carregarUsuarios);
 .badge-combo { background: #fce7f3; color: #9d174d; }
 .badge-pagamento.pago { background: #dcfce7; color: #166534; }
 .badge-pagamento.pendente { background: #fef3c7; color: #92400e; }
+.badge-certificado { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+
+/* Certificado no modal */
+.certificado-atual { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac; }
+.btn-remove-cert { background: none; border: none; color: #dc2626; cursor: pointer; padding: 5px; }
+.btn-remove-cert:hover { color: #b91c1c; }
 
 /* Uniformizar selects do investimento */
 .investimento-box select {

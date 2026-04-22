@@ -12,6 +12,7 @@ const cursoRoutes = require('./routes/cursoRoutes');
 const userRoutes = require('./routes/userRoutes');
 const financeiroRoutes = require('./routes/financeiroRoutes');
 const materialRoutes = require('./routes/materialRoutes');
+const certificadoRoutes = require('./routes/certificadoRoutes');
 const profissionalRoutes = require('./routes/profissionalRoutes'); 
 const clienteB2bRoutes = require('./routes/clienteB2bRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -80,6 +81,7 @@ connectDB().catch(err => console.error("Erro na conexão inicial do Mongo:", err
 // 4. SERVIR ARQUIVOS ESTÁTICOS
 // ==========================================
 app.use('/uploads/materiais', express.static(path.join(__dirname, '../uploads/materiais')));
+app.use('/uploads/certificados', express.static(path.join(__dirname, '../uploads/certificados')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ==========================================
@@ -91,6 +93,7 @@ app.use('/api/cursos', cursoRoutes);
 app.use('/api/usuarios', userRoutes);
 app.use('/api/financeiro', financeiroRoutes);
 app.use('/api/materiais', materialRoutes);
+app.use('/api/certificados', certificadoRoutes);
 app.use('/api/profissionais', profissionalRoutes); 
 app.use('/api/b2b', clienteB2bRoutes);
 app.use('/api/admin', adminRoutes); 
