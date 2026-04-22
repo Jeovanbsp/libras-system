@@ -8,7 +8,7 @@
 
       <div class="title-box">
         <KeyRound :size="24" class="text-brand" />
-        <h1>Solicitar <span>Nova Senha</span>
+        <h1>Solicitar <span>Nova Senha</span></h1>
       </div>
       
       <p class="subtitle">Digite seu e-mail e a nova senha desejada. O admin approvingá a solicitação.</p>
