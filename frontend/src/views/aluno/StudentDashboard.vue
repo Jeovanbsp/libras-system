@@ -125,7 +125,7 @@ const certificados = ref([]);
 const usuarioId = localStorage.getItem('userId');
 
 const getCertificadoUrl = (arquivo) => {
-  return `/uploads/certificados/${arquivo}`;
+  return `https://libras-system.onrender.com/uploads/certificados/${arquivo}`;
 };
 
 const formatarData = (data) => {
