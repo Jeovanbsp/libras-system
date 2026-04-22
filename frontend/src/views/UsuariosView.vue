@@ -146,8 +146,8 @@
                 <span class="text-xs text-gray-400 block mt-1">
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
-                <!-- Campos de investimento - sempre mostrar para alunos -->
-                <div v-if="user.role === 'aluno'" class="investimento-info">
+                <!-- Campos de investimento - só mostrar se existirem dados -->
+                <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
                   <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
