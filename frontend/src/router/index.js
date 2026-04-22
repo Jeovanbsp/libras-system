@@ -172,6 +172,13 @@ const routes = [
     name: 'SolicitacoesSenha',
     component: () => import('../views/SolicitacoesSenhaView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
+  },
+  // ROTA DO PROFESSOR (apenas para editar cursos)
+  {
+    path: '/professor/cursos',
+    name: 'ProfessorCursos',
+    component: () => import('../views/CursosView.vue'),
+    meta: { requiresAuth: true, role: 'professor' }
   }
 ];
 
@@ -192,7 +199,7 @@ router.beforeEach((to, from, next) => {
     return next('/aluno/login');
   } 
   
-  // Verificar permissões de role (admin/aluno)
+  // Verificar permissões de role (admin/aluno/professor)
   if (to.meta.role) {
     if (to.meta.role === 'admin') {
       // Admin: permitir 'admin' e 'admin_restrito'
@@ -202,10 +209,15 @@ router.beforeEach((to, from, next) => {
       
       // Admin restrito: bloquear acesso a financeiro e empresas
       if ((to.path === '/admin/financeiro' || to.path === '/admin/empresas' || to.path === '/admin/logs') && userRole === 'admin_restrito') {
-        // Bloqueamos também a visão de logs para o admin_restrito (opcional)
         return next('/admin/dashboard'); 
       }
-    } 
+    }
+    // Professor: só pode acessar /professor/cursos
+    else if (to.meta.role === 'professor') {
+      if (userRole !== 'professor') {
+        return next('/aluno/login');
+      }
+    }
     else if (to.meta.role === 'aluno' && userRole !== 'aluno') {
       return next('/admin/dashboard');
     }

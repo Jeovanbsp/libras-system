@@ -72,7 +72,8 @@ exports.login = async (req, res) => {
                 nome: user.nome, 
                 role: user.role,
                 primeiroAcesso: user.primeiroAcesso 
-            }
+            },
+            redirectUrl: user.role === 'professor' ? '/professor/cursos' : null
         });
     } catch (err) {
         res.status(500).json({ error: "Erro interno no servidor" });

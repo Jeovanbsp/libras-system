@@ -39,6 +39,7 @@
             <label>Nível de Acesso</label>
             <select v-model="form.role" class="modern-select">
               <option value="aluno">Aluno (Área de Estudos)</option>
+              <option value="professor">Professor (Gestão de Aulas)</option>
               <option v-if="userRole === 'admin'" value="admin_restrito">Administrador Restrito</option>
               <option v-if="userRole === 'admin'" value="admin">Administrador Geral</option>
             </select>
