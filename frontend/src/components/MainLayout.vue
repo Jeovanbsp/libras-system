@@ -90,7 +90,7 @@
         <div class="user-profile">
           <div class="user-text">
             <span class="name">{{ userName }}</span>
-            <span class="role">{{ userRole === 'admin' ? 'Administrador' : 'Admin Restrito' }}</span>
+            <span class="role">{{ userRole === 'admin' ? 'Administrador' : (userRole === 'professor' ? 'Professor' : 'Admin Restrito') }}</span>
           </div>
           <div class="avatar">{{ userInitials }}</div>
           

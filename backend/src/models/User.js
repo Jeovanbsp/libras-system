@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema({
   role: { 
     type: String, 
     required: true, 
-    enum: ['admin', 'admin_restrito', 'aluno'],
+    enum: ['admin', 'admin_restrito', 'aluno', 'professor'],
     default: 'aluno' 
   },
   cursosMatriculados: [{ 

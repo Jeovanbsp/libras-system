@@ -111,32 +111,46 @@ app.get('/api/stats', async (req, res) => {
     const ServicoConfirmado = require('./models/ServicoConfirmado');
     const Venda = require('./models/Venda');
 
-    const [totalAlunos, totalCursos, transacoes, totalB2B, servicosConfirmados, vendas] = await Promise.all([
+    const [totalAlunos, totalCursos, transacoes, totalB2B, servicosConfirmados, vendas, alunosPagos] = await Promise.all([
       User.countDocuments({ role: 'aluno' }).catch(() => 0),
       Curso.countDocuments().catch(() => 0),
       Financeiro.find({ tipo: 'Entrada' }).catch(() => []),
       ClienteB2B.countDocuments().catch(() => 0),
       ServicoConfirmado.find().catch(() => []),
-      Venda.find({ statusPagamento: 'Confirmado' }).catch(() => [])
+      Venda.find({ statusPagamento: 'Confirmado' }).catch(() => []),
+      User.aggregate([
+        { $match: { role: 'aluno', statusPagamento: 'Pago', valorTotalCurso: { $gt: 0 } } },
+        { $group: { _id: null, total: { $sum: '$valorTotalCurso' } } }
+      ]).catch(() => [])
     ]);
 
     // Soma do fluxo de caixa financeiro
     const somaFinanceiro = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
     
-    // Soma do caixa empresa dos serviços confirmados
-    const somaServicos = servicosConfirmados.reduce((acc, curr) => acc + (curr.caixaEmpresa || 0), 0);
+    // Soma do caixa empresa dos serviços confirmados (apenas pagos)
+    const servicosPagos = servicosConfirmados.filter(s => s.statusPagamento === 'Pago');
+    const somaServicos = servicosPagos.reduce((acc, curr) => acc + (curr.caixaEmpresa || curr.valorTotal || 0), 0);
     
     // Soma das vendas de cursos confirmados
     const somaVendas = vendas.reduce((acc, curr) => acc + (curr.valorFinal || 0), 0);
     
-    // Total geral = Financeiro + Serviços + Vendas
-    const totalGeral = somaFinanceiro + somaServicos + somaVendas;
+    // Soma dos valores pagos pelos alunos
+    const somaAlunos = alunosPagos[0]?.total || 0;
+    
+    // Total geral = Financeiro + Serviços + Vendas + Alunos
+    const totalGeral = somaFinanceiro + somaServicos + somaVendas + somaAlunos;
+
+    // Último serviço cadastrado
+    const ultimoServico = servicosConfirmados.sort((a, b) => new Date(b.data) - new Date(a.data))[0] || null;
 
     res.json({
       alunos: totalAlunos,
       cursos: totalCursos,
       clientesB2B: totalB2B,
-      vendas: totalGeral.toFixed(2)
+      vendas: totalGeral.toFixed(2),
+      ultimoServico: ultimoServico,
+      valorServicos: somaServicos.toFixed(2),
+      valorAlunos: somaAlunos.toFixed(2)
     });
   } catch (error) {
     console.error("Erro ao carregar stats:", error);
