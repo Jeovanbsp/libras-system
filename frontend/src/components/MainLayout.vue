@@ -67,6 +67,10 @@
           <li v-if="userRole === 'admin'" :class="{ active: $route.path === '/admin/logs' }" @click="navegar('/admin/logs')">
             <ClipboardList :size="20" class="nav-icon" /> Logs de Auditoria
           </li>
+          
+          <li :class="{ active: $route.path === '/admin/solicitacoes-senha' }" @click="navegar('/admin/solicitacoes-senha')">
+            <KeyRound :size="20" class="nav-icon" /> Solicitações de Senha
+          </li>
         </ul>
       </nav>
 
@@ -109,7 +113,7 @@ import { useRouter } from 'vue-router';
 import { 
   LayoutDashboard, BookOpen, HandMetal, Users, Building2,
   CalendarPlus, BadgeDollarSign, FileText, Package, LogOut,
-  Menu as MenuIcon, X, MessageSquare, ClipboardList
+  Menu as MenuIcon, X, MessageSquare, ClipboardList, KeyRound
 } from 'lucide-vue-next';
 import AdminNotification from './AdminNotification.vue';
 

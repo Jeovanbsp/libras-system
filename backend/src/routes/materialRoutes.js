@@ -8,8 +8,8 @@ const Material = require('../models/Material');
 // Configuração do armazenamento do arquivo
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = './uploads/';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir); // Cria a pasta se não existir
+    const dir = './uploads/materiais/';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); // Cria a pasta se não existir
     cb(null, dir);
   },
   filename: (req, file, cb) => {

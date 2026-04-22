@@ -32,7 +32,7 @@
             <input type="checkbox" v-model="rememberMe" />
             <span>Lembrar de mim</span>
           </label>
-          <router-link to="/forgot-password" class="forgot-link">Esqueceu a sua senha?</router-link>
+          <router-link to="/solicitar-senha" class="forgot-link">Esqueceu a sua senha?</router-link>
         </div>
 
         <button type="submit" class="btn-primary" :disabled="loading">

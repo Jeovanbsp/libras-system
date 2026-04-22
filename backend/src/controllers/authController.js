@@ -95,14 +95,25 @@ exports.forgotPassword = async (req, res) => {
         const mailOptions = {
             from: `"Libras Salvador" <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: 'Recuperação de Senha',
-            html: `<p>Olá ${user.nome}, clique <a href="${resetUrl}">aqui</a> para redefinir sua senha.</p>`
+            subject: 'Recuperação de Senha - Libras Salvador',
+            html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #004aad;">Libras Salvador</h2>
+                <p>Olá ${user.nome},</p>
+                <p>Você solicitou a recuperação de senha. Clique no botão abaixo para criar uma nova senha:</p>
+                <a href="${resetUrl}" style="display: inline-block; background: #004aad; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin: 16px 0;">
+                    Criar Nova Senha
+                </a>
+                <p style="color: #666; font-size: 12px;">Se você não solicitou isso, pode ignorar este email.</p>
+            </div>
+            `
         };
 
         await transporter.sendMail(mailOptions);
-        res.json({ message: "E-mail enviado!" });
+        res.json({ message: "E-mail de recuperação enviado!" });
     } catch (err) {
-        res.status(500).json({ error: "Erro ao enviar e-mail." });
+        console.error("Erro ao enviar email:", err);
+        res.status(500).json({ error: "Erro ao enviar e-mail. Tente novamente mais tarde." });
     }
 };
 

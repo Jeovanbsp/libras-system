@@ -146,6 +146,14 @@
                 <option v-for="c in clientes" :key="c._id" :value="c._id">{{ c.razaoSocial }}</option>
               </select>
             </div>
+            <div class="form-group-col">
+              <label class="text-xs font-bold text-gray-500">Status:</label>
+              <select v-model="filtros.status" @change="carregarServicos" class="modern-select" style="height: 48px;">
+                <option value="">Todos</option>
+                <option value="Pago">Pago</option>
+                <option value="Pendente">Pendente</option>
+              </select>
+            </div>
             <div class="form-group-col" style="flex: 0.5;" v-if="userRole !== 'admin_restrito'">
               <button @click="gerarRelatorioPDF" class="btn-secondary" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <FileText :size="18" /> PDF
@@ -235,7 +243,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save, FileText, Info } from 'lucide-vue-next';
+import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save, FileText, Info, CheckCircle } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 import jsPDF from 'jspdf';
@@ -443,6 +451,11 @@ onMounted(() => { carregarDadosBase(); carregarServicos(); });
 .footer-actions { display: flex; gap: 8px; margin-left: auto; }
 .btn-del-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; }
 .btn-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
+.btn-status-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; }
+.btn-pago { color: #16a34a; border-color: #bbf7d0; }
+.btn-pago:hover { background: #dcfce7; color: #166534; }
+.btn-undo { color: #b45309; border-color: #fde68a; }
+.btn-undo:hover { background: #fef3c7; }
 
 .scrollable-form { max-height: 85vh; overflow-y: auto; padding-right: 10px; }
 .scrollable-form::-webkit-scrollbar { width: 5px; }

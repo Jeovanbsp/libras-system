@@ -99,6 +99,7 @@ app.use('/api/vendas', vendaRoutes);
 app.use('/api/servicos', servicoConfirmadoRoutes);
 app.use('/api/estoque', estoqueRoutes);
 app.use('/api/forum', forumRoutes);
+app.use('/api/solicitacoes-senha', require('./routes/solicitacaoSenhaRoutes'));
 
 // Rota de Stats
 app.get('/api/stats', async (req, res) => {
@@ -107,21 +108,35 @@ app.get('/api/stats', async (req, res) => {
     const Curso = require('./models/Curso');
     const Financeiro = require('./models/Financeiro');
     const ClienteB2B = require('./models/ClienteB2B');
+    const ServicoConfirmado = require('./models/ServicoConfirmado');
+    const Venda = require('./models/Venda');
 
-    const [totalAlunos, totalCursos, transacoes, totalB2B] = await Promise.all([
+    const [totalAlunos, totalCursos, transacoes, totalB2B, servicosConfirmados, vendas] = await Promise.all([
       User.countDocuments({ role: 'aluno' }).catch(() => 0),
       Curso.countDocuments().catch(() => 0),
       Financeiro.find({ tipo: 'Entrada' }).catch(() => []),
-      ClienteB2B.countDocuments().catch(() => 0)
+      ClienteB2B.countDocuments().catch(() => 0),
+      ServicoConfirmado.find().catch(() => []),
+      Venda.find({ statusPagamento: 'Confirmado' }).catch(() => [])
     ]);
 
-    const somaVendas = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
+    // Soma do fluxo de caixa financeiro
+    const somaFinanceiro = transacoes.reduce((acc, curr) => acc + (curr.valor || 0), 0);
+    
+    // Soma do caixa empresa dos serviços confirmados
+    const somaServicos = servicosConfirmados.reduce((acc, curr) => acc + (curr.caixaEmpresa || 0), 0);
+    
+    // Soma das vendas de cursos confirmados
+    const somaVendas = vendas.reduce((acc, curr) => acc + (curr.valorFinal || 0), 0);
+    
+    // Total geral = Financeiro + Serviços + Vendas
+    const totalGeral = somaFinanceiro + somaServicos + somaVendas;
 
     res.json({
       alunos: totalAlunos,
       cursos: totalCursos,
       clientesB2B: totalB2B,
-      vendas: somaVendas.toFixed(2)
+      vendas: totalGeral.toFixed(2)
     });
   } catch (error) {
     console.error("Erro ao carregar stats:", error);

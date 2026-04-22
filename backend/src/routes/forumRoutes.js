@@ -38,8 +38,13 @@ router.get('/users', auth, async (req, res) => {
   }
 });
 
-// Criar novo tópico
+// Criar novo tópico (apenas admin)
 router.post('/topics', auth, async (req, res) => {
+  // Verificar se é admin
+  if (req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
+    return res.status(403).json({ message: 'Apenas administradores podem criar tópicos no fórum.' });
+  }
+
   try {
     const { titulo, conteudo, categoria } = req.body;
     const mencoes = extrairMencoes(conteudo);

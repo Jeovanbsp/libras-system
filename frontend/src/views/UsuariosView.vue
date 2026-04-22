@@ -4,7 +4,7 @@
       
       <div class="glass-card side-form">
         <h3 class="form-title">
-          <UserPlus :size="20" class="text-brand" /> Novo Usuário
+          <UserPlus :size="20" class="text-brand" /> Cadastro
         </h3>
         
         <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
@@ -44,6 +44,51 @@
             </select>
           </div>
 
+          <!-- Campos de Investimento (apenas para alunos) -->
+          <div v-if="form.role === 'aluno'" class="investimento-box">
+            <h4><DollarSign :size="16" /> Dados de Investimento</h4>
+            
+            <div class="form-group">
+              <label>Modalidade do Curso</label>
+              <select v-model="form.modalidade" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Virtual">Virtual</option>
+                <option value="Presencial">Presencial</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Valor Total do Curso (R$)</label>
+              <input v-model.number="form.valorTotalCurso" type="number" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div class="form-group">
+              <label>Adquiriu Apostila?</label>
+              <select v-model="form.apostila" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Digital">Digital</option>
+                <option value="Impressa">Impressa</option>
+                <option value="Nenhuma">Nenhuma</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="form.combo" />
+                <span>Adquiriu o Combo (Conversação + Oficina)</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Status do Pagamento</label>
+              <select v-model="form.statusPagamento" class="modern-select">
+                <option value="">Selecione...</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Pago">Pago</option>
+              </select>
+            </div>
+          </div>
+
           <button type="submit" class="btn-primary">
             <UserCheck :size="18" /> Cadastrar Usuário
           </button>
@@ -59,6 +104,18 @@
               <input v-model="filtros.busca" placeholder="Digite para pesquisar..." @input="carregarUsuarios" />
             </div>
             <div class="form-group-col">
+              <label class="text-xs font-bold text-gray-500">Turma:</label>
+              <input v-model="filtros.turma" placeholder="Ex: Turma A" @input="carregarUsuarios" />
+            </div>
+            <div class="form-group-col">
+              <label class="text-xs font-bold text-gray-500">Modalidade:</label>
+              <select v-model="filtros.modalidade" @change="carregarUsuarios" class="modern-select">
+                <option value="">Todas</option>
+                <option value="Virtual">Virtual</option>
+                <option value="Presencial">Presencial</option>
+              </select>
+            </div>
+            <div class="form-group-col">
               <label class="text-xs font-bold text-gray-500">Cadastrado a partir de:</label>
               <input v-model="filtros.dataInicio" type="date" @change="carregarUsuarios" />
             </div>
@@ -70,9 +127,14 @@
         </div>
 
         <div class="glass-card list-box mt-4">
-          <h3 class="form-title">
-            <Users :size="20" class="text-brand" /> Usuários Encontrados ({{ usuarios.length }})
-          </h3>
+          <div class="list-header">
+            <h3 class="form-title">
+              <Users :size="20" class="text-brand" /> Usuários Encontrados ({{ usuarios.length }})
+            </h3>
+            <button v-if="usuarios.length > 0" @click="gerarPDF" class="btn-pdf">
+              <FileText :size="18" /> Gerar PDF
+            </button>
+          </div>
           <div class="user-list">
             <div v-for="user in usuarios" :key="user._id" class="user-item">
               <div class="item-main">
@@ -83,6 +145,14 @@
                 <span class="text-xs text-gray-400 block mt-1">
                   Cadastrado em: {{ formatarData(user.dataCadastro || user.createdAt) }}
                 </span>
+                <!-- Campos de investimento -->
+                <div v-if="user.modalidade || user.valorTotalCurso" class="investimento-info">
+                  <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
+                  <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
+                  <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
+                  <span v-if="user.combo" class="badge-combo">Combo</span>
+                  <span v-if="user.statusPagamento" :class="['badge-pagamento', user.statusPagamento === 'Pago' ? 'pago' : 'pendente']">{{ user.statusPagamento }}</span>
+                </div>
               </div>
               <div class="item-actions">
                 <span v-if="user.turma" class="turma-badge">{{ user.turma }}</span>
@@ -158,6 +228,24 @@
             <label>E-mail</label>
             <input v-model="editForm.email" type="email" placeholder="email@exemplo.com" required />
           </div>
+          
+          <!-- Nova senha - para admin e admin_restrito -->
+          <div v-if="userRole === 'admin' || (userRole === 'admin_restrito' && userParaEditar?.role === 'aluno')" class="form-group">
+            <label>Nova Senha <span class="text-xs text-gray-400">(deixe vazio para manter a atual)</span></label>
+            <input v-model="editForm.novaSenha" type="password" placeholder="Digite nova senha ou deixe vazio" />
+            <p class="text-xs text-gray-500 mt-1">Se preenchida, substitui a senha atual do usuário.</p>
+          </div>
+          
+          <!-- Status Pagamento - apenas para alunos -->
+          <div v-if="userParaEditar?.role === 'aluno'" class="form-group">
+            <label>Status do Pagamento</label>
+            <select v-model="editForm.statusPagamento" class="modern-select">
+              <option value="">Selecione...</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Pago">Pago</option>
+            </select>
+          </div>
+          
           <div class="modal-actions-row mt-4">
             <button type="button" @click="fecharModalEdicao" class="btn-cancel flex-1">Cancelar</button>
             <button type="submit" class="btn-primary btn-save flex-1">Salvar Alterações</button>
@@ -171,17 +259,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2 } from 'lucide-vue-next';
+import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 
 const usuarios = ref([]);
-const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '' });
+const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, statusPagamento: '' });
 
 const filtros = ref({
   busca: '',
+  turma: '',
+  modalidade: '',
   dataInicio: '',
   dataFim: ''
 });
@@ -251,13 +341,18 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '' });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '' });
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
 
 const abrirModalEdicao = (user) => {
   userParaEditar.value = user;
-  editForm.value = { nome: user.nome, email: user.email };
+  editForm.value = { 
+    nome: user.nome, 
+    email: user.email, 
+    novaSenha: '',
+    statusPagamento: user.statusPagamento || ''
+  };
   editFeedback.value = '';
   mostrarModalEdicao.value = true;
 };
@@ -265,14 +360,31 @@ const abrirModalEdicao = (user) => {
 const fecharModalEdicao = () => {
   mostrarModalEdicao.value = false;
   userParaEditar.value = null;
+  editForm.value = { nome: '', email: '', novaSenha: '' };
   editFeedback.value = '';
 };
 
 const salvarEdicao = async () => {
   if (!userParaEditar.value) return;
   try {
-    await api.put(`/usuarios/${userParaEditar.value._id}`, editForm.value);
-    editFeedback.value = 'Usuário atualizado com sucesso!';
+    const dados = { nome: editForm.value.nome, email: editForm.value.email };
+    
+    if (editForm.value.novaSenha && editForm.value.novaSenha.length >= 6) {
+      dados.password = editForm.value.novaSenha;
+    }
+    
+    // Status pagamento - apenas para alunos
+    if (userParaEditar.value.role === 'aluno' && editForm.value.statusPagamento) {
+      dados.statusPagamento = editForm.value.statusPagamento;
+    }
+    
+    await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
+    
+    if (editForm.value.novaSenha) {
+      editFeedback.value = 'Usuário e senha atualizados com sucesso!';
+    } else {
+      editFeedback.value = 'Usuário atualizado com sucesso!';
+    }
     editFeedbackTipo.value = 'success';
     carregarUsuarios();
     setTimeout(() => fecharModalEdicao(), 1500);
@@ -286,6 +398,30 @@ const salvarEdicao = async () => {
 const formatarData = (dataIso) => {
   if (!dataIso) return 'Data não disponível';
   return new Date(dataIso).toLocaleDateString('pt-BR');
+};
+
+// Gerar PDF dos alunos
+const gerarPDF = () => {
+  const conteudo = usuarios.value.map(user => `
+${user.nome}
+E-mail: ${user.email}
+Turma: ${user.turma || 'Não definida'}
+Modalidade: ${user.modalidade || 'Não definida'}
+Valor do Curso: R$ ${user.valorTotalCurso || '0,00'}
+Apostila: ${user.apostila || 'Nenhuma'}
+Combo: ${user.combo ? 'Sim' : 'Não'}
+Status Pagamento: ${user.statusPagamento || 'Não definido'}
+Cadastrado em: ${formatarData(user.createdAt)}
+${'='.repeat(40)}
+`).join('\n');
+
+  const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `alunos_${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 onMounted(carregarUsuarios);
@@ -312,6 +448,15 @@ onMounted(carregarUsuarios);
 .text-gray-500 { color: #64748b; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 5px; display: block;}
 
 .form-title { margin-bottom: 25px; color: #1e293b; font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+
+.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.list-header .form-title { margin-bottom: 0; }
+.btn-pdf { 
+  background: #dc2626; color: white; border: none; padding: 10px 20px; 
+  border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: 0.2s;
+}
+.btn-pdf:hover { background: #b91c1c; }
 
 .modern-form label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin: 15px 0 5px; text-transform: uppercase; }
 .modern-form input, .modern-form select, .search-bar input { 
@@ -341,6 +486,22 @@ onMounted(carregarUsuarios);
 .role-admin { color: #6d28d9; background: #f5f3ff; }
 .role-aluno { color: #004aad; background: #eff6ff; }
 .turma-badge { background: #f8fafc; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+/* INVESTIMENTO */
+.investimento-info { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.investimento-info span { font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
+.badge-modalidade { background: #e0e7ff; color: #4338ca; }
+.badge-valor { background: #dcfce7; color: #166534; }
+.badge-apostila { background: #fef3c7; color: #92400e; }
+.badge-combo { background: #fce7f3; color: #9d174d; }
+.badge-pagamento { background: #fee2e2; color: #dc2626; }
+.badge-pagamento.pago { background: #dcfce7; color: #166534; }
+.badge-pagamento.pendente { background: #fef3c7; color: #92400e; }
+
+.investimento-box { background: #f8fafc; padding: 20px; border-radius: 14px; margin-top: 20px; border: 1px solid #e2e8f0; }
+.investimento-box h4 { display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 0.9rem; margin-bottom: 15px; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.checkbox-label input { width: auto; margin: 0; }
 
 .btn-edit-mini { background: transparent; border: none; padding: 10px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; }
 .btn-edit-mini:hover { color: #0284c7; background: #dbeafe; }
