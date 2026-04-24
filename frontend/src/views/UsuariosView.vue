@@ -561,14 +561,12 @@ const salvarEdicao = async () => {
       dados.password = editForm.value.novaSenha;
     }
     
-    // Status pagamento e investimento - apenas para alunos
-    if (userParaEditar.value.role === 'aluno') {
-      dados.statusPagamento = editForm.value.statusPagamento || '';
-      dados.modalidade = editForm.value.modalidade || '';
-      dados.valorTotalCurso = editForm.value.valorTotalCurso || 0;
-      dados.apostila = editForm.value.apostila || '';
-      dados.combo = editForm.value.combo || false;
-    }
+    // Sempre enviar dados de investimento (não só para alunos)
+    dados.statusPagamento = editForm.value.statusPagamento || '';
+    dados.modalidade = editForm.value.modalidade || '';
+    dados.valorTotalCurso = editForm.value.valorTotalCurso || 0;
+    dados.apostila = editForm.value.apostila || '';
+    dados.combo = editForm.value.combo || false;
     
     await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
     
