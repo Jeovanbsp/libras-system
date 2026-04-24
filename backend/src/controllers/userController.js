@@ -33,7 +33,7 @@ exports.criarUsuario = async (req, res) => {
 exports.atualizarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, email, password, statusPagamento } = req.body;
+        const { nome, email, password, statusPagamento, modalidade, valorTotalCurso, apostila, combo } = req.body;
         
         const usuario = await User.findById(id);
         if (!usuario) {
@@ -60,10 +60,16 @@ exports.atualizarUsuario = async (req, res) => {
             );
         }
         
-        // Atualiza status de pagamento
+        // Atualiza dados de pagamento
         if (statusPagamento) {
             usuario.statusPagamento = statusPagamento;
         }
+        
+        // Atualiza dados de investimento
+        if (modalidade !== undefined) usuario.modalidade = modalidade;
+        if (valorTotalCurso !== undefined) usuario.valorTotalCurso = valorTotalCurso;
+        if (apostila !== undefined) usuario.apostila = apostila;
+        if (combo !== undefined) usuario.combo = combo;
         
         await usuario.save();
         res.json({ msg: "Usuário atualizado com sucesso!" });

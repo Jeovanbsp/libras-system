@@ -445,8 +445,17 @@ const carregarUsuarios = async () => {
 
 const salvarUsuario = async () => {
   try {
-    await api.post('/auth/register', form.value);
-    form.value = { nome: '', email: '', password: '', role: 'aluno', turma: '' };
+    // Incluir dados de investimento ao criar usuário
+    const userData = {
+      ...form.value,
+      modalidade: form.value.modalidade || '',
+      valorTotalCurso: form.value.valorTotalCurso || 0,
+      apostila: form.value.apostila || '',
+      combo: form.value.combo || false,
+      statusPagamento: form.value.statusPagamento || ''
+    };
+    await api.post('/auth/register', userData);
+    form.value = { nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, statusPagamento: '' };
     mostrarMensagem('Usuário cadastrado com sucesso!');
     carregarUsuarios();
   } catch (error) {
