@@ -87,25 +87,22 @@
       <div class="list-section">
         
         <div class="glass-card search-bar">
-          <div class="form-row" style="margin-bottom: 0;">
-            <div class="form-group-col">
-              <input v-model="filtros.nome" placeholder="Buscar por nome..." @input="carregar" />
+          <div class="search-bar-content">
+            <div class="search-input-wrapper">
+              <Search :size="18" class="search-icon" />
+              <input v-model="filtros.nome" placeholder="Buscar por nome..." @input="carregar" class="search-input" />
             </div>
-            <div class="form-group-col">
-              <select v-model="filtros.especialidade" @change="carregar" class="modern-select">
-                <option value="">Todas Especialidades</option>
-                <option v-for="esp in listaEspecialidades" :key="esp" :value="esp">{{ esp }}</option>
-              </select>
-            </div>
-            <div class="form-group-col">
-              <select v-model="filtros.disponibilidade" @change="carregar" class="modern-select">
-                <option value="">Qualquer Disponibilidade</option>
-                <option value="Manhãs">Manhãs</option>
-                <option value="Tardes">Tardes</option>
-                <option value="Noites">Noites</option>
-                <option value="Integral">Integral</option>
-              </select>
-            </div>
+            <select v-model="filtros.especialidade" @change="carregar" class="modern-select">
+              <option value="">Todas Especialidades</option>
+              <option v-for="esp in listaEspecialidades" :key="esp" :value="esp">{{ esp }}</option>
+            </select>
+            <select v-model="filtros.disponibilidade" @change="carregar" class="modern-select">
+              <option value="">Qualquer Disponibilidade</option>
+              <option value="Manhãs">Manhãs</option>
+              <option value="Tardes">Tardes</option>
+              <option value="Noites">Noites</option>
+              <option value="Integral">Integral</option>
+            </select>
           </div>
         </div>
 
@@ -189,7 +186,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { UserPlus, Users, Mail, Save, Trash2, Inbox, MessageCircle, Info, Edit2, X, FileText } from 'lucide-vue-next';
+import { UserPlus, Users, Mail, Save, Trash2, Inbox, MessageCircle, Info, Edit2, X, FileText, Search } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 import jsPDF from 'jspdf';
@@ -377,6 +374,14 @@ onMounted(carregar);
 .list-section { display: flex; flex-direction: column; gap: 20px; }
 .glass-card { background: white; padding: 30px; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(30, 64, 175, 0.05); }
 .search-bar { padding: 20px 25px; }
+
+/* NOVO DESIGN SEARCH BAR */
+.search-bar-content { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-input-wrapper { position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.search-input { width: 100%; padding-left: 44px !important; border-radius: 12px !important; }
+
+.search-bar .modern-select { padding: 12px 14px; border-radius: 12px; min-width: 160px; }
 
 .text-brand { color: #004aad; }
 .mt-4 { margin-top: 1rem; }

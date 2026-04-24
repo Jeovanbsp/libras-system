@@ -208,124 +208,154 @@
     </div>
 
     <!-- MODAL DE EDIÇÃO -->
-    <div v-if="mostrarModalEdicao" class="modal-overlay" @click.self="fecharModalEdicao">
-      <div class="glass-card modal-content edit-modal">
-        <div class="edit-icon-wrapper">
-          <Edit2 :size="36" />
+    <div v-if="mostrarModalEdicao" class="modal-overlay-lg" @click.self="fecharModalEdicao">
+      <div class="glass-card modal-content-lg">
+        <div class="edit-header">
+          <div class="edit-icon-wrapper">
+            <Edit2 :size="32" />
+          </div>
+          <div>
+            <h3>Editar Usuário</h3>
+            <p class="edit-subtitle">{{ userParaEditar?.nome }}</p>
+          </div>
+          <button @click="fecharModalEdicao" class="btn-close"><X :size="20" /></button>
         </div>
-        <h3>Editar Usuário</h3>
-        <p class="edit-subtitle">Atualize o nome e/ou e-mail do usuário <strong>{{ userParaEditar?.nome }}</strong>.</p>
         
-        <div v-if="editFeedback" :class="['feedback-toast', editFeedbackTipo]" style="margin-bottom: 15px;">
+        <div v-if="editFeedback" :class="['feedback-toast', editFeedbackTipo]">
           <CheckCircle2 v-if="editFeedbackTipo === 'success'" :size="20" />
           <AlertCircle v-else :size="20" />
           <p>{{ editFeedback }}</p>
         </div>
 
         <form @submit.prevent="salvarEdicao" class="edit-form">
-          <div class="form-group">
-            <label>Nome Completo</label>
-            <input v-model="editForm.nome" placeholder="Nome do usuário" required />
-          </div>
-          <div class="form-group">
-            <label>E-mail</label>
-            <input v-model="editForm.email" type="email" placeholder="email@exemplo.com" required />
+          <!-- SEÇÃO 1: Dados Básicos -->
+          <div class="section-card">
+            <div class="section-header" @click="toggleSection('dados')">
+              <UserCheck :size="18" />
+              <span>Dados Básicos</span>
+              <ChevronDown :size="18" :class="{ 'rotate-180': sectionsOpen.dados }" />
+            </div>
+            <div v-show="sectionsOpen.dados" class="section-content">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>Nome Completo</label>
+                  <input v-model="editForm.nome" placeholder="Nome do usuário" required />
+                </div>
+                <div class="form-group">
+                  <label>E-mail</label>
+                  <input v-model="editForm.email" type="email" placeholder="email@exemplo.com" required />
+                </div>
+              </div>
+              
+              <div v-if="userRole === 'admin'" class="form-group">
+                <label>Nova Senha <span class="text-xs text-gray-400">(deixe vazio para manter)</span></label>
+                <input v-model="editForm.novaSenha" type="password" placeholder="Digite nova senha" />
+              </div>
+            </div>
           </div>
           
-          <!-- Nova senha - para admin e admin_restrito -->
-          <div v-if="userRole === 'admin' || (userRole === 'admin_restrito' && userParaEditar?.role === 'aluno')" class="form-group">
-            <label>Nova Senha <span class="text-xs text-gray-400">(deixe vazio para manter a atual)</span></label>
-            <input v-model="editForm.novaSenha" type="password" placeholder="Digite nova senha ou deixe vazio" />
-            <p class="text-xs text-gray-500 mt-1">Se preenchida, substitui a senha atual do usuário.</p>
-          </div>
-          
-          <!-- Status Pagamento - apenas para alunos -->
-          <div v-if="userParaEditar?.role === 'aluno'" class="form-group">
-            <label>Status do Pagamento</label>
-            <select v-model="editForm.statusPagamento" class="modern-select">
-              <option value="">Selecione...</option>
-              <option value="Pendente">Pendente</option>
-              <option value="Pago">Pago</option>
-            </select>
-          </div>
-          
-          <!-- Dados do Investimento - apenas para alunos -->
-          <div v-if="userParaEditar?.role === 'aluno'" class="investimento-box">
-            <h4><DollarSign :size="16" /> Dados do Investimento</h4>
-            
-            <div class="form-group">
-              <label>Modalidade</label>
-              <select v-model="editForm.modalidade" class="modern-select">
-                <option value="">Selecione...</option>
-                <option value="Virtual">Virtual</option>
-                <option value="Presencial">Presencial</option>
-              </select>
+          <!-- SEÇÃO 2: Investimento (apenas para alunos) -->
+          <div v-if="userParaEditar?.role === 'aluno'" class="section-card">
+            <div class="section-header" @click="toggleSection('investimento')">
+              <DollarSign :size="18" />
+              <span>Dados do Investimento</span>
+              <ChevronDown :size="18" :class="{ 'rotate-180': sectionsOpen.investimento }" />
             </div>
-            
-            <div class="form-group">
-              <label>Valor Total do Curso (R$)</label>
-              <input v-model.number="editForm.valorTotalCurso" type="number" step="0.01" placeholder="0.00" class="form-input" />
-            </div>
-            
-            <div class="form-group">
-              <label>Apostila</label>
-              <select v-model="editForm.apostila" class="modern-select">
-                <option value="">Selecione...</option>
-                <option value="Digital">Digital</option>
-                <option value="Impressa">Impressa</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
+            <div v-show="sectionsOpen.investimento" class="section-content">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>Modalidade</label>
+                  <div class="custom-select-wrapper">
+                    <select v-model="editForm.modalidade" class="modern-select">
+                      <option value="">Selecione...</option>
+                      <option value="Virtual">Virtual</option>
+                      <option value="Presencial">Presencial</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Valor Total do Curso (R$)</label>
+                  <input v-model.number="editForm.valorTotalCurso" type="number" step="0.01" placeholder="0,00" class="money-input" />
+                </div>
+              </div>
+              
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>Apostila</label>
+                  <div class="custom-select-wrapper">
+                    <select v-model="editForm.apostila" class="modern-select">
+                      <option value="">Selecione...</option>
+                      <option value="Digital">Digital</option>
+                      <option value="Impressa">Impressa</option>
+                      <option value="Nenhuma">Nenhuma</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Status Pagamento</label>
+                  <div class="custom-select-wrapper">
+                    <select v-model="editForm.statusPagamento" class="modern-select">
+                      <option value="">Selecione...</option>
+                      <option value="Pendente">Pendente</option>
+                      <option value="Pago">Pago</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
               <label class="checkbox-label">
                 <input v-model="editForm.combo" type="checkbox" />
                 <span>Adquiriu Combo (Conversação + Oficina)</span>
               </label>
-            </div>
-
-            <div class="form-group">
-              <label>Status do Pagamento</label>
-              <select v-model="editForm.statusPagamento" class="modern-select">
-                <option value="">Selecione...</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Pago">Pago</option>
-              </select>
-            </div>
-          </div>
-          
-          <!-- Certificado do Aluno -->
-          <div v-if="userParaEditar?.role === 'aluno'" class="investimento-box">
-            <h4><Award :size="16" /> Certificados ({{ editForm.certificados?.length || 0 }})</h4>
-            
-            <!-- Lista de certificados -->
-            <div v-if="editForm.certificados && editForm.certificados.length > 0" class="certificados-list">
-              <div v-for="(cert, idx) in editForm.certificados" :key="idx" class="cert-item">
-                <div class="cert-info">
-                  <CheckCircle2 :size="16" class="text-green-600" />
-                  <span class="cert-nome">{{ cert.nome }}</span>
-                  <span class="cert-data">{{ formatarData(cert.dataUpload) }}</span>
+              
+              <!-- Tags de Investimento -->
+              <div class="tags-section">
+                <label>Tags</label>
+                <div class="tags-list">
+                  <span v-if="editForm.modalidade" class="tag">{{ editForm.modalidade }}</span>
+                  <span v-if="editForm.apostila && editForm.apostila !== 'Nenhuma'" class="tag tag-apostila">{{ editForm.apostila }}</span>
+                  <span v-if="editForm.combo" class="tag tag-combo">Combo</span>
+                  <span v-if="editForm.statusPagamento === 'Pago'" class="tag tag-pago">Pago</span>
+                  <span v-else-if="editForm.statusPagamento === 'Pendente'" class="tag tag-pendente">Pendente</span>
                 </div>
-                <button @click="removerCertificado(idx)" class="btn-remove-cert" title="Remover certificado">
-                  <Trash2 :size="14" />
-                </button>
               </div>
             </div>
-            
-            <!-- Adicionar novo certificado -->
-            <div class="form-group">
-              <label>Nome do Certificado</label>
-              <input v-model="nomeCertificado" placeholder="Ex: Curso de Libras Intermediário" class="form-input" />
+          </div>
+          
+          <!-- SEÇÃO 3: Certificados (apenas para alunos) -->
+          <div v-if="userParaEditar?.role === 'aluno'" class="section-card">
+            <div class="section-header" @click="toggleSection('certificados')">
+              <Award :size="18" />
+              <span>Certificados ({{ editForm.certificados?.length || 0 }})</span>
+              <ChevronDown :size="18" :class="{ 'rotate-180': sectionsOpen.certificados }" />
             </div>
-            
-            <div class="form-group">
-              <label>Enviar Certificado (PDF)</label>
-              <input type="file" @change="handleCertificado" accept=".pdf" class="form-input" />
+            <div v-show="sectionsOpen.certificados" class="section-content">
+              <div v-if="editForm.certificados && editForm.certificados.length > 0" class="certificados-list">
+                <div v-for="(cert, idx) in editForm.certificados" :key="idx" class="cert-item">
+                  <div class="cert-info">
+                    <CheckCircle2 :size="16" class="text-green-600" />
+                    <span class="cert-nome">{{ cert.nome }}</span>
+                    <span class="cert-data">{{ formatarData(cert.dataUpload) }}</span>
+                  </div>
+                  <button @click="removerCertificado(idx)" class="btn-remove-cert"><Trash2 :size="14" /></button>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>Nome do Certificado</label>
+                <input v-model="nomeCertificado" placeholder="Ex: Curso de Libras Intermediário" />
+              </div>
+              
+              <div class="form-group">
+                <label>Enviar Certificado (PDF)</label>
+                <input type="file" @change="handleCertificado" accept=".pdf" class="form-input" />
+              </div>
             </div>
           </div>
           
-          <div class="modal-actions-row mt-4">
-            <button type="button" @click="fecharModalEdicao" class="btn-cancel flex-1">Cancelar</button>
-            <button type="submit" class="btn-primary btn-save flex-1">Salvar Alterações</button>
+          <div class="modal-actions-row">
+            <button type="button" @click="fecharModalEdicao" class="btn-cancel">Cancelar</button>
+            <button type="submit" class="btn-primary btn-save">Salvar Alterações</button>
           </div>
         </form>
       </div>
@@ -350,12 +380,23 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { jsPDF } from 'jspdf';
-import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText, Award } from 'lucide-vue-next';
+import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText, Award, ChevronDown, X } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
 import api from '../services/api';
 
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
+
+// Seções colapsáveis
+const sectionsOpen = ref({
+  dados: true,
+  investimento: false,
+  certificados: false
+});
+
+const toggleSection = (section) => {
+  sectionsOpen.value[section] = !sectionsOpen.value[section];
+};
 
 // Estado do Modal Padrão
 const showConfirmModal = ref(false);
@@ -751,6 +792,52 @@ onMounted(carregarUsuarios);
 .btn-cancel:hover { background: #e2e8f0; }
 .btn-danger { background-color: #ef4444 !important; border: none; margin-top: 0; }
 .btn-danger:hover { background-color: #dc2626 !important; }
+
+/* NOVO MODAL DE EDIÇÃO COM SEÇÕES */
+.modal-overlay-lg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); padding: 20px; overflow-y: auto; }
+.modal-content-lg { max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 25px; }
+.edit-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; position: relative; }
+.edit-header .edit-icon-wrapper { margin: 0; }
+.edit-header h3 { margin: 0; text-align: left; }
+.edit-header .edit-subtitle { margin: 0; text-align: left; }
+.btn-close { position: absolute; right: 0; top: 0; background: none; border: none; padding: 8px; cursor: pointer; color: #64748b; border-radius: 8px; }
+.btn-close:hover { background: #f1f5f9; color: #1e293b; }
+
+/* Seções Colapsáveis */
+.section-card { background: #f8fafc; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+.section-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; cursor: pointer; background: white; font-weight: 600; color: #334155; font-size: 0.9rem; }
+.section-header:hover { background: #f1f5f9; }
+.section-header svg.rotate-180 { transform: rotate(180deg); transition: 0.3s; }
+.section-content { padding: 16px; border-top: 1px solid #e2e8f0; }
+
+/* Form rows */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+@media (max-width: 480px) { .form-row-2 { grid-template-columns: 1fr; } }
+
+/* Custom Select */
+.custom-select-wrapper { position: relative; }
+.modern-select { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: white; color: #1e293b; font-size: 0.9rem; cursor: pointer; }
+.modern-select:focus { outline: none; border-color: #004aad; box-shadow: 0 0 0 3px rgba(0,74,173,0.1); }
+
+/* Money Input */
+.money-input { font-size: 1.1rem; font-weight: 600; color: #059669; }
+
+/* Tags */
+.tags-section { margin-top: 15px; }
+.tags-section label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 8px; font-weight: 600; }
+.tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #e0f2fe; color: #0369a1; }
+.tag-apostila { background: #fef3c7; color: #92400e; }
+.tag-combo { background: #ede9fe; color: #6d28d9; }
+.tag-pago { background: #dcfce7; color: #166534; }
+.tag-pendente { background: #fee2e2; color: #991b1b; }
+
+/* Certificados no modal */
+.certificados-list { margin-bottom: 15px; }
+.cert-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: white; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+.cert-info { display: flex; align-items: center; gap: 8px; }
+.cert-nome { font-weight: 500; color: #1e293b; }
+.cert-data { font-size: 0.75rem; color: #64748b; }
 
 @media (max-width: 992px) {
   .layout-split { grid-template-columns: 1fr; gap: 20px; }
