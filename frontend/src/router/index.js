@@ -17,19 +17,9 @@ const routes = [
   // ROTAS PÚBLICAS / SEGURANÇA
   // ==========================================
   {
-    path: '/forgot-password',
-    name: 'ForgotPassword',
-    component: () => import('../views/ForgotPasswordView.vue')
-  },
-  {
     path: '/solicitar-senha',
     name: 'SolicitarSenha',
     component: () => import('../views/SolicitarSenhaView.vue')
-  },
-  {
-    path: '/reset-password/:token',
-    name: 'ResetPasswordToken',
-    component: () => import('../views/ResetPasswordView.vue')
   },
   {
     path: '/aluno/reset-password',

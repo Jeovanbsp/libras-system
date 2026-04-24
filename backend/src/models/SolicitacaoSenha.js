@@ -16,7 +16,7 @@ const SolicitacaoSenhaSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pendente', 'aprovada', 'rejeitada'],
+    enum: ['pendente', 'aprovada', 'rejeitada', 'cancelada'],
     default: 'pendente'
   },
   dataSolicitacao: {
@@ -29,6 +29,10 @@ const SolicitacaoSenhaSchema = new mongoose.Schema({
   respondidoPor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  motivo: {
+    type: String,
+    default: ''
   }
 });
 

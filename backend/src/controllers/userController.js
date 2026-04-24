@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const SolicitacaoSenha = require('../models/SolicitacaoSenha');
 
 exports.criarUsuario = async (req, res) => {
     try {
@@ -32,7 +33,7 @@ exports.criarUsuario = async (req, res) => {
 exports.atualizarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, email, password } = req.body;
+        const { nome, email, password, statusPagamento } = req.body;
         
         const usuario = await User.findById(id);
         if (!usuario) {
@@ -43,10 +44,25 @@ exports.atualizarUsuario = async (req, res) => {
         if (nome) usuario.nome = nome;
         if (email) usuario.email = email;
         
-        // Atualiza senha se fornecida
+        // Atualiza senha se fornecida E marca solicitações pendentes como canceladas
         if (password && password.length >= 6) {
             const salt = await bcrypt.genSalt(10);
             usuario.password = await bcrypt.hash(password, salt);
+            
+            // Cancela quaisquer solicitações de senha pendentes para este usuário
+            await SolicitacaoSenha.updateMany(
+                { usuario: id, status: 'pendente' },
+                { 
+                    status: 'cancelada',
+                    dataResposta: new Date(),
+                    motivo: 'Senha alterada pelo admin manualmente'
+                }
+            );
+        }
+        
+        // Atualiza status de pagamento
+        if (statusPagamento) {
+            usuario.statusPagamento = statusPagamento;
         }
         
         await usuario.save();
