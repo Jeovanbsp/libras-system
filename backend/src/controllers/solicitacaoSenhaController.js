@@ -59,18 +59,37 @@ exports.responderSolicitacao = async (req, res) => {
     }
     
     if (action === 'aprovar') {
-      // Atualizar senha do usuário
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(solicitacao.novaSenha, salt);
-      
-      await User.findByIdAndUpdate(solicitacao.usuario._id, { password: hashedPassword });
-      
-      solicitacao.status = 'aprovada';
-      solicitacao.dataResposta = new Date();
-      solicitacao.respondidoPor = adminId;
-      await solicitacao.save();
-      
-      res.json({ message: "Senha atualizada com sucesso!" });
+      try {
+        // Atualizar senha do usuário
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(solicitacao.novaSenha, salt);
+        
+        // Buscar usuário e atualizar senha
+        const usuarioId = solicitacao.usuario._id || solicitacao.usuario;
+        console.log('Atualizando senha do usuário ID:', usuarioId);
+        
+        const usuarioAtualizado = await User.findByIdAndUpdate(
+          usuarioId, 
+          { password: hashedPassword },
+          { new: true }
+        );
+        
+        console.log('Usuário atualizado:', usuarioAtualizado ? 'Sim' : 'Não');
+        
+        if (!usuarioAtualizado) {
+          return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+        
+        solicitacao.status = 'aprovada';
+        solicitacao.dataResposta = new Date();
+        solicitacao.respondidoPor = adminId;
+        await solicitacao.save();
+        
+        res.json({ message: "Senha atualizada com sucesso!" });
+      } catch (err) {
+        console.error('Erro ao atualizar senha:', err);
+        return res.status(500).json({ message: "Erro ao atualizar senha: " + err.message });
+      }
     } else {
       solicitacao.status = 'rejeitada';
       solicitacao.dataResposta = new Date();

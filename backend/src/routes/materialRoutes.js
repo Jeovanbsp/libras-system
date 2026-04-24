@@ -48,6 +48,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET: Download arquivo
+router.get('/download/:id', async (req, res) => {
+  try {
+    const material = await Material.findById(req.params.id);
+    if (!material) {
+      return res.status(404).json({ error: "Material não encontrado" });
+    }
+    const caminho = path.join(__dirname, '../../uploads/materiais/', material.nomeArquivo);
+    if (!fs.existsSync(caminho)) {
+      return res.status(404).json({ error: "Arquivo não encontrado no servidor" });
+    }
+    res.download(caminho);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao baixar arquivo" });
+  }
+});
+
 // DELETE: Remover material e arquivo físico
 router.delete('/:id', async (req, res) => {
   try {

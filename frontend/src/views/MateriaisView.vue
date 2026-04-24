@@ -54,6 +54,9 @@
             </div>
           </div>
           <div class="file-actions">
+            <button @click="baixarArquivo(m)" class="btn-download">
+              <Download :size="16" /> Baixar
+            </button>
             <a :href="obterUrlArquivo(m.caminho)" target="_blank" rel="noopener noreferrer" class="btn-view">
               <Eye :size="16" /> Ver PDF
             </a>
@@ -90,7 +93,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { 
-  UploadCloud, FileText, FilePlus, Loader2, Eye, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle
+  UploadCloud, FileText, FilePlus, Loader2, Eye, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Download
 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
@@ -179,8 +182,12 @@ const executarRemocao = async () => {
 const obterUrlArquivo = (caminho) => {
   if (!caminho) return '#';
   const caminhoLimpo = caminho.replace(/\\/g, '/');
-  const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:3000';
+  const baseUrl = 'https://libras-system.onrender.com';
   return `${baseUrl}/${caminhoLimpo}`;
+};
+
+const baixarArquivo = (material) => {
+  window.open(`https://libras-system.onrender.com/api/materiais/download/${material._id}`, '_blank');
 };
 
 onMounted(buscarMateriais);
@@ -222,6 +229,8 @@ onMounted(buscarMateriais);
 .file-texts h4 { color: #1e293b; margin-bottom: 4px; font-size: 1.1rem; font-weight: 700; }
 .file-texts p { color: #64748b; font-size: 0.85rem; font-weight: 500; }
 
+.btn-download { background: #004aad; color: white; font-weight: 800; font-size: 0.85rem; padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; transition: 0.2s; text-decoration: none; }
+.btn-download:hover { background: #003380; }
 .btn-view { text-decoration: none; color: #004aad; font-weight: 800; font-size: 0.85rem; background: #eff6ff; padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
 .btn-view:hover { background: #dbeafe; }
 
