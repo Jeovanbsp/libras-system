@@ -332,6 +332,19 @@
     </div>
 
   </MainLayout>
+  
+  <!-- MODAL PADRÃO DE CONFIRMAÇÃO -->
+  <ConfirmModal
+    :show="showConfirmModal"
+    :title="confirmModalConfig.title"
+    :message="confirmModalConfig.message"
+    :details="confirmModalConfig.details"
+    :type="confirmModalConfig.type"
+    :confirm-text="confirmModalConfig.confirmText"
+    :confirm-text-button="confirmModalConfig.confirmTextButton"
+    @confirm="handleConfirmAction"
+    @cancel="showConfirmModal = false"
+  />
 </template>
 
 <script setup>
@@ -339,9 +352,22 @@ import { ref, onMounted } from 'vue';
 import { jsPDF } from 'jspdf';
 import { UserPlus, UserCheck, Users, Mail, Trash2, Inbox, AlertTriangle, CheckCircle2, AlertCircle, Edit2, DollarSign, FileText, Award } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
 import api from '../services/api';
 
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
+
+// Estado do Modal Padrão
+const showConfirmModal = ref(false);
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  details: [],
+  type: 'warning',
+  confirmText: '',
+  confirmTextButton: 'Confirmar'
+});
+const onConfirmAction = ref(null);
 
 const usuarios = ref([]);
 const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, statusPagamento: '' });
@@ -388,11 +414,33 @@ const salvarUsuario = async () => {
 };
 
 // ==========================================
-// LÓGICA DO NOVO MODAL DE EXCLUSÃO
+// LÓGICA DO MODAL PADRÃO DE CONFIRMAÇÃO
 // ==========================================
+const handleConfirmAction = async () => {
+  showConfirmModal.value = false;
+  if (onConfirmAction.value) {
+    await onConfirmAction.value();
+    onConfirmAction.value = null;
+  }
+};
+
+const openConfirmModal = (config) => {
+  confirmModalConfig.value = config;
+  onConfirmAction.value = config.onConfirm;
+  showConfirmModal.value = true;
+};
+
 const confirmarRemocao = (user) => {
   userParaExcluir.value = user;
-  mostrarModalExclusao.value = true;
+  openConfirmModal({
+    title: 'Excluir Usuário?',
+    message: `Tem certeza que deseja excluir o usuário "${user.nome}"?`,
+    details: ['Todo o progresso de aulas será perdido', 'Esta ação é irreversível'],
+    type: 'danger',
+    confirmText: 'excluir',
+    confirmTextButton: 'Sim, Excluir',
+    onConfirm: executarRemocao
+  });
 };
 
 const cancelarRemocao = () => {
