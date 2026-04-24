@@ -42,6 +42,34 @@ exports.listarSolicitacoes = async (req, res) => {
   }
 };
 
+// Listar todas as solicitações (incluindo canceladas)
+exports.listarTodasSolicitacoes = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let filtro = {};
+    if (status) filtro.status = status;
+    
+    const solicitacoes = await SolicitacaoSenha.find(filtro)
+      .populate('usuario', 'nome role turma')
+      .sort({ dataSolicitacao: -1 });
+    res.json(solicitacoes);
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao buscar solicitações." });
+  }
+};
+
+// Verificar histórico de senha de um usuário específico
+exports.listarSolicitacoesPorUsuario = async (req, res) => {
+  try {
+    const { usuarioId } = req.params;
+    const solicitacoes = await SolicitacaoSenha.find({ usuario: usuarioId })
+      .sort({ dataSolicitacao: -1 });
+    res.json(solicitacoes);
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao buscar histórico." });
+  }
+};
+
 // Admin aprova ou rejeita
 exports.responderSolicitacao = async (req, res) => {
   try {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const SolicitacaoSenha = require('../models/SolicitacaoSenha');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // GET: Listar todos os usuários (Alunos/Professores)
@@ -45,11 +46,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(403).json({ error: "Acesso negado." });
     }
 
-    // admin_restrito só pode editar alunos
+    // admin_restrito só pode editar alunos (não admin, não professor, não admin_restrito)
     if (userRole === 'admin_restrito') {
       const alvo = await User.findById(req.params.id).select('role');
       if (!alvo) return res.status(404).json({ error: "Usuário não encontrado." });
-      if (alvo.role === 'admin' || alvo.role === 'admin_restrito') {
+      if (alvo.role === 'admin' || alvo.role === 'admin_restrito' || alvo.role === 'professor') {
         return res.status(403).json({ error: "Você não tem permissão para editar este usuário." });
       }
     }
@@ -62,11 +63,25 @@ router.put('/:id', authMiddleware, async (req, res) => {
       updateData.email = email;
     }
     
-    // Admin pode alterar senha
+    // Admin pode alterar senha, admin_restrito NÃO pode alterar senha
     if (password && password.length >= 6) {
-      const bcrypt = require('bcryptjs');
-      const salt = await bcrypt.genSalt(10);
-      updateData.password = await bcrypt.hash(password, salt);
+      if (userRole === 'admin') {
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        updateData.password = await bcrypt.hash(password, salt);
+        
+        // Cancela solicitações pendentes quando admin altera senha
+        await SolicitacaoSenha.updateMany(
+          { usuario: req.params.id, status: 'pendente' },
+          { 
+            status: 'cancelada',
+            dataResposta: new Date(),
+            motivo: 'Senha alterada pelo admin manualmente'
+          }
+        );
+      } else {
+        return res.status(403).json({ error: "Admin restrito não pode alterar senhas de usuários." });
+      }
     }
 
     // Status pagamento
