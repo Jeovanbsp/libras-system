@@ -568,6 +568,8 @@ const salvarEdicao = async () => {
     dados.apostila = editForm.value.apostila || '';
     dados.combo = editForm.value.combo || false;
     
+    console.log('Salvando dados:', dados);
+    
     await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
     
     // Upload do certificado se existir
@@ -585,7 +587,8 @@ const salvarEdicao = async () => {
     carregarUsuarios();
     setTimeout(() => fecharModalEdicao(), 1500);
   } catch (error) {
-    editFeedback.value = error.response?.data?.error || 'Erro ao atualizar usuário.';
+    console.log('Erro na API:', error.response?.data || error.message);
+    editFeedback.value = error.response?.data?.error || error.response?.data?.msg || 'Erro ao atualizar usuário.';
     editFeedbackTipo.value = 'error';
   }
 };
