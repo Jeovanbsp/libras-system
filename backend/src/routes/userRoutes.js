@@ -36,6 +36,20 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// GET: Buscar usuário por ID (para aluno ver seus próprios dados)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuario = await User.findById(id).select('-password');
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    res.json(usuario);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar usuário' });
+  }
+});
+
 // PUT: Atualizar nome, email e senha de um usuário (Admin)
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
