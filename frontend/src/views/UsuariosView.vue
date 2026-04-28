@@ -150,10 +150,7 @@
                 <div v-if="user.modalidade || user.valorTotalCurso || user.statusPagamento || (user.certificados && user.certificados.length > 0) || user.certificado" class="investimento-info">
                   <span v-if="user.modalidade" class="badge-modalidade">{{ user.modalidade }}</span>
                   <span v-if="user.valorTotalCurso" class="badge-valor">R$ {{ user.valorTotalCurso.toFixed(2) }}</span>
-                  <span v-if="user.apostila" class="badge-apostila">{{ user.apostila }}</span>
-                  <span v-if="user.combo" class="badge-combo">Combo</span>
-                  <span v-if="user.statusPagamento" :class="['badge-pagamento', user.statusPagamento === 'Pago' ? 'pago' : 'pendente']">{{ user.statusPagamento }}</span>
-                  <span v-if="user.certificados && user.certificados.length > 0" class="badge-certificado">Certificados ({{ user.certificados.length }})</span>
+                  <span v-if="user.certificados && user.certificados.length > 0" class="badge-certificado">{{ user.certificados.length }} Certificado(s)</span>
                   <span v-if="!user.certificados?.length && user.certificado" class="badge-certificado">Certificado</span>
                 </div>
               </div>
@@ -438,6 +435,11 @@ const carregarUsuarios = async () => {
   try {
     const res = await api.get('/usuarios', { params: filtros.value });
     usuarios.value = res.data;
+    // Debug: mostrar se tem certificados
+    const comCertificados = usuarios.value.filter(u => u.certificados && u.certificados.length > 0);
+    if (comCertificados.length > 0) {
+      console.log('Usuários com certificados:', comCertificados.length);
+    }
   } catch (error) {
     console.error('Erro ao carregar usuários');
   }
@@ -672,11 +674,15 @@ const uploadCertificado = async (alunoId) => {
   if (nomeCertificado.value) {
     formData.append('nomeCertificado', nomeCertificado.value);
   }
-  await api.post(`/certificados/${alunoId}`, formData, {
+  const res = await api.post(`/certificados/${alunoId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
+  console.log('Upload resultado:', res.data);
   certificadoFile.value = null;
   nomeCertificado.value = '';
+  // Recarregar dados do usuário
+  carregarUsuarios();
+  return res.data;
 };
 
 onMounted(carregarUsuarios);
