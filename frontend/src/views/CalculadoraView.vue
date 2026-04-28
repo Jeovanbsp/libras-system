@@ -411,12 +411,10 @@ const gerarPDF = () => {
     y += 10;
     
     // ==========================
-    // QUEBRA DE PAGINA ANTES DA PROXIMA SEÇÃO
+    // FORCAR NOVA PAGINA
     // ==========================
-    if (y > 200) {
-      doc.addPage();
-      y = 20;
-    }
+    doc.addPage();
+    y = 20;
     
     // ==========================
     // 6. TERMOS E CONDICOES (Observacoes)
