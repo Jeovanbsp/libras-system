@@ -162,7 +162,7 @@ const gerarPDF = () => {
   const doc = new jsPDF();
   
   // ==========================
-  // DADOS DA EMPRESA
+  // DADOS DA EMPRESA (Fixos)
   // ==========================
   const dadosEmpresa = {
     nome: 'LIBRAS SALVADOR LTDA',
@@ -170,52 +170,59 @@ const gerarPDF = () => {
     endereco: 'Rua Alceu Amoroso Lima, 786, Edf. Tancredo Neves Trade Center, Sala 312, Caminho das Árvores, Salvador/BA',
     cep: '41.820-770',
     contato: '(71) 98836-1371',
-    email: 'contato@librasalvador.com'
+    email: 'contato@librasalvador.com',
+    dadosBancarios: 'Pix: (71) 98836-1371 (Jeovan Bispo)'
   };
   
   let y = 15;
   
-  // Header com cor
+  // ==========================
+  // CABEÇALHO COM LOGO
+  // ==========================
+  // Fundo azul do cabeçalho
   doc.setFillColor(0, 74, 173);
   doc.rect(0, 0, 210, 30, 'F');
+  
+  // Logo -.desenhar um ícone simples de Libras (duas mãos)
+  doc.setFillColor(255, 255, 255);
+  // Mão esquerda
+  doc.ellipse(175, 15, 4, 6, 'F');
+  doc.ellipse(175, 12, 3, 4, 'F');
+  // Mão direita
+  doc.ellipse(185, 15, 4, 6, 'F');
+  doc.ellipse(185, 12, 3, 4, 'F');
+  
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
+  doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('ORÇAMENTO', 14, 15);
+  doc.text('ORÇAMENTO', 14, 18);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(dadosEmpresa.nome, 14, 22);
-  doc.text(dadosEmpresa.contato + ' | ' + dadosEmpresa.email, 14, 28);
+  doc.setTextColor(245, 245, 245);
+  doc.text('Serviços de Tradução e Interpretação em Libras', 14, 26);
   
-  // Logo-placeholder (quadrado onde poderia ter logo)
-  doc.setFillColor(255, 255, 255);
-  doc.rect(170, 5, 30, 20, 'F');
-  doc.setTextColor(0, 74, 173);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('LIBRAS', 185, 15, { align: 'center' });
-  doc.text('SALVADOR', 185, 21, { align: 'center' });
-  
-  y = 45;
-  doc.setTextColor(0, 0, 0);
+  y = 38;
   
   // ==========================
-  // SEÇÃO 1: IDENTIFICAÇÃO
+  // 1. IDENTIFICAÇÃO
   // ==========================
-  doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('1. IDENTIFICAÇÃO', 16, y + 2);
-  y += 14;
+  doc.text('1. IDENTIFICAÇÃO', 16, y);
+  y += 10;
   
   // Dados do Prestador
-  doc.setFontSize(9);
+  doc.setTextColor(0, 74, 173);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('DADOS DO PRESTADOR:', 14, y);
-  y += 6;
+  doc.text('DADOS DO PRESTADOR (Contratado):', 14, y);
+  y += 7;
+  doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(9);
   doc.text(`${dadosEmpresa.nome}`, 14, y);
   y += 5;
   doc.text(`CNPJ: ${dadosEmpresa.cnpj}`, 14, y);
@@ -228,158 +235,195 @@ const gerarPDF = () => {
   y += 10;
   
   // Dados do Cliente
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(0, 74, 173);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('DADOS DO CLIENTE:', 14, y);
-  y += 6;
+  y += 7;
+  doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(9);
   doc.text(`Cliente: ${form.value.nomeCliente || '(não informado)'}`, 14, y);
   y += 5;
-  doc.text('CNPJ: ', 14, y);
+  doc.text('CNPJ: _________________________________', 14, y);
   y += 5;
-  doc.text('Responsável pelo contato: ', 14, y);
+  doc.text('Responsável pelo contato: ________________________', 14, y);
   y += 5;
-  doc.text('Setor: ', 14, y);
+  doc.text('Setor: _________________________________', 14, y);
   y += 10;
   
   // ==========================
-  // SEÇÃO 2: DESCRIÇÃO DOS SERVIÇOS
+  // 2. DESCRIÇÃO DETALHADA DOS SERVIÇOS
   // ==========================
-  doc.setTextColor(0, 0, 0);
-  doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('2. DESCRIÇÃO DETALHADA DOS SERVIÇOS', 16, y + 2);
-  y += 14;
+  doc.text('2. DESCRIÇÃO DETALHADA DOS SERVIÇOS', 16, y);
+  y += 10;
   
+  doc.setTextColor(60, 60, 60);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
   const descServico = form.value.observacoes || 'Serviço de interpretação em Libras para eventos, palestras, seminários e workshops.';
   const descLines = doc.splitTextToSize(descServico, 180);
   descLines.forEach(line => {
     doc.text(line, 14, y);
     y += 5;
   });
+  y += 3;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.text('O preço da hora/interpretação leva em conta a lista de referência da FEBRAPILS para esse tipo de atividade.', 14, y);
   y += 5;
-  doc.text('O preço da hora/interpretação leva em conta a lista de referência da FEBRAPILS.', 14, y);
-  y += 5;
-  doc.text('Para atividades com até uma hora de duração, será necessária a atuação de um intérprete.', 14, y);
+  doc.text('Para atividades com até uma hora de duração, será necessária a atuação de um intérprete de Libras.', 14, y);
   y += 10;
   
   // ==========================
-  // SEÇÃO 3: DETALHAMENTO
+  // 3. DETALHAMENTO
   // ==========================
-  doc.setTextColor(0, 0, 0);
-  doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('3. DETALHAMENTO', 16, y + 2);
-  y += 14;
+  doc.text('3. DETALHAMENTO', 16, y);
+  y += 10;
+  
+  const subtotalHoras = form.value.tempoServico * form.value.valorHora;
+  const logistica = form.value.logistica || 0;
+  const subtotalBruto = subtotalHoras + logistica;
+  const taxaImposto = (form.value.imposto || 0) / 100;
+  const valorImposto = subtotalBruto * taxaImposto;
   
   const items = [
-    ['Duração do Orçamento', `${form.value.tempoServico} horas`],
+    ['Duração do Orçamento', `${form.value.tempoServico} hora(s)`],
     ['Valor da Hora', `R$ ${Number(form.value.valorHora).toFixed(2)}`],
-    ['Subtotal (Horas × Valor)', `R$ ${(form.value.tempoServico * form.value.valorHora).toFixed(2)}`],
-    ['Custos de Logística', `R$ ${(form.value.logistica || 0).toFixed(2)}`],
-    ['Subtotal Bruto', `R$ ${subtotalBruto.value.toFixed(2)}`],
-    ['Reserva para Imposto (' + (form.value.imposto || 0) + '%)', `R$ ${valorImposto.value.toFixed(2)}`],
-    ['Valor Final', `R$ ${valorFinal.value.toFixed(2)}`],
+    ['Subtotal (Horas × Valor)', `R$ ${subtotalHoras.toFixed(2)}`],
+    ['Custos de Logística', `R$ ${logistica.toFixed(2)}`],
+    ['Subtotal Bruto', `R$ ${subtotalBruto.toFixed(2)}`]
   ];
   
   doc.setFontSize(10);
   items.forEach(([label, value]) => {
-    const isLast = label === 'Valor Final';
-    if (isLast) {
-      doc.setFillColor(0, 74, 173);
-      doc.rect(14, y - 5, 182, 10, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-    } else {
-      doc.setFillColor(248, 250, 252);
-      doc.rect(14, y - 5, 182, 9, 'F');
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-    }
-    doc.text(label, 16, y + 1);
-    doc.text(value, 196, y + 1, { align: 'right' });
-    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, y - 4, 160, 7, 'F');
+    doc.setTextColor(60, 60, 60);
+    doc.text(label, 16, y);
+    doc.text(value, 170, y, { align: 'right' });
+    y += 8;
   });
   
-  y += 5;
-  doc.setTextColor(0, 0, 0);
+  y += 3;
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 4, 160, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.text('VALOR TOTAL', 16, y);
+  doc.text(`R$ ${valorFinal.value.toFixed(2)}`, 170, y, { align: 'right' });
+  y += 12;
   
   // ==========================
-  // SEÇÃO 4: CONDIÇÕES FINANCEIRAS
+  // IMPOSTO E MARGEM
   // ==========================
   doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(0, 74, 173);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('4. CONDIÇÕES FINANCEIRAS', 16, y + 2);
-  y += 14;
+  doc.text('IMPOSTO E MARGEM', 16, y);
+  y += 8;
   
   doc.setFontSize(9);
+  const taxItems = [
+    [`Reserva para Imposto (${form.value.imposto || 0}%)`, `R$ ${valorImposto.toFixed(2)}`],
+    ['Margem de Lucro', 'Retirada']
+  ];
+  taxItems.forEach(([label, value]) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.text(label, 16, y);
+    doc.text(value, 170, y, { align: 'right' });
+    y += 7;
+  });
+  
+  y += 8;
+  
+  // ==========================
+  // 4. CONDIÇÕES FINANCEIRAS
+  // ==========================
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('4. CONDIÇÕES FINANCEIRAS', 16, y);
+  y += 10;
+  
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Prazo de pagamento: ', 14, y);
-  y += 5;
-  doc.text('Forma de Pagamento: PIX, boleto, transferência ou cartão', 14, y);
-  y += 5;
-  doc.text('Dados Bancários: ', 14, y);
+  doc.text('Prazo de pagamento: _________________________________', 14, y);
+  y += 6;
+  doc.text('Forma de Pagamento: Pix, boleto, transferência ou cartão', 14, y);
+  y += 6;
+  doc.text('Dados Bancários: ' + dadosEmpresa.dadosBancarios, 14, y);
   y += 10;
   
   // ==========================
-  // SEÇÃO 5: PRAZOS E VALIDADE
+  // 5. PRAZOS E VALIDADE
   // ==========================
-  doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('5. PRAZOS E VALIDADE', 16, y + 2);
-  y += 14;
+  doc.text('5. PRAZOS E VALIDADE', 16, y);
+  y += 10;
   
+  doc.setTextColor(60, 60, 60);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Prazo de Entrega/Execução: ', 14, y);
-  y += 5;
+  doc.text('Prazo de Entrega/Execução: ______________________', 14, y);
+  y += 6;
   doc.text('Validade da Proposta: Este orçamento é válido por 10 dias.', 14, y);
   y += 10;
   
   // ==========================
-  // SEÇÃO 6: TERMOS E CONDIÇÕES
+  // 6. TERMOS E CONDIÇÕES
   // ==========================
-  doc.setFillColor(248, 250, 252);
-  doc.rect(14, y - 5, 182, 10, 'F');
-  doc.setFontSize(12);
+  doc.setFillColor(0, 74, 173);
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('6. TERMOS E CONDIÇÕES', 16, y + 2);
-  y += 14;
+  doc.text('6. TERMOS E CONDIÇÕES', 16, y);
+  y += 10;
   
+  doc.setTextColor(60, 60, 60);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Política de Cancelamento: ', 14, y);
-  y += 5;
-  doc.text('Requisitos: ', 14, y);
-  y += 8;
+  doc.text('Política de Cancelamento: ____________________', 14, y);
+  y += 6;
+  doc.text('Requisitos: ________________________________', 14, y);
+  y += 10;
   
   // ==========================
   // DIFERENCIAL
   // ==========================
-  y += 5;
   doc.setFillColor(240, 253, 244);
-  doc.rect(14, y - 5, 182, 10, 'F');
+  doc.rect(14, y - 5, 182, 8, 'F');
+  doc.setTextColor(22, 101, 52);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(22, 101, 52);
-  doc.text('POR QUE CONTRATAR A LIBRAS SALVADOR?', 16, y + 2);
-  y += 10;
+  doc.text('POR QUE CONTRATAR A LIBRAS SALVADOR?', 16, y);
+  y += 8;
   
+  doc.setTextColor(60, 60, 60);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
   const diferenciais = [
     'Empresa especializada em tradução e interpretação em Libras',
     'Equipe de intérpretes qualificados para atendimento em vários estados',
@@ -391,18 +435,21 @@ const gerarPDF = () => {
     y += 5;
   });
   
-  y += 8;
+  y += 5;
   doc.setFont('helvetica', 'italic');
   doc.text('Ficamos no aguardo do retorno da proposta. Obrigado pela oportunidade!', 14, y);
   
-  // Footer
-  y = 280;
+  // ==========================
+  // RODAPÉ
+  // ==========================
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR'), 14, y);
-  doc.text('Libras Salvador - www.librasalvador.com', 196, y, { align: 'right' });
+  doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR'), 14, 285);
+  doc.text('Libras Salvador - www.librasalvador.com', 196, 285, { align: 'right' });
   
-  // Salvar
+  // ==========================
+  // SALVAR
+  // ==========================
   const nomeArquivo = form.value.nomeCliente
     ? `Orcamento_${form.value.nomeCliente.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
     : `Orcamento_LibrasSalvador_${new Date().toISOString().split('T')[0]}.pdf`;
