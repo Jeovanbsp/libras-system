@@ -15,6 +15,22 @@
 
           <div class="form-row">
             <div>
+              <label>CNPJ do Cliente</label>
+              <input v-model="form.cnpjCliente" type="text" placeholder="00.000.000/0001-00" />
+            </div>
+            <div>
+              <label>Responsável Contato</label>
+              <input v-model="form.responsavelContato" type="text" placeholder="Nome do responsável" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Setor</label>
+            <input v-model="form.setor" type="text" placeholder="Ex: Recursos Humanos" />
+          </div>
+
+          <div class="form-row">
+            <div>
               <label>Duração (Horas)</label>
               <input v-model.number="form.tempoServico" type="number" min="1" required />
             </div>
@@ -116,9 +132,13 @@ import {
 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import jsPDF from 'jspdf';
+import logoImg from '../assets/logo.png';
 
 const form = ref({
   nomeCliente: '',
+  cnpjCliente: '',
+  responsavelContato: '',
+  setor: '',
   tempoServico: 2,
   valorHora: 150,
   logistica: 50,
@@ -183,14 +203,12 @@ const gerarPDF = () => {
   doc.setFillColor(0, 74, 173);
   doc.rect(0, 0, 210, 30, 'F');
   
-  // Logo -.desenhar um ícone simples de Libras (duas mãos)
-  doc.setFillColor(255, 255, 255);
-  // Mão esquerda
-  doc.ellipse(175, 15, 4, 6, 'F');
-  doc.ellipse(175, 12, 3, 4, 'F');
-  // Mão direita
-  doc.ellipse(185, 15, 4, 6, 'F');
-  doc.ellipse(185, 12, 3, 4, 'F');
+  // Adicionar logo
+  try {
+    doc.addImage(logoImg, 'PNG', 170, 5, 30, 20);
+  } catch (e) {
+    // Se não conseguir carregar, usa o ícone desenhado
+  }
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
@@ -245,11 +263,11 @@ const gerarPDF = () => {
   doc.setFontSize(9);
   doc.text(`Cliente: ${form.value.nomeCliente || '(não informado)'}`, 14, y);
   y += 5;
-  doc.text('CNPJ: _________________________________', 14, y);
+  doc.text(`CNPJ: ${form.value.cnpjCliente || '_________________________________'}`, 14, y);
   y += 5;
-  doc.text('Responsável pelo contato: ________________________', 14, y);
+  doc.text(`Responsável pelo contato: ${form.value.responsavelContato || '________________________'}`, 14, y);
   y += 5;
-  doc.text('Setor: _________________________________', 14, y);
+  doc.text(`Setor: ${form.value.setor || '_________________________________'}`, 14, y);
   y += 10;
   
   // ==========================
@@ -438,6 +456,14 @@ const gerarPDF = () => {
   y += 5;
   doc.setFont('helvetica', 'italic');
   doc.text('Ficamos no aguardo do retorno da proposta. Obrigado pela oportunidade!', 14, y);
+  
+  // ==========================
+  // QUEBRA DE PÁGINA SE NECESSÁRIO
+  // ==========================
+  if (y > 250) {
+    doc.addPage();
+    y = 20;
+  }
   
   // ==========================
   // RODAPÉ
