@@ -405,28 +405,32 @@ const gerarPDF = () => {
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Prazo de Entrega/Execução: ______________________', 14, y);
+    doc.text('Prazo de Entrega/Execução: ________________________________', 14, y);
     y += 6;
-    doc.text('Validade da Proposta: Este orçamento é válido por 10 dias.', 14, y);
+    doc.text('Validade da Proposta: Este orcamento e valido por 10 dias.', 14, y);
     y += 10;
     
     // ==========================
-    // 6. TERMOS E CONDIÇÕES
+    // 6. TERMOS E CONDICOES (Observacoes)
     // ==========================
     doc.setFillColor(0, 74, 173);
     doc.rect(14, y - 5, 182, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('6. TERMOS E CONDIÇÕES', 16, y);
+    doc.text('6. TERMOS E CONDICOES', 16, y);
     y += 10;
     
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Política de Cancelamento: ____________________', 14, y);
+    doc.text('Politica de Cancelamento: ________________________________', 14, y);
     y += 6;
-    doc.text('Requisitos: ________________________________', 14, y);
+    doc.text('Requisitos: O que voce precisa que o cliente forneca para o trabalho', 14, y);
+    y += 5;
+    doc.text('comecar (documentos, acesso ao local, material de apoio).', 14, y);
+    y += 5;
+    doc.text('_________________________________________________________', 14, y);
     y += 10;
     
     // ==========================
@@ -444,19 +448,27 @@ const gerarPDF = () => {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     var diferenciais = [
-      'Empresa especializada em tradução e interpretação em Libras',
-      'Equipe de intérpretes qualificados para atendimento em vários estados',
-      'Mais de 300 avaliações 5 estrelas no Google',
-      'Emitimos Nota Fiscal como Tradução e Interpretação (não como MEI)'
+      'A Libras Salvador e uma empresa especializada em traducao e',
+      'interpretacao em Libras e foi criada pela uniao de duas paixoes:',
+      'a Libras e a historia da cidade de Salvador!',
+      'Temos o compromisso com a qualidade e etica no atendimento',
+      'ao publiko Surdo, por meio da acessibilidade linguistica.',
+      'Possuimos uma equipe de interpretes qualificados para',
+      'atendimento em varios estados do Brasil!',
+      'Somos mais de 300 avaliacoes 5 estrelas no Google.',
+      'Tambem emitimos a Nota Fiscal como Traducao e',
+      'Interpretação, diferentemente do que ocorre no mercado.'
     ];
     for (var d = 0; d < diferenciais.length; d++) {
       doc.text('• ' + diferenciais[d], 16, y);
       y += 5;
     }
     
-    y += 5;
+    y += 3;
     doc.setFont('helvetica', 'italic');
-    doc.text('Ficamos no aguardo do retorno da proposta. Obrigado pela oportunidade!', 14, y);
+    doc.text('Ficamos no aguardo de retorno da proposta e agradecemos', 14, y);
+    y += 5;
+    doc.text('pela oportunidade de apresenta-la!', 14, y);
     
     // ==========================
     // QUEBRA DE PÁGINA SE NECESSÁRIO
