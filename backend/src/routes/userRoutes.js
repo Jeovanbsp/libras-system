@@ -50,10 +50,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT: Atualizar nome, email e senha de um usuário (Admin)
+// PUT: Atualizar usuário completo (Admin)
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { nome, email, password, statusPagamento } = req.body;
+    const { nome, email, password, statusPagamento, modalidade, valorTotalCurso, apostila, combo, turma } = req.body;
     const userRole = req.user?.role;
     
     if (userRole !== 'admin' && userRole !== 'admin_restrito') {
@@ -98,8 +98,13 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     }
 
-    // Status pagamento
+    // Campos de investimento
     if (statusPagamento) updateData.statusPagamento = statusPagamento;
+    if (modalidade !== undefined) updateData.modalidade = modalidade;
+    if (valorTotalCurso !== undefined) updateData.valorTotalCurso = valorTotalCurso;
+    if (apostila !== undefined) updateData.apostila = apostila;
+    if (combo !== undefined) updateData.combo = combo;
+    if (turma !== undefined) updateData.turma = turma;
 
     const usuario = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
     if (!usuario) return res.status(404).json({ error: "Usuário não encontrado." });
