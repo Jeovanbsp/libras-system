@@ -519,7 +519,7 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, certificados: [] });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, turma: '', certificados: [] });
 const nomeCertificado = ref('');
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
@@ -540,6 +540,7 @@ const abrirModalEdicao = (user) => {
     valorTotalCurso: user.valorTotalCurso || 0,
     apostila: user.apostila || '',
     combo: user.combo || false,
+    turma: user.turma || '',
     certificados: certs
   };
   nomeCertificado.value = '';
@@ -569,6 +570,7 @@ const salvarEdicao = async () => {
     dados.valorTotalCurso = editForm.value.valorTotalCurso || 0;
     dados.apostila = editForm.value.apostila || '';
     dados.combo = editForm.value.combo || false;
+    dados.turma = editForm.value.turma || '';
     
     console.log('Salvando dados:', dados);
     
