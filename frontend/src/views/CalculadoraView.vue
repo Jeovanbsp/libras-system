@@ -60,6 +60,21 @@
             <label>Observações</label>
             <textarea v-model="form.observacoes" rows="2" placeholder="Informações adicionais..."></textarea>
           </div>
+
+          <div class="form-group">
+            <label>Prazo de Entrega/Execução</label>
+            <input v-model="form.prazoEntrega" type="text" placeholder="Ex: 15 dias após aprovação" />
+          </div>
+
+          <div class="form-group">
+            <label>Política de Cancelamento</label>
+            <input v-model="form.politicaCancelamento" type="text" placeholder="Ex: Cancelamento com 48h de antecedência" />
+          </div>
+
+          <div class="form-group">
+            <label>Requisitos</label>
+            <textarea v-model="form.requisitos" rows="2" placeholder="O que precisa do cliente (documentos, acesso, material)..."></textarea>
+          </div>
         </form>
       </div>
 
@@ -144,7 +159,10 @@ const form = ref({
   logistica: 50,
   imposto: 6,
   lucro: 20,
-  observacoes: ''
+  observacoes: '',
+  prazoEntrega: '',
+  politicaCancelamento: '',
+  requisitos: ''
 });
 
 const subtotalBruto = computed(() => {
@@ -405,7 +423,7 @@ const gerarPDF = () => {
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Prazo de Entrega/Execução: ________________________________', 14, y);
+    doc.text('Prazo de Entrega/Execucao: ' + (form.value.prazoEntrega ? form.value.prazoEntrega : '________________________________'), 14, y);
     y += 6;
     doc.text('Validade da Proposta: Este orcamento e valido por 10 dias.', 14, y);
     y += 10;
@@ -430,13 +448,13 @@ const gerarPDF = () => {
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Politica de Cancelamento: ________________________________', 14, y);
+    doc.text('Politica de Cancelamento: ' + (form.value.politicaCancelamento ? form.value.politicaCancelamento : '________________________________'), 14, y);
     y += 6;
-    doc.text('Requisitos: O que voce precisa que o cliente forneca para o trabalho', 14, y);
+    doc.text('Requisitos: ' + (form.value.requisitos ? form.value.requisitos : 'O que voce precisa que o cliente forneca'), 14, y);
     y += 5;
-    doc.text('comecar (documentos, acesso ao local, material de apoio).', 14, y);
-    y += 5;
-    doc.text('_________________________________________________________', 14, y);
+    if (!form.value.requisitos) {
+      doc.text('comecar (documentos, acesso ao local, material).', 14, y);
+    }
     y += 10;
     
     // ==========================
