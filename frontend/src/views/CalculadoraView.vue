@@ -411,6 +411,14 @@ const gerarPDF = () => {
     y += 10;
     
     // ==========================
+    // QUEBRA DE PAGINA ANTES DA PROXIMA SEÇÃO
+    // ==========================
+    if (y > 200) {
+      doc.addPage();
+      y = 20;
+    }
+    
+    // ==========================
     // 6. TERMOS E CONDICOES (Observacoes)
     // ==========================
     doc.setFillColor(0, 74, 173);
