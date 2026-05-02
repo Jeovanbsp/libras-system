@@ -11,6 +11,10 @@ const financeiroSchema = new mongoose.Schema(
       enum: ['SINDAUTO', 'BOTICÁRIO', 'OUTRA'],
       trim: true
     },
+    cnpj: {
+      type: String,
+      trim: true
+    },
     solicitante: {
       type: String,
       required: [true, 'Solicitante é obrigatório'],
@@ -143,6 +147,35 @@ const financeiroSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    
+    // ==========================================
+    // DADOS PARA ORÇAMENTO
+    // ==========================================
+    prazoEntrega: {
+      type: String,
+      trim: true
+    },
+    politicaCancelamento: {
+      type: String,
+      trim: true
+    },
+    requisitos: {
+      type: String,
+      trim: true
+    },
+    dadosBancarios: {
+      type: String,
+      trim: true
+    },
+    formaPagamento: {
+      type: String,
+      trim: true
+    },
+    parcelamento: {
+      type: String,
+      trim: true
+    },
+    
     status: {
       type: String,
       enum: ['pendente', 'pago', 'cancelado'],

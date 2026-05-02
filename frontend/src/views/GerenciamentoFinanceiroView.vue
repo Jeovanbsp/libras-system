@@ -337,6 +337,41 @@
               <label>Outros</label>
               <input v-model="formulario.outros" type="text" />
             </div>
+            
+            <!-- Novos campos para Orçamento -->
+            <div class="form-section">
+              <h4 class="section-title">Dados para Orçamento</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>CNPJ Cliente</label>
+                  <input v-model="formulario.cnpj" type="text" placeholder="00.000.000/0001-00" />
+                </div>
+                <div class="form-group">
+                  <label>Prazo de Entrega/Execução</label>
+                  <input v-model="formulario.prazoEntrega" type="text" placeholder="Ex: Imediato, 5 dias..." />
+                </div>
+                <div class="form-group">
+                  <label>Política de Cancelamento</label>
+                  <input v-model="formulario.politicaCancelamento" type="text" placeholder="Ex: Cancelamento em até 48h..." />
+                </div>
+                <div class="form-group">
+                  <label>Requisitos</label>
+                  <input v-model="formulario.requisitos" type="text" placeholder="Ex: Acesso à sala, material..." />
+                </div>
+                <div class="form-group">
+                  <label>Dados Bancários</label>
+                  <input v-model="formulario.dadosBancarios" type="text" placeholder="Banco: ... Agência: ... Conta: ..." />
+                </div>
+                <div class="form-group">
+                  <label>Forma de Pagamento</label>
+                  <input v-model="formulario.formaPagamento" type="text" placeholder="Pix, Boleto, Transferência..." />
+                </div>
+                <div class="form-group">
+                  <label>Parcelamento</label>
+                  <input v-model="formulario.parcelamento" type="text" placeholder="Ex: 2x, 3x..." />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="form-actions">
@@ -380,11 +415,13 @@ const modoEdicao = ref(false);
 const idEdicao = ref(null);
 
 const formulario = ref({
-  empresa: '', solicitante: '', email: '', contato: '', tematica: '', evento: '',
+  empresa: '', cnpj: '', solicitante: '', email: '', contato: '', tematica: '', evento: '',
   tipoEvento: '', dataInicial: '', dataFinal: '', horaInicio: '', horaTermino: '',
   quantidadeHoras: 0, interpretes: '', plataforma: '', precoTotal: 0, transporte: 0,
   impostos: 0, pagosInterpretes: 0, caixaEmpresa: 0, mes: 'janeiro',
-  ano: new Date().getFullYear(), observacao: '', previsaoPagamento: '', pagoEm: '', outros: ''
+  ano: new Date().getFullYear(), observacao: '', previsaoPagamento: '', pagoEm: '', outros: '',
+  // Novos campos para orçamento
+  prazoEntrega: '', politicaCancelamento: '', requisitos: '', dadosBancarios: '', formaPagamento: '', parcelamento: ''
 });
 
 const eventosFiltrados = computed(() => {
@@ -524,6 +561,12 @@ const gerarOrcamento = (evento) => {
     doc.text('3. DETALHAMENTO', margin, y);
     y += 8;
     
+    // Quebra de página se necessário
+    if (y > 200) {
+      doc.addPage();
+      y = margin;
+    }
+    
     // Tabela de valores
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -598,6 +641,11 @@ const gerarOrcamento = (evento) => {
     y += 12;
     
     // ========== 4. CONDIÇÕES FINANCEIRAS ==========
+    // Quebra de página se necessário
+    if (y > 200) {
+      doc.addPage();
+      y = margin;
+    }
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('4. CONDIÇÕES FINANCEIRAS', margin, y);
@@ -605,13 +653,13 @@ const gerarOrcamento = (evento) => {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Prazo de pagamento: em ______', margin, y);
+    doc.text(`Prazo de pagamento: ${evento.prazoPagamento || 'em ______'}`, margin, y);
     y += 5;
-    doc.text('Forma de Pagamento: Pix, boleto, transferência ou cartão.', margin, y);
+    doc.text(`Forma de Pagamento: ${evento.formaPagamento || 'Pix, boleto, transferência ou cartão.'}`, margin, y);
     y += 5;
-    doc.text('Dados Bancários: ________________________', margin, y);
+    doc.text(`Dados Bancários: ${evento.dadosBancarios || '________________________'}`, margin, y);
     y += 5;
-    doc.text('Parcelamento: ( ) à vista ( ) ____x', margin, y);
+    doc.text(`Parcelamento: ${evento.parcelamento || '( ) à vista ( ) ____x'}`, margin, y);
     
     y += 10;
     
@@ -623,7 +671,7 @@ const gerarOrcamento = (evento) => {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Prazo de Entrega/Execução: ________________________', margin, y);
+    doc.text(`Prazo de Entrega/Execução: ${evento.prazoEntrega || '________________________'}`, margin, y);
     y += 5;
     doc.text('Validade da Proposta: Este orçamento é válido por 10 dias.', margin, y);
     
@@ -637,15 +685,20 @@ const gerarOrcamento = (evento) => {
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Política de Cancelamento: ________________________', margin, y);
+    doc.text(`Política de Cancelamento: ${evento.politicaCancelamento || '________________________'}`, margin, y);
     y += 5;
-    doc.text('Requisitos: O que você precisa que o cliente forneça para o trabalho', margin, y);
+    doc.text(`Requisitos: ${evento.requisitos || 'O que você precisa que o cliente forneça para o trabalho'}`, margin, y);
     y += 5;
     doc.text('começar (documentos, acesso ao local, material de apoio): ________________', margin, y);
     
     y += 10;
     
     // ========== DIFERENCIAL ==========
+    // Quebra de página se necessário
+    if (y > 210) {
+      doc.addPage();
+      y = margin;
+    }
     doc.setFillColor(240, 253, 244);
     doc.rect(margin - 2, y - 3, pageWidth - 2 * margin + 4, 45, 'F');
     
