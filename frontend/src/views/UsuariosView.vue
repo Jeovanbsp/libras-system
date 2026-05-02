@@ -157,7 +157,7 @@
               <div class="item-actions">
                 <span v-if="user.turma" class="turma-badge">{{ user.turma }}</span>
                 <span :class="['role-badge', user.role === 'aluno' ? 'role-aluno' : 'role-admin']">
-                  {{ user.role === 'admin' ? 'Administrador' : (user.role === 'admin_restrito' ? 'Adm Restrito' : 'Aluno') }}
+                  {{ getRoleLabel(user.role) }}
                 </span>
                 
                 <button 
@@ -685,6 +685,13 @@ const uploadCertificado = async (alunoId) => {
   // Recarregar dados do usuário
   carregarUsuarios();
   return res.data;
+};
+
+const getRoleLabel = (role) => {
+  if (role === 'admin') return 'Administrador';
+  if (role === 'admin_restrito') return 'Adm Restrito';
+  if (role === 'professor') return 'Professor';
+  return 'Aluno';
 };
 
 onMounted(carregarUsuarios);
