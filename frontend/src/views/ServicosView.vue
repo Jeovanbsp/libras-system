@@ -371,117 +371,259 @@ const formatarData = (dataIso) => {
   return data.toLocaleDateString('pt-BR');
 };
 
-// Gerar PDF de um serviço específico
+// Gerar PDF de um serviço específico (Orçamento)
 const gerarPDF = async (servico) => {
   try {
     // Buscar dados do cliente
-    let razaoSocial = 'Cliente';
-    let cnpj = '';
+    let clienteData = { razaoSocial: 'Cliente', cnpj: '', email: '', telefone: '' };
     if (servico.cliente) {
       const clienteId = typeof servico.cliente === 'object' ? servico.cliente._id : servico.cliente;
       try {
         const resCli = await api.get(`/b2b/${clienteId}`);
-        razaoSocial = resCli.data.razaoSocial || 'Cliente';
-        cnpj = resCli.data.cnpj || '';
+        clienteData = resCli.data || clienteData;
       } catch (e) { console.log('Cliente não encontrado'); }
     }
     
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 14;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
     let y = margin;
     
-    // Cabeçalho
+    // ========== CABEÇALHO AZUL ==========
     doc.setFillColor(0, 74, 173);
-    doc.rect(0, 0, pageWidth, 30, 'F');
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('LIBRAS SALVADOR', margin, 15);
+    doc.text('LIBRAS SALVADOR', margin, 18);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(' Serviços de Interpretação de Libras ', margin, 28);
+    
+    // Data e validade à direita
+    doc.setFontSize(10);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth - margin - 35, 18, { align: 'right' });
+    doc.text('Validade: 10 dias', pageWidth - margin - 35, 25, { align: 'right' });
+    doc.text('Orçamento / Comprovante', pageWidth - margin - 35, 32, { align: 'right' });
+    
+    y = 45;
+    doc.setTextColor(0, 0, 0);
+    
+    // ========== SEÇÃO 1: DADOS DO CLIENTE ==========
+    doc.setFillColor(240, 247, 254);
+    doc.rect(margin, y - 5, pageWidth - 2*margin, 12, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 74, 173);
+    doc.text('1. DADOS DO CLIENTE', margin + 3, y + 3);
+    
+    y += 15;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Comprovante de Serviço', margin, 23);
-    
-    y = 40;
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
     
-    // Dados do serviço
-    doc.setFontSize(11);
-    doc.text('CLIENTE:', margin, y);
+    // Nome/Razão Social
     doc.setFont('helvetica', 'bold');
-    doc.text(razaoSocial, margin + 25, y);
-    y += 7;
+    doc.text('Razão Social / Nome:', margin, y);
     doc.setFont('helvetica', 'normal');
+    doc.text(clienteData.razaoSocial || 'Não informado', margin + 45, y, { maxWidth: pageWidth - margin - 60 });
+    y += 8;
+    
+    // CNPJ
+    doc.setFont('helvetica', 'bold');
     doc.text('CNPJ:', margin, y);
-    doc.text(cnpj || 'Não informado', margin + 18, y);
-    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.text(clienteData.cnpj || 'Não informado', margin + 15, y);
     
-    doc.text('DATA:', margin, y);
-    doc.text(formatarData(servico.dataEvento), margin + 20, y);
-    y += 7;
-    doc.text('HORÁRIO:', margin, y);
-    doc.text(`${servico.horaInicio || ''} às ${servico.horaTermino || ''}`, margin + 25, y);
-    y += 7;
-    doc.text('QTD HORAS:', margin, y);
-    doc.text(String(servico.quantidadeHoras || 0), margin + 32, y);
-    y += 10;
+    // Email
+    doc.setFont('helvetica', 'bold');
+    doc.text('E-mail:', margin + 70, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(clienteData.email || 'Não informado', margin + 85, y, { maxWidth: pageWidth - margin - 100 });
+    y += 8;
     
-    doc.text('TIPO:', margin, y);
-    doc.text(servico.tipoEvento || '', margin + 18, y);
-    y += 7;
-    doc.text('MODALIDADE:', margin, y);
-    doc.text(servico.modalidade || '', margin + 35, y);
-    y += 15;
+    // Contato
+    if (servico.solicitante) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Contato:', margin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(servico.solicitante, margin + 25, y);
+      y += 8;
+    }
     
-    // Valores
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, y, pageWidth - 2*margin, 50, 'F');
-    y += 10;
+    y += 5;
     
+    // ========== SEÇÃO 2: DADOS DO SERVIÇO ==========
+    doc.setFillColor(240, 247, 254);
+    doc.rect(margin, y - 5, pageWidth - 2*margin, 12, 'F');
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('VALORES', margin + 5, y);
-    y += 10;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setTextColor(0, 74, 173);
+    doc.text('2. DADOS DO SERVIÇO', margin + 3, y + 3);
     
-    doc.text('Valor Total:', margin, y);
-    doc.text(`R$ ${(servico.precoTotal || 0).toFixed(2)}`, margin + 35, y);
-    y += 8;
-    doc.text('Transporte/Logística:', margin, y);
-    doc.text(`R$ ${(servico.valorLogistica || 0).toFixed(2)}`, margin + 55, y);
-    y += 8;
-    doc.text('Intérpretes:', margin, y);
-    doc.text(`R$ ${(servico.valorInterpretes || 0).toFixed(2)}`, margin + 35, y);
-    y += 8;
-    doc.text('Impostos:', margin, y);
-    doc.text(`R$ ${(servico.impostos || 0).toFixed(2)}`, margin + 25, y);
-    y += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Caixa Empresa:', margin, y);
-    doc.text(`R$ ${(servico.caixaEmpresa || 0).toFixed(2)}`, margin + 42, y);
-    
-    y += 20;
-    doc.setFont('helvetica', 'normal');
-    doc.text('Status:', margin, y);
-    doc.text(servico.statusPagamento || 'Pendente', margin + 20, y);
     y += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
     
+    // Data do evento
+    doc.setFont('helvetica', 'bold');
+    doc.text('Data do Evento:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formatarData(servico.dataEvento), margin + 35, y);
+    
+    // Data fim (se houver)
+    if (servico.dataFim) {
+      doc.text(' a ', margin + 60, y);
+      doc.text(formatarData(servico.dataFim), margin + 68, y);
+    }
+    y += 8;
+    
+    // Horário
+    doc.setFont('helvetica', 'bold');
+    doc.text('Horário:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${servico.horaInicio || '--'} às ${servico.horaTermino || '--'}`, margin + 25, y);
+    
+    // Quantidade de horas
+    doc.setFont('helvetica', 'bold');
+    doc.text('Qtd Horas:', margin + 90, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(servico.quantidadeHoras || 0), margin + 115, y);
+    y += 8;
+    
+    // Tipo de evento
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tipo de Evento:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(servico.tipoEvento || 'Não informado', margin + 35, y);
+    
+    // Modalidade
+    doc.setFont('helvetica', 'bold');
+    doc.text('Modalidade:', margin + 90, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(servico.modalidade || '', margin + 113, y);
+    y += 8;
+    
+    // Intérpretes (se houver)
+    if (servico.interpretes && servico.interpretes.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Intérprete(s):', margin, y);
+      doc.setFont('helvetica', 'normal');
+      const nomes = servico.interpretes.map(i => typeof i === 'object' ? i.nome : i).join(', ');
+      doc.text(nomes, margin + 32, y, { maxWidth: pageWidth - margin - 50 });
+      y += 8;
+    }
+    
+    // Quebra de página se necessário
+    if (y > pageHeight - 80) {
+      doc.addPage();
+      y = margin;
+    }
+    
+    y += 5;
+    
+    // ========== SEÇÃO 3: VALORES ==========
+    doc.setFillColor(240, 247, 254);
+    doc.rect(margin, y - 5, pageWidth - 2*margin, 12, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 74, 173);
+    doc.text('3. VALORES', margin + 3, y + 3);
+    
+    y += 15;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    
+    // Linha tracejada
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+    
+    // Tabela de valores
+    const valores = [
+      ['Valor Totaldo Serviço', `R$ ${(servico.precoTotal || 0).toFixed(2)}`],
+      ['Transporte/Logística', `R$ ${(servico.valorLogistica || 0).toFixed(2)}`],
+      ['Valor para Intérpretes', `R$ ${(servico.valorInterpretes || 0).toFixed(2)}`],
+      ['Impostos', `R$ ${(servico.impostos || 0).toFixed(2)}`],
+      ['CAIXA EMPRESA', `R$ ${(servico.caixaEmpresa || 0).toFixed(2)}`]
+    ];
+    
+    valores.forEach(([label, valor], idx) => {
+      doc.setFont('helvetica', idx === 4 ? 'bold' : 'normal');
+      doc.setFontSize(idx === 4 ? 11 : 10);
+      doc.text(label, margin + 60, y);
+      doc.text(valor, pageWidth - margin - 3, y, { align: 'right' });
+      if (idx === 4) {
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+      }
+      y += 8;
+    });
+    
+    y += 5;
+    
+    // ========== SEÇÃO 4: STATUS ==========
+    doc.setFillColor(240, 247, 254);
+    doc.rect(margin, y - 5, pageWidth - 2*margin, 12, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 74, 173);
+    doc.text('4. STATUS DO PAGAMENTO', margin + 3, y + 3);
+    
+    y += 15;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Status:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    const statusText = servico.statusPagamento || 'Pendente';
+    doc.setTextColor(statusText === 'Pago' ? 0 : statusText === 'Cancelado' ? 220 : 0, statusText === 'Pago' ? 150 : statusText === 'Cancelado' ? 50 : 0, 0);
+    doc.text(statusText === 'Pago' ? '✓ PAGO' : statusText === 'Cancelado' ? '✕ CANCELADO' : 'PENDENTE', margin + 22, y);
+    
+    y += 5;
+    
+    // ========== SEÇÃO 5: OBSERVAÇÕES ==========
     if (servico.observacoes) {
-      doc.text('Observações:', margin, y);
-      y += 7;
+      y += 10;
+      doc.setFillColor(240, 247, 254);
+      doc.rect(margin, y - 5, pageWidth - 2*margin, 12, 'F');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 74, 173);
+      doc.text('5. OBSERVAÇÕES', margin + 3, y + 3);
+      
+      y += 15;
       doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
       doc.text(servico.observacoes, margin, y, { maxWidth: pageWidth - 2*margin });
     }
     
-    doc.save(`Servico_${servico._id}_${new Date().toISOString().split('T')[0]}.pdf`);
+    // ========== RODAPÉ ==========
+    y = pageHeight - 20;
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, y - 5, pageWidth, 25, 'F');
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('LIBRAS SALVADOR - Serviços de Interpretação de Libras', margin, y);
+    doc.text('https://librasalvador.com.br', pageWidth / 2, y, { align: 'center' });
+    y += 6;
+    doc.text('Este documento é um orçamento/comprovante e pode ser alterado.', margin, y);
+    doc.setFontSize(7);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth - margin - 3, y + 6, { align: 'right' });
+    
+    doc.save(`Orcamento_Servico_${servico._id}_${new Date().toISOString().split('T')[0]}.pdf`);
   } catch (error) {
     console.error(error);
     alert('Erro ao gerar PDF');
   }
 };
-
 const gerarRelatorioPDF = () => {
   if (userRole.value === 'admin_restrito') return alert("Acesso negado.");
   if (servicos.value.length === 0) return alert("Nenhum serviço para exportar neste período.");
