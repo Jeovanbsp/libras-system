@@ -70,8 +70,8 @@
 
         <div class="summary-card card-green" @click="abrirModalValoresAlunos" style="cursor: pointer;">
           <CheckCircle :size="28" />
-          <span class="card-label">Pago</span>
-          <span class="card-value">R$ {{ formatarValor(totalPago) }}</span>
+          <span class="card-label">Valores/Alunos</span>
+          <span class="card-value">R$ {{ formatarValor(somaValoresAlunos) }}</span>
         </div>
 
         <div class="summary-card card-slate">
@@ -452,14 +452,17 @@ import {
 const router = useRouter();
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 const totalPago = ref(0);
+const somaValoresAlunos = ref(0);
 const totalPagoModal = ref(false);
 const alunosValores = ref([]);
 
 const carregarTotalPago = async () => {
   try {
-    const res = await api.get('/usuarios/total-pago');
-    totalPago.value = res.data.total || 0;
-  } catch { totalPago.value = 0; }
+    const res = await api.get('/usuarios?role=aluno');
+    const alunos = res.data.filter(a => a.valorTotalCurso && a.valorTotalCurso > 0);
+    somaValoresAlunos.value = alunos.reduce((s, a) => s + (a.valorTotalCurso || 0), 0);
+    totalPago.value = alunos.reduce((s, a) => s + (a.valorPago || 0), 0);
+  } catch { totalPago.value = 0; somaValoresAlunos.value = 0; }
 };
 
 const abrirModalValoresAlunos = async () => {
