@@ -94,16 +94,12 @@ const handleReset = async () => {
       res = await api.post(`/auth/reset-password/${token}`, { password: password.value });
     }
     
-    mostrarMensagem(res.data.message || "Senha guardada com sucesso!");
+    mostrarMensagem(res.data.message || "Senha guardada com sucesso! Faça login com a nova senha.");
     
+    // Limpar sessão e redirecionar para login
+    localStorage.clear();
     setTimeout(() => {
-      if (isPrimeiroAcesso.value) {
-        const role = localStorage.getItem('userRole');
-        if (role === 'admin' || role === 'admin_restrito') router.push('/admin/dashboard');
-        else router.push('/aluno/dashboard');
-      } else {
-        router.push('/aluno/login');
-      }
+      router.push('/aluno/login');
     }, 2000);
 
   } catch (err) {
