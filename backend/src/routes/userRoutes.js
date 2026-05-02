@@ -8,6 +8,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.get('/total-pago', authMiddleware, async (req, res) => {
   try {
     const resultado = await User.aggregate([
+      { $match: { role: 'aluno' } },
       { $group: { _id: null, total: { $sum: '$valorPago' } } }
     ]);
     res.json({ total: resultado[0]?.total || 0 });

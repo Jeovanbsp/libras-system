@@ -464,8 +464,9 @@ const carregarTotalPago = async () => {
 
 const abrirModalValoresAlunos = async () => {
   try {
-    const res = await api.get('/users?role=aluno&fields=nome,email,valorPago,modalidade,valorTotalCurso');
-    alunosValores.value = res.data.filter(a => a.valorPago > 0);
+    const res = await api.get('/users?role=aluno');
+    // Mostrar todos os alunos com dados de investimento
+    alunosValores.value = res.data.filter(a => a.modalidade || a.valorTotalCurso || a.valorPago || a.statusPagamento);
   } catch {}
   totalPagoModal.value = true;
 };
