@@ -2,11 +2,15 @@
   <MainLayout pageTitle="Gestão de Cursos" pageDescription="Configure conteúdo, preços, materiais e libere acessos para alunos.">
     <div class="layout-split">
       
-      <div class="glass-card side-form" :style="{ display: isProfessor ? 'none' : 'block' }">
-        <h3 class="form-title">
-          <component :is="editandoId ? FileEdit : PlusCircle" :size="20" class="text-brand-color" /> 
-          {{ editandoId ? 'Editar Conteúdo' : 'Novo Curso' }}
+      <div class="glass-card side-form">
+        <h3 class="form-title" :class="{ 'prof-title': isProfessor }">
+          <component :is="editandoId ? FileEdit : (isProfessor ? Library : PlusCircle)" :size="20" class="text-brand-color" /> 
+          {{ isProfessor ? (editandoId ? 'Editar Módulos e Aulas' : 'Adicionar aos Módulos') : (editandoId ? 'Editar Conteúdo' : 'Novo Curso') }}
         </h3>
+        
+        <div v-if="isProfessor" class="professor-info">
+          <p>💡 Você pode editar módulos e aulas dos cursos. Não é possível alterar precios ou excluir cursos.</p>
+        </div>
         
         <div v-if="mensagemFeedback" :class="['feedback-toast', tipoFeedback]">
           <CheckCircle2 v-if="tipoFeedback === 'success'" :size="20" />
@@ -15,17 +19,17 @@
         </div>
 
         <form @submit.prevent="salvarCurso" class="modern-form scrollable-content">
-          <div class="form-group">
+          <div class="form-group" v-if="!isProfessor">
             <label>Título do Curso</label>
             <input v-model="curso.titulo" placeholder="Ex: Libras Avançado" required />
           </div>
           
-          <div class="form-group">
+          <div class="form-group" v-if="!isProfessor">
             <label>Descrição</label>
             <textarea v-model="curso.descricao" rows="3" placeholder="Detalhes do curso..." required></textarea>
           </div>
           
-          <div class="form-row">
+          <div class="form-row" v-if="!isProfessor">
             <div>
               <label>Carga Horária</label>
               <input v-model.number="curso.cargaHoraria" type="number" placeholder="Horas" required />

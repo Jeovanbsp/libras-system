@@ -38,11 +38,11 @@ router.get('/users', auth, async (req, res) => {
   }
 });
 
-// Criar novo tópico (apenas admin)
+// Criar novo tópico (admin, admin_restrito, professor)
 router.post('/topics', auth, async (req, res) => {
-  // Verificar se é admin
-  if (req.user.role !== 'admin' && req.user.role !== 'admin_restrito') {
-    return res.status(403).json({ message: 'Apenas administradores podem criar tópicos no fórum.' });
+  // Verificar se é admin ou professor
+  if (!['admin', 'admin_restrito', 'professor'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Apenas administradores e professores podem criar tópicos no fórum.' });
   }
 
   try {
@@ -89,12 +89,12 @@ router.get('/topics/:id', auth, async (req, res) => {
   }
 });
 
-// Deletar tópico (admin ou autor)
+// Deletar tópico (admin, professor ou autor)
 router.delete('/topics/:id', auth, async (req, res) => {
   try {
     const topic = await ForumTopic.findById(req.params.id);
     if (!topic) return res.status(404).json({ message: 'Tópico não encontrado' });
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'admin_restrito';
+    const isAdmin = ['admin', 'admin_restrito', 'professor'].includes(req.user.role);
     const isAutor = topic.autor.toString() === req.user.id;
     if (!isAdmin && !isAutor) return res.status(403).json({ message: 'Sem permissão' });
     await ForumTopic.findByIdAndDelete(req.params.id);
@@ -148,7 +148,7 @@ router.put('/topics/:id/replies/:replyId', auth, async (req, res) => {
     const reply = topic.respostas.id(req.params.replyId);
     if (!reply) return res.status(404).json({ message: 'Resposta não encontrada' });
 
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'admin_restrito';
+    const isAdmin = ['admin', 'admin_restrito', 'professor'].includes(req.user.role);
     const isAutor = reply.autor.toString() === req.user.id;
     if (!isAdmin && !isAutor) return res.status(403).json({ message: 'Sem permissão' });
 
@@ -173,7 +173,7 @@ router.delete('/topics/:id/replies/:replyId', auth, async (req, res) => {
     const reply = topic.respostas.id(req.params.replyId);
     if (!reply) return res.status(404).json({ message: 'Resposta não encontrada' });
 
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'admin_restrito';
+    const isAdmin = ['admin', 'admin_restrito', 'professor'].includes(req.user.role);
     const isAutor = reply.autor.toString() === req.user.id;
     if (!isAdmin && !isAutor) return res.status(403).json({ message: 'Sem permissão' });
 
