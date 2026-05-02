@@ -385,6 +385,7 @@ const realcarMencoes = (texto) => {
 
 const formatarRole = (role) => {
   if (role === 'admin' || role === 'admin_restrito') return 'Admin';
+  if (role === 'professor') return 'Professor';
   return 'Aluno';
 };
 
@@ -454,6 +455,7 @@ onMounted(() => { carregarTopicos(); carregarUsuarios(); });
 .mention-item:hover { background: #f1f5f9; }
 .role-badge { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 5px; text-transform: uppercase; margin-left: 4px; }
 .role-badge.admin, .role-badge.admin_restrito { background: #eff6ff; color: #1d4ed8; }
+.role-badge.professor { background: #fef3c7; color: #d97706; }
 .role-badge.aluno { background: #f0fdf4; color: #16a34a; }
 .btn-primary-sm { background: #004aad; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
 .btn-primary-sm:hover:not(:disabled) { background: #003a8c; }
