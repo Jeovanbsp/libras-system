@@ -22,6 +22,10 @@ router.get('/topics', auth, async (req, res) => {
       .populate('autor', 'nome role')
       .sort({ fixado: -1, dataCriacao: -1 })
       .lean();
+    // Debug: log primeiro topico
+    if (topics.length > 0) {
+      console.log('[DEBUG GET /topics] Primeiro topico:', JSON.stringify(topics[0]));
+    }
     res.json(topics);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao listar tópicos' });
