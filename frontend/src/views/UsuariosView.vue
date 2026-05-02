@@ -64,6 +64,11 @@
             </div>
 
             <div class="form-group">
+              <label>Valor Já Pago (R$)</label>
+              <input v-model.number="form.valorPago" type="number" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div class="form-group">
               <label>Adquiriu Apostila?</label>
               <select v-model="form.apostila" class="modern-select">
                 <option value="">Selecione...</option>
@@ -408,7 +413,7 @@ const confirmModalConfig = ref({
 const onConfirmAction = ref(null);
 
 const usuarios = ref([]);
-const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, statusPagamento: '' });
+const form = ref({ nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, valorPago: 0, apostila: '', combo: false, statusPagamento: '' });
 
 const filtros = ref({
   busca: '',
@@ -452,12 +457,13 @@ const salvarUsuario = async () => {
       ...form.value,
       modalidade: form.value.modalidade || '',
       valorTotalCurso: form.value.valorTotalCurso || 0,
+      valorPago: form.value.valorPago || 0,
       apostila: form.value.apostila || '',
       combo: form.value.combo || false,
       statusPagamento: form.value.statusPagamento || ''
     };
     await api.post('/auth/register', userData);
-    form.value = { nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, statusPagamento: '' };
+    form.value = { nome: '', email: '', password: '', role: 'aluno', turma: '', modalidade: '', valorTotalCurso: 0, valorPago: 0, apostila: '', combo: false, statusPagamento: '' };
     mostrarMensagem('Usuário cadastrado com sucesso!');
     carregarUsuarios();
   } catch (error) {
@@ -519,7 +525,7 @@ const executarRemocao = async () => {
 // ==========================================
 const mostrarModalEdicao = ref(false);
 const userParaEditar = ref(null);
-const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, apostila: '', combo: false, turma: '', certificados: [] });
+const editForm = ref({ nome: '', email: '', novaSenha: '', statusPagamento: '', modalidade: '', valorTotalCurso: 0, valorPago: 0, apostila: '', combo: false, turma: '', certificados: [] });
 const nomeCertificado = ref('');
 const editFeedback = ref('');
 const editFeedbackTipo = ref('');
@@ -538,6 +544,7 @@ const abrirModalEdicao = (user) => {
     statusPagamento: user.statusPagamento || '',
     modalidade: user.modalidade || '',
     valorTotalCurso: user.valorTotalCurso || 0,
+    valorPago: user.valorPago || 0,
     apostila: user.apostila || '',
     combo: user.combo || false,
     turma: user.turma || '',
@@ -568,6 +575,7 @@ const salvarEdicao = async () => {
     dados.statusPagamento = editForm.value.statusPagamento || '';
     dados.modalidade = editForm.value.modalidade || '';
     dados.valorTotalCurso = editForm.value.valorTotalCurso || 0;
+    dados.valorPago = editForm.value.valorPago || 0;
     dados.apostila = editForm.value.apostila || '';
     dados.combo = editForm.value.combo || false;
     dados.turma = editForm.value.turma || '';

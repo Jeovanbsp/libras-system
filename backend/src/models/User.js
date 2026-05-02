@@ -27,6 +27,7 @@ const UserSchema = new mongoose.Schema({
     default: '' 
   },
   valorTotalCurso: { type: Number, default: 0 },
+  valorPago: { type: Number, default: 0 },
   apostila: { 
     type: String, 
     enum: ['Digital', 'Impressa', 'Nenhuma', ''],

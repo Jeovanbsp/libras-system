@@ -4,6 +4,18 @@ const User = require('../models/User');
 const SolicitacaoSenha = require('../models/SolicitacaoSenha');
 const authMiddleware = require('../middlewares/authMiddleware');
 
+// GET: Total pago por todos os alunos
+router.get('/total-pago', authMiddleware, async (req, res) => {
+  try {
+    const resultado = await User.aggregate([
+      { $group: { _id: null, total: { $sum: '$valorPago' } } }
+    ]);
+    res.json({ total: resultado[0]?.total || 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET: Listar todos os usuários (Alunos/Professores)
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -53,7 +65,7 @@ router.get('/:id', async (req, res) => {
 // PUT: Atualizar usuário completo (Admin)
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { nome, email, password, statusPagamento, modalidade, valorTotalCurso, apostila, combo, turma } = req.body;
+    const { nome, email, password, statusPagamento, modalidade, valorTotalCurso, valorPago, apostila, combo, turma } = req.body;
     const userRole = req.user?.role;
     
     if (userRole !== 'admin' && userRole !== 'admin_restrito') {
@@ -102,6 +114,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (statusPagamento) updateData.statusPagamento = statusPagamento;
     if (modalidade !== undefined) updateData.modalidade = modalidade;
     if (valorTotalCurso !== undefined) updateData.valorTotalCurso = valorTotalCurso;
+    if (valorPago !== undefined) updateData.valorPago = valorPago;
     if (apostila !== undefined) updateData.apostila = apostila;
     if (combo !== undefined) updateData.combo = combo;
     if (turma !== undefined) updateData.turma = turma;

@@ -68,6 +68,12 @@
           <span class="card-value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
         </div>
 
+        <div class="summary-card card-green">
+          <CheckCircle :size="28" />
+          <span class="card-label">Pago</span>
+          <span class="card-value">R$ {{ formatarValor(totalPago) }}</span>
+        </div>
+
         <div class="summary-card card-slate">
           <Clock :size="28" />
           <span class="card-label">Horas Total</span>
@@ -409,11 +415,19 @@ import api from '../services/api';
 import jsPDF from 'jspdf';
 import {
   Filter, Plus, RotateCcw, DollarSign, Clock, Truck, AlertCircle, Users,
-  Briefcase, FileText, Edit2, Trash2, X, BarChart3, CreditCard
+  Briefcase, FileText, Edit2, Trash2, X, BarChart3, CreditCard, CheckCircle
 } from 'lucide-vue-next';
 
 const router = useRouter();
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
+const totalPago = ref(0);
+
+const carregarTotalPago = async () => {
+  try {
+    const res = await api.get('/users/total-pago');
+    totalPago.value = res.data.total || 0;
+  } catch { totalPago.value = 0; }
+};
 
 if (userRole.value === 'admin_restrito') {
   router.push('/admin/dashboard');
@@ -868,6 +882,7 @@ const carregarEventos = async () => {
 onMounted(async () => {
   await carregarEmpresas();
   await carregarEventos();
+  await carregarTotalPago();
 });
 </script>
 

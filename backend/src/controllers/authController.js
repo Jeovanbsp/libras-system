@@ -19,7 +19,7 @@ exports.getMe = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-    const { nome, email, password, role, turma, modalidade, valorTotalCurso, apostila, combo, statusPagamento } = req.body;
+    const { nome, email, password, role, turma, modalidade, valorTotalCurso, valorPago, apostila, combo, statusPagamento } = req.body;
     
     if (req.user && req.user.role === 'admin_restrito' && (role === 'admin' || role === 'admin_restrito')) {
         return res.status(403).json({ msg: "Operação não permitida para o seu nível de acesso." });
@@ -40,6 +40,7 @@ exports.register = async (req, res) => {
             turma: turma || '',
             modalidade: modalidade || '',
             valorTotalCurso: valorTotalCurso || 0,
+            valorPago: valorPago || 0,
             apostila: apostila || '',
             combo: combo || false,
             statusPagamento: statusPagamento || '',
