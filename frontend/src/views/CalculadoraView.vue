@@ -8,6 +8,20 @@
         </h3>
         
         <form @submit.prevent class="modern-form">
+          <!-- Seletor de Evento -->
+          <div class="form-group">
+            <label>Buscar Evento Cadastrado</label>
+            <select v-model="eventoSelecionado" @change="preencherDoEvento" class="modern-select">
+              <option value="">Selecione um evento...</option>
+              <option v-for="evt in eventos" :key="evt._id" :value="evt">
+                {{ evt.empresa }} - {{ evt.evento }} ({{ formatDate(evt.dataInicial) }})
+              </option>
+            </select>
+            <small v-if="eventoSelecionado" class="text-green-600 text-xs cursor-pointer" @click="limparEvento">
+              ✖ Limpar seleção
+            </small>
+          </div>
+
           <div class="form-group">
             <label>Nome do Cliente / Evento</label>
             <input v-model="form.nomeCliente" type="text" placeholder="Ex: Empresa ABC - Conferência" />
@@ -164,6 +178,43 @@ const form = ref({
   politicaCancelamento: '',
   requisitos: ''
 });
+
+// Sistema de Eventos
+const eventos = ref([]);
+const eventoSelecionado = ref(null);
+
+const carregarEventos = async () => {
+  try {
+    const res = await api.get('/financeiro/lista-simples');
+    eventos.value = res.data;
+  } catch (error) {
+    console.error('Erro ao carregar eventos:', error);
+  }
+};
+
+const preencherDoEvento = () => {
+  if (!eventoSelecionado.value) return;
+  const evt = eventoSelecionado.value;
+  // Mapear dados do evento para o formulário
+  form.value.nomeCliente = evt.empresa || '';
+  form.value.responsavelContato = evt.solicitante || '';
+  form.value.setor = evt.tematica || '';
+  form.value.observacoes = evt.evento + ' - ' + evt.tipoEvento || '';
+  form.value.tempoServico = evt.quantidadeHoras || 2;
+  form.value.logistica = evt.precoTotal ? evt.precoTotal * 0.1 : 50;
+};
+
+const limparEvento = () => {
+  eventoSelecionado.value = null;
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('pt-BR');
+};
+
+// Carregar eventos ao iniciar
+carregarEventos();
 
 const subtotalBruto = computed(() => {
   return (form.value.tempoServico * form.value.valorHora) + (form.value.logistica || 0);

@@ -154,6 +154,19 @@ router.get('/relatorio/empresa/:empresa', authMiddleware, async (req, res) => {
   }
 });
 
+// GET: Listar eventos simples (para seletor de orçamento)
+router.get('/lista-simples', authMiddleware, async (req, res) => {
+  try {
+    const eventos = await Financeiro.find()
+      .select('empresa solicitante email contato tematica evento tipoEvento dataInicial horaInicio quantidadeHoras precoTotal')
+      .sort({ dataInicial: -1 })
+      .limit(50);
+    res.json(eventos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ==========================================
 // GET: Listar todos os eventos financeiros
 // ==========================================
