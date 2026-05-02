@@ -222,6 +222,12 @@
                   <span>{{ servico.observacoes }}</span>
                 </div>
                 <div class="footer-actions">
+                  <button @click="gerarPDF(servico)" class="btn-action-mini" title="Gerar PDF">
+                    <FileText :size="18" />
+                  </button>
+                  <button @click="editar(servico)" class="btn-action-mini" title="Editar">
+                    <Edit2 :size="18" />
+                  </button>
                   <button @click="remover(servico._id)" class="btn-del-mini" title="Excluir">
                     <Trash2 :size="18" />
                   </button>
@@ -243,7 +249,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save, FileText, Info, CheckCircle } from 'lucide-vue-next';
+import { CalendarPlus, Calendar, Briefcase, Users, DollarSign, Clock, Trash2, Inbox, Save, FileText, Info, CheckCircle, Edit2 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
 import jsPDF from 'jspdf';
@@ -296,8 +302,15 @@ const cadastrar = async () => {
        form.value.precoTotal = 0; form.value.valorLogistica = 0;
        form.value.impostos = 0; form.value.valorInterpretes = 0; form.value.caixaEmpresa = 0;
     }
-    await api.post('/servicos', form.value);
-    alert('Serviço lançado com sucesso!');
+    
+    // Se tem _id, é edição - usar PUT
+    if (form.value._id) {
+      await api.put(`/servicos/${form.value._id}`, form.value);
+      alert('Serviço atualizado com sucesso!');
+    } else {
+      await api.post('/servicos', form.value);
+      alert('Serviço lançado com sucesso!');
+    }
     
     form.value = {
       cliente: '', solicitante: '', interpretes: [], dataEvento: '', dataFim: '', horaInicio: '', horaTermino: '',
@@ -315,6 +328,33 @@ const remover = async (id) => {
       carregarServicos();
     } catch (error) { alert("Erro ao excluir."); }
   }
+};
+
+// Editar serviço - preenche o formulário
+const editar = (servico) => {
+  form.value = {
+    cliente: servico.cliente,
+    solicitante: servico.solicitante,
+    interpretes: servico.interpretes || [],
+    dataEvento: servico.dataEvento ? servico.dataEvento.split('T')[0] : '',
+    dataFim: servico.dataFim ? servico.dataFim.split('T')[0] : '',
+    horaInicio: servico.horaInicio,
+    horaTermino: servico.horaTermino,
+    quantidadeHoras: servico.quantidadeHoras,
+    tipoEvento: servico.tipoEvento,
+    modalidade: servico.modalidade,
+    statusPagamento: servico.statusPagamento || 'Pendente',
+    valorLogistica: servico.valorLogistica || 0,
+    impostos: servico.impostos || 0,
+    valorInterpretes: servico.valorInterpretes || 0,
+    precoTotal: servico.precoTotal || 0,
+    CaixaEmpresa: servico.caixaEmpresa || 0,
+    observacoes: servico.observacoes || '',
+    _id: servico._id
+  };
+  // Mudar título do formulário
+  document.querySelector('.form-title')?.insertAdjacentHTML('afterend', '<p class="editando">Editando serviço</p>');
+  alert('Dados carregados! Faça as alterações e clique em "Lançar Serviço" para atualizar.');
 };
 
 const formatarData = (dataIso) => {
@@ -451,6 +491,11 @@ onMounted(() => { carregarDadosBase(); carregarServicos(); });
 .footer-actions { display: flex; gap: 8px; margin-left: auto; }
 .btn-del-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; color: #94a3b8; transition: 0.2s; display: flex; align-items: center; }
 .btn-del-mini:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
+
+.btn-action-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; color: #64748b; transition: 0.2s; display: flex; align-items: center; margin-right: 4px; }
+.btn-action-mini:hover { background: #dbeafe; color: #0284c7; border-color: #bfdbfe; }
+
+.editando { color: #059669; font-weight: 600; margin: 5px 0; }
 .btn-status-mini { background: white; border: 1px solid #e2e8f0; padding: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; }
 .btn-pago { color: #16a34a; border-color: #bbf7d0; }
 .btn-pago:hover { background: #dcfce7; color: #166534; }
