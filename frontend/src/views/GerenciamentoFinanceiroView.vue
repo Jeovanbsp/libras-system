@@ -826,11 +826,15 @@ const gerarOrcamento = (evento) => {
 const abrirModalNovoEvento = () => {
   modoEdicao.value = false;
   formulario.value = {
-    empresa: '', solicitante: '', email: '', contato: '', tematica: '', evento: '',
+    empresa: '', cnpj: '', solicitante: '', email: '', contato: '', tematica: '', evento: '',
     tipoEvento: '', dataInicial: '', dataFinal: '', horaInicio: '', horaTermino: '',
     quantidadeHoras: 0, interpretes: '', plataforma: '', precoTotal: 0, transporte: 0,
     impostos: 0, pagosInterpretes: 0, caixaEmpresa: 0, mes: 'janeiro',
-    ano: new Date().getFullYear(), observacao: '', previsaoPagamento: '', pagoEm: '', outros: ''
+    ano: new Date().getFullYear(), observacao: '', previsaoPagamento: '', pagoEm: '', outros: '',
+    // Dados para orçamento
+    prazoEntrega: '', politicaCancelamento: '', requisitos: '', dadosBancarios: '', formaPagamento: '', parcelamento: '',
+    // Status
+    status: 'pendente'
   };
   mostrarModal.value = true;
 };

@@ -230,7 +230,14 @@ router.post('/', authMiddleware, async (req, res) => {
       observacao,
       previsaoPagamento,
       pagoEm,
-      outros
+      outros,
+      // Campos para orçamento
+      prazoEntrega,
+      politicaCancelamento,
+      requisitos,
+      dadosBancarios,
+      formaPagamento,
+      parcelamento
     } = req.body;
 
     // Validações básicas
@@ -297,7 +304,14 @@ router.post('/', authMiddleware, async (req, res) => {
       observacao,
       previsaoPagamento,
       pagoEm,
-      outros
+      outros,
+      // Dados para orçamento
+      prazoEntrega,
+      politicaCancelamento,
+      requisitos,
+      dadosBancarios,
+      formaPagamento,
+      parcelamento
     });
 
     await novoEvento.save();
