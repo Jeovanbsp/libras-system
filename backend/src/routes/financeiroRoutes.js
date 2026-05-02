@@ -252,12 +252,15 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // Validar empresa (enum)
-    if (!['SINDAUTO', 'BOTICÁRIO', 'OUTRA'].includes(empresa)) {
-      return res.status(400).json({ 
-        error: 'Empresa inválida. Use: SINDAUTO, BOTICÁRIO ou OUTRA',
-        campo: 'empresa'
-      });
+    // Validar empresa (aceita qualquer nome de empresa cadastrada no sistema)
+    if (empresa && empresa.length > 0) {
+      // Verifica se empresa tem pelo menos 2 caracteres válidos
+      if (empresa.trim().length < 2) {
+        return res.status(400).json({ 
+          error: 'Nome da empresa muito curto',
+          campo: 'empresa'
+        });
+      }
     }
 
     // Validar mês (enum)

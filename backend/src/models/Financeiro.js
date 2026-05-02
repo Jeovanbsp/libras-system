@@ -8,7 +8,6 @@ const financeiroSchema = new mongoose.Schema(
     empresa: {
       type: String,
       required: [true, 'Empresa é obrigatória'],
-      enum: ['SINDAUTO', 'BOTICÁRIO', 'OUTRA'],
       trim: true
     },
     cnpj: {
