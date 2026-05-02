@@ -437,48 +437,76 @@
 
     <!-- MODAL DETALHADO POR MÊS -->
     <div v-if="mostrarModalDetalhado" class="modal-overlay" @click.self="mostrarModalDetalhado = false">
-      <div class="modal-content glass-card" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
-        <div class="modal-header">
-          <h2>Detalhamento Financeiro por Mês</h2>
+      <div class="modal-content glass-card modal-detalhado">
+        <div class="modal-header header-detalhado">
+          <div>
+            <h2>📊 Detalhamento Financeiro</h2>
+            <p class="subtitle">Resumo por mês de todos os eventos</p>
+          </div>
           <button class="close-btn" @click="mostrarModalDetalhado = false">&times;</button>
         </div>
         <div class="modal-body">
-          <table class="data-table">
+          <div class="resumo-cards" v-if="breakdownPorMes.length > 0">
+            <div class="resumo-card">
+              <span class="label">Total Recebido</span>
+              <span class="value green">R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.precoTotal, 0)) }}</span>
+            </div>
+            <div class="resumo-card">
+              <span class="label">Eventos</span>
+              <span class="value">{{ breakdownPorMes.reduce((s, i) => s + i.quantidadeEventos, 0) }}</span>
+            </div>
+            <div class="resumo-card">
+              <span class="label">Horas</span>
+              <span class="value">{{ breakdownPorMes.reduce((s, i) => s + i.horas, 0) }}h</span>
+            </div>
+            <div class="resumo-card">
+              <span class="label">Caixa Empresa</span>
+              <span class="value blue">R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.caixaEmpresa, 0)) }}</span>
+            </div>
+          </div>
+          
+          <table class="data-table detalhada">
             <thead>
               <tr>
-                <th>Mês/Ano</th>
+                <th class="th-mes">Mês/Ano</th>
                 <th>Eventos</th>
                 <th>Horas</th>
-                <th>Preço Total</th>
-                <th>Transporte</th>
-                <th>Impostos</th>
-                <th>Pago Intérpretes</th>
-                <th>Caixa Empresa</th>
+                <th class="th-money">Valor Total</th>
+                <th class="th-money">Transporte</th>
+                <th class="th-money">Impostos</th>
+                <th class="th-money">Intérpretes</th>
+                <th class="th-money">Caixa Emp.</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in breakdownPorMes" :key="item.mes + '-' + item.ano">
-                <td class="mes-cell">{{ item.mes.charAt(0).toUpperCase() + item.mes.slice(1) }} {{ item.ano }}</td>
-                <td>{{ item.quantidadeEventos }}</td>
-                <td>{{ item.horas }}h</td>
-                <td class="valor-destaque">R$ {{ formatarValor(item.precoTotal) }}</td>
-                <td>R$ {{ formatarValor(item.transporte) }}</td>
-                <td>R$ {{ formatarValor(item.impostos) }}</td>
-                <td>R$ {{ formatarValor(item.pagosInterpretes) }}</td>
-                <td class="valor-caixa">R$ {{ formatarValor(item.caixaEmpresa) }}</td>
+                <td class="mes-cell">
+                  <span class="mes-nome">{{ item.mes.charAt(0).toUpperCase() + item.mes.slice(1) }}</span>
+                  <span class="mes-ano">{{ item.ano }}</span>
+                </td>
+                <td class="center"><span class="badge-eventos">{{ item.quantidadeEventos }}</span></td>
+                <td class="center">{{ item.horas }}h</td>
+                <td class="money green">R$ {{ formatarValor(item.precoTotal) }}</td>
+                <td class="money">R$ {{ formatarValor(item.transporte) }}</td>
+                <td class="money">R$ {{ formatarValor(item.impostos) }}</td>
+                <td class="money">R$ {{ formatarValor(item.pagosInterpretes) }}</td>
+                <td class="money blue">R$ {{ formatarValor(item.caixaEmpresa) }}</td>
               </tr>
               <tr class="total-row">
-                <td><strong>TOTAL</strong></td>
-                <td><strong>{{ breakdownPorMes.reduce((s, i) => s + i.quantidadeEventos, 0) }}</strong></td>
-                <td><strong>{{ breakdownPorMes.reduce((s, i) => s + i.horas, 0) }}h</strong></td>
-                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.precoTotal, 0)) }}</strong></td>
-                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.transporte, 0)) }}</strong></td>
-                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.impostos, 0)) }}</strong></td>
-                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.pagosInterpretes, 0)) }}</strong></td>
-                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.caixaEmpresa, 0)) }}</strong></td>
+                <td colspan="2"><strong>TOTAL GERAL</strong></td>
+                <td class="center"><strong>{{ breakdownPorMes.reduce((s, i) => s + i.horas, 0) }}h</strong></td>
+                <td class="money green"><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.precoTotal, 0)) }}</strong></td>
+                <td class="money"><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.transporte, 0)) }}</strong></td>
+                <td class="money"><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.impostos, 0)) }}</strong></td>
+                <td class="money"><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.pagosInterpretes, 0)) }}</strong></td>
+                <td class="money blue"><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.caixaEmpresa, 0)) }}</strong></td>
               </tr>
             </tbody>
           </table>
+          
+          <p v-if="breakdownPorMes.length === 0" class="no-data">
+            Nenhum evento encontrado.
+          </p>
         </div>
       </div>
     </div>
@@ -1200,4 +1228,41 @@ onMounted(async () => {
 .total-row { background: #f1f5f9; font-weight: bold; }
 .total-row td { border-top: 2px solid #94a3b8; }
 .no-data { text-align: center; padding: 30px; color: #64748b; }
+
+/* Modal Detalhado */
+.modal-detalhado { max-width: 1000px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+.header-detalhado { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
+.header-detalhado h2 { margin: 0; color: #0f172a; font-size: 1.5rem; }
+.header-detalhado .subtitle { margin: 4px 0 0; color: #64748b; font-size: 0.9rem; }
+
+.resumo-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.resumo-card { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+.resumo-card .label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 4px; }
+.resumo-card .value { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+.resumo-card .value.green { color: #059669; }
+.resumo-card .value.blue { color: #004aad; }
+
+.data-table.detalhada { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.data-table.detalhada th { background: #f8fafc; padding: 12px 8px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; }
+.data-table.detalhada th.th-mes { width: 120px; }
+.data-table.detalhada th.th-money { text-align: right; }
+.data-table.detalhada td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; }
+.data-table.detalhada td.center { text-align: center; }
+.data-table.detalhada td.money { text-align: right; font-family: 'Courier New', monospace; }
+.data-table.detalhada td.money.green { color: #059669; font-weight: 600; }
+.data-table.detalhada td.money.blue { color: #004aad; font-weight: 600; }
+
+.mes-cell { display: flex; flex-direction: column; }
+.mes-nome { font-weight: 600; color: #0f172a; }
+.mes-ano { font-size: 0.75rem; color: #94a3b8; }
+
+.badge-eventos { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+
+.total-row { background: #f1f5f9; }
+.total-row td { padding: 14px 8px; border-top: 2px solid #94a3b8; }
+
+@media (max-width: 768px) {
+  .resumo-cards { grid-template-columns: repeat(2, 1fr); }
+  .modal-detalhado { font-size: 0.8rem; }
+}
 </style>    
