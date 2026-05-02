@@ -611,7 +611,7 @@ const formatarData = (dataIso) => {
   return new Date(dataIso).toLocaleDateString('pt-BR');
 };
 
-// Gerar PDF dos alunos
+// Gerar PDF dos alunos (Relatório de Matrícula)
 const gerarPDF = () => {
   const doc = new jsPDF();
   const brandColor = [0, 74, 173];
@@ -622,38 +622,79 @@ const gerarPDF = () => {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text('Relatório de Alunos - Libras Salvador', 105, 10, { align: 'center' });
+  doc.text('Relatório de Matrícula - Libras Salvador', 105, 10, { align: 'center' });
   doc.setFontSize(10);
-  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 105, 18, { align: 'center' });
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} | Total: ${usuarios.value.length} alunos`, 105, 18, { align: 'center' });
+  
+  // Estatísticas
+  const turmas = {};
+  const modalidades = {};
+  usuarios.value.forEach(u => {
+    if (u.turma) turmas[u.turma] = (turmas[u.turma] || 0) + 1;
+    if (u.modalidade) modalidades[u.modalidade] = (modalidades[u.modalidade] || 0) + 1;
+  });
   
   let y = 35;
   
+  // Resumo por turma
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text('Resumo por Turma:', 14, y);
+  y += 7;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  Object.entries(turmas).sort().forEach(([turma, qtd]) => {
+    doc.text(`  • ${turma}: ${qtd} alunos`, 14, y);
+    y += 5;
+  });
+  if (Object.keys(turmas).length === 0) {
+    doc.text('  Nenhuma turma definida', 14, y);
+    y += 5;
+  }
+  y += 5;
+  
+  // Linha separadora
+  doc.setDrawColor(200, 200, 200);
+  doc.line(14, y, 196, y);
+  y += 10;
+  
   // Lista de alunos
-  usuarios.value.forEach((user, index) => {
-    if (y > 270) {
+  let contador = 1;
+  doc.setFontSize(10);
+  usuarios.value.forEach((user) => {
+    if (y > 265) {
       doc.addPage();
       y = 20;
     }
     
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${index + 1}. ${user.nome}`, 14, y);
-    y += 6;
+    // Card do aluno
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(14, y - 4, 182, 26, 2, 2, 'F');
     
-    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${contador}. ${user.nome}`, 18, y + 2);
+    contador++;
+    
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`E-mail: ${user.email}`, 14, y);
-    y += 5;
-    doc.text(`Turma: ${user.turma || 'Não definida'} | Modalidade: ${user.modalidade || 'Não definida'}`, 14, y);
-    y += 5;
-    doc.text(`Valor: R$ ${(user.valorTotalCurso || 0).toFixed(2)} | Apostila: ${user.apostila || 'Nenhuma'} | Combo: ${user.combo ? 'Sim' : 'Não'}`, 14, y);
-    y += 5;
-    doc.text(`Status Pagamento: ${user.statusPagamento || 'Não definido'} | Cadastrado: ${formatarData(user.createdAt)}`, 14, y);
-    y += 10;
+    doc.setTextColor(80, 80, 80);
+    
+    // Linha 1: Turma e Modalidade
+    doc.text(`Turma: ${user.turma || 'Não definida'}  |  Modalidade: ${user.modalidade || 'Não definida'}`, 18, y + 9);
+    
+    // Linha 2: E-mail
+    doc.text(`E-mail: ${user.email}`, 18, y + 15);
+    
+    // Linha 3: Apostila e Data
+    doc.text(`Apostila: ${user.apostila || 'Nenhuma'}  |  Combo: ${user.combo ? 'Sim' : 'Não'}`, 18, y + 21);
+    
+    y += 32;
   });
   
-  doc.save(`alunos_${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`relatorio_matricula_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
 // Upload do certificado
