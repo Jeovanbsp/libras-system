@@ -148,7 +148,7 @@
                 <td class="valor caixa">R$ {{ formatarValor(evento.caixaEmpresa) }}</td>
                 <td class="data">{{ formatarData(evento.dataInicial) }}</td>
                 <td class="status">
-                  <span :class="'badge-status ' + evento.status" @click="alternarStatus(evento._id, evento.status)">
+                  <span :class="'badge-status ' + (evento.status || 'pendente')" @click="alternarStatus(evento._id, evento.status || 'pendente')">
                     {{ evento.status === 'pago' ? '✓ Pago' : evento.status === 'cancelado' ? '✕ Cancelado' : 'Pendente' }}
                   </span>
                 </td>
@@ -794,9 +794,10 @@ const deletarEvento = async (id) => {
 // Alternar status do pagamento
 const alternarStatus = async (id, statusAtual) => {
   // Ciclo: pendente -> pago -> cancelado -> pendente
+  const status = statusAtual || 'pendente';
   let novoStatus = 'pendente';
-  if (statusAtual === 'pendente') novoStatus = 'pago';
-  else if (statusAtual === 'pago') novoStatus = 'cancelado';
+  if (status === 'pendente') novoStatus = 'pago';
+  else if (status === 'pago') novoStatus = 'cancelado';
   
   if (confirm(`Alterar status para "${novoStatus === 'pago' ? 'Pago' : novoStatus === 'cancelado' ? 'Cancelado' : 'Pendente'}"?`)) {
     try {
