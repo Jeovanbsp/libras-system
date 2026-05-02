@@ -457,14 +457,14 @@ const alunosValores = ref([]);
 
 const carregarTotalPago = async () => {
   try {
-    const res = await api.get('/users/total-pago');
+    const res = await api.get('/usuarios/total-pago');
     totalPago.value = res.data.total || 0;
   } catch { totalPago.value = 0; }
 };
 
 const abrirModalValoresAlunos = async () => {
   try {
-    const res = await api.get('/users?role=aluno');
+    const res = await api.get('/usuarios?role=aluno');
     // Mostrar todos os alunos com dados de investimento
     alunosValores.value = res.data.filter(a => a.modalidade || a.valorTotalCurso || a.valorPago || a.statusPagamento);
   } catch {}

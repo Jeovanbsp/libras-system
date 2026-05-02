@@ -234,7 +234,7 @@ router.post('/', authMiddleware, async (req, res) => {
     } = req.body;
 
     // Validações básicas
-    if (!empresa || !solicitante || !tematica || !evento || !quantidadeHoras || !interpretes || !precoTotal || !mes || !ano) {
+    if (!empresa || !solicitante || !tematica || !evento || !quantidadeHoras || quantidadeHoras === 0 || !interpretes || !precoTotal || precoTotal === 0 || !mes || !ano) {
       return res.status(400).json({ error: 'Campos obrigatórios faltando' });
     }
 
