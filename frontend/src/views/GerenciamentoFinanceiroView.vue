@@ -147,6 +147,9 @@
                 <td class="valor caixa">R$ {{ formatarValor(evento.caixaEmpresa) }}</td>
                 <td class="data">{{ formatarData(evento.dataInicial) }}</td>
                 <td class="acoes">
+                  <button @click="gerarOrcamento(evento)" class="btn-orcamento" title="Gerar Orçamento">
+                    <FileText :size="16" />
+                  </button>
                   <button @click="editarEvento(evento._id)" class="btn-edit" title="Editar">
                     <Edit2 :size="16" />
                   </button>
@@ -354,6 +357,7 @@ import { ref, computed, onMounted } from 'vue';
 import MainLayout from '../components/MainLayout.vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
+import jsPDF from 'jspdf';
 import {
   Filter, Plus, RotateCcw, DollarSign, Clock, Truck, AlertCircle, Users,
   Briefcase, FileText, Edit2, Trash2, X, BarChart3, CreditCard
@@ -422,6 +426,105 @@ const resetarFiltros = () => {
   filtroMes.value = '';
   filtroAno.value = new Date().getFullYear();
   filtroEmpresa.value = '';
+};
+
+// Gerar Orçamento PDF do evento
+const gerarOrcamento = (evento) => {
+  try {
+    const doc = new jsPDF();
+    
+    // Cabeçalho
+    doc.setFillColor(0, 74, 173);
+    doc.rect(0, 0, 220, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LIBRAS SALVADOR', 20, 20);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Orçamento de Serviços', 20, 32);
+    
+    // Dados do Cliente
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DADOS DO CLIENTE', 20, 55);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Empresa: ${evento.empresa || '-'}`, 20, 65);
+    doc.text(`Solicitante: ${evento.solicitante || '-'}`, 20, 73);
+    doc.text(`Email: ${evento.email || '-'}`, 20, 81);
+    doc.text(`Contato: ${evento.contato || '-'}`, 20, 89);
+    doc.text(`Tema/Temática: ${evento.tematica || '-'}`, 110, 65);
+    
+    // Dados do Serviço
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DESCRIÇÃO DO SERVIÇO', 20, 110);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Tipo de Evento: ${evento.tipoEvento || '-'}`, 20, 120);
+    doc.text(`Data: ${formatarData(evento.dataInicial)} ${evento.horaInicio || ''}`, 20, 128);
+    doc.text(`Duração: ${evento.quantidadeHoras} horas`, 20, 136);
+    doc.text(`Intérprete(s): ${evento.interpretes || '-'}`, 20, 144);
+    doc.text(`Plataforma: ${evento.plataforma || '-'}`, 110, 120);
+    
+    // Valores
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VALORES', 20, 165);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const y = 175;
+    doc.text('Descrição', 20, y);
+    doc.text('Valor', 160, y);
+    doc.line(20, y + 3, 190, y + 3);
+    
+    doc.text(`Serviço de Interpretação`, 20, y + 12);
+    doc.text(`R$ ${formatarValor(evento.precoTotal)}`, 160, y + 12);
+    
+    if (evento.transporte > 0) {
+      doc.text('Transporte', 20, y + 20);
+      doc.text(`R$ ${formatarValor(evento.transporte)}`, 160, y + 20);
+    }
+    
+    if (evento.impostos > 0) {
+      doc.text('Impostos', 20, y + 28);
+      doc.text(`R$ ${formatarValor(evento.impostos)}`, 160, y + 28);
+    }
+    
+    // Total
+    doc.line(20, y + 38, 190, y + 38);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL', 20, y + 48);
+    doc.text(`R$ ${formatarValor(evento.precoTotal + evento.transporte + evento.impostos)}`, 160, y + 48);
+    
+    // Observações
+    if (evento.observacao) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('OBSERVAÇÕES', 20, y + 70);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(evento.observacao, 20, y + 80);
+    }
+    
+    // Rodapé
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR'), 20, 285);
+    doc.text('Libras Salvador - www.librasalvador.com', 196, 285, { align: 'right' });
+    
+    // Salvar
+    const nomeArquivo = `Orcamento_${evento.empresa}_${evento.evento}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nomeArquivo);
+  } catch (error) {
+    console.error('Erro ao gerar orçamento:', error);
+    alert('Erro ao gerar orçamento. Tente novamente.');
+  }
 };
 
 const abrirModalNovoEvento = () => {
@@ -575,7 +678,8 @@ onMounted(async () => {
 .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; color: white; font-weight: 700; font-size: 0.75rem; }
 
 .acoes { text-align: center; }
-.btn-edit, .btn-delete { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; color: #64748b; }
+.btn-edit, .btn-delete, .btn-orcamento { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; color: #64748b; }
+.btn-orcamento:hover { background: #dbeafe; color: #004aad; }
 .btn-edit:hover { background: #dbeafe; color: #0284c7; }
 .btn-delete:hover { background: #fee2e2; color: #dc2626; }
 
