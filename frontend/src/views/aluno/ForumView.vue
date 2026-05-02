@@ -40,6 +40,7 @@
               <div class="topic-item-bottom">
                 <span class="topic-author">
                   <UserCircle :size="13" /> {{ t.autor?.nome || 'Anônimo' }}
+                  <span :class="['role-badge', t.autor?.role]" style="background: yellow; color: black;">[{{ t.autor?.role }}]</span>
                   <span :class="['role-badge', t.autor?.role]">{{ formatarRole(t.autor?.role) }}</span>
                 </span>
                 <span class="topic-replies">
@@ -109,6 +110,7 @@
                   </div>
                   <div>
                     <span class="reply-name">{{ reply.autor?.nome || 'Anônimo' }}</span>
+                    <span :class="['role-badge', reply.autor?.role]" style="background: yellow; color: black;">[{{ reply.autor?.role }}]</span>
                     <span :class="['role-badge', reply.autor?.role]">{{ formatarRole(reply.autor?.role) }}</span>
                     <span v-if="reply.editada" class="edited-tag">editada</span>
                   </div>
