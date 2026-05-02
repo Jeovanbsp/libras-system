@@ -95,27 +95,33 @@
                   <div class="materials-box mt-3">
                     <label class="text-xs text-brand-color font-bold mb-2 block border-b pb-1">Atividades / Materiais desta Aula:</label>
                     
-                    <div v-for="(mat, matIdx) in aula.materiais" :key="matIdx" class="material-row mb-2">
-                      <select v-model="mat.tipo" class="material-select">
-                        <option value="video">Vídeo (YouTube)</option>
-                        <option value="link">Link Externo</option>
-                        <option value="pdf">Arquivo PDF</option>
-                        <option value="texto">Texto de Apoio</option>
-                      </select>
-                      <input v-model="mat.titulo" placeholder="Título da Atividade" class="material-input" />
-                      
-                      <div v-if="mat.tipo === 'pdf'" class="upload-mini">
-                         <label class="btn-upload-mini">
+                    <div v-for="(mat, matIdx) in aula.materiais" :key="matIdx" class="material-box">
+                      <div class="material-row mb-2">
+                        <select v-model="mat.tipo" class="material-select">
+                          <option value="video">Vídeo (YouTube)</option>
+                          <option value="link">Link Externo</option>
+                          <option value="pdf">Arquivo PDF</option>
+                          <option value="texto">Texto de Apoio</option>
+                          <option value="atividade">Atividade/Exercício</option>
+                        </select>
+                        <input v-model="mat.titulo" placeholder="Título da Atividade" class="material-input" />
+                        
+                        <div v-if="mat.tipo === 'pdf'" class="upload-mini">
+                          <label class="btn-upload-mini">
                             <FileUp :size="14" /> {{ mat.url ? 'Troc..' : 'Subir' }}
                             <input type="file" @change="uploadMaterialMultiplo($event, mIdx, aIdx, matIdx)" hidden accept=".pdf,.zip,.docx" />
-                         </label>
-                         <span v-if="mat.url" class="text-xs text-green-600 block w-full truncate ml-1">✓ OK</span>
+                          </label>
+                          <span v-if="mat.url" class="text-xs text-green-600 block w-full truncate ml-1">✓ OK</span>
+                        </div>
+                        <input v-else v-model="mat.url" :placeholder="mat.tipo === 'texto' ? 'Escreva o texto aqui...' : 'URL / Link'" class="material-input" style="flex: 1.5;" />
+                        
+                        <button type="button" @click="removerMaterial(mIdx, aIdx, matIdx)" class="btn-icon-del-micro" title="Remover Material">
+                          <Trash2 :size="14" />
+                        </button>
                       </div>
-                      <input v-else v-model="mat.url" :placeholder="mat.tipo === 'texto' ? 'Escreva o texto aqui...' : 'URL / Link'" class="material-input" style="flex: 1.5;" />
                       
-                      <button type="button" @click="removerMaterial(mIdx, aIdx, matIdx)" class="btn-icon-del-micro" title="Remover Material">
-                        <Trash2 :size="14" />
-                      </button>
+                      <!-- Descrição da Atividade Individual -->
+                      <textarea v-model="mat.descricao" placeholder="Descrição/instruções desta atividade (opcional)" rows="2" class="w-full p-2 border rounded text-sm mb-2 bg-gray-50"></textarea>
                     </div>
 
                     <button type="button" @click="adicionarMaterial(mIdx, aIdx)" class="btn-add-micro mt-2">
@@ -462,6 +468,7 @@ onMounted(() => {
 .btn-add-lesson:hover { background: #f8fafc; color: #004aad; border-color: #94a3b8; }
 
 .materials-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.material-box { background: white; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 8px; }
 .material-row { display: flex; gap: 8px; align-items: center; }
 .material-select { flex: 0.8; padding: 8px !important; font-size: 0.75rem !important; border-radius: 6px !important; }
 .material-input { flex: 1; padding: 8px !important; font-size: 0.75rem !important; border-radius: 6px !important; margin: 0 !important;}
