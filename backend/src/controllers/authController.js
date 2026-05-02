@@ -20,6 +20,7 @@ exports.getMe = async (req, res) => {
 
 exports.register = async (req, res) => {
     const { nome, email, password, role, turma, modalidade, valorTotalCurso, apostila, combo, statusPagamento } = req.body;
+    console.log('[DEBUG REGISTER] Recebido role:', role, '| email:', email);
     
     if (req.user && req.user.role === 'admin_restrito' && (role === 'admin' || role === 'admin_restrito')) {
         return res.status(403).json({ msg: "Operação não permitida para o seu nível de acesso." });
