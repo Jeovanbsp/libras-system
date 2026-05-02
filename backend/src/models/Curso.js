@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 // Nova estrutura: cada aula pode ter VÁRIOS materiais (vídeos, links, pdfs, etc)
 const materialSchema = new mongoose.Schema({
   titulo: { type: String, required: true },
-  tipo: { type: String, enum: ['video', 'link', 'pdf', 'texto'], required: true },
-  url: { type: String, required: true }
+  tipo: { type: String, enum: ['video', 'link', 'pdf', 'texto', 'atividade'], required: true },
+  url: { type: String },
+  descricao: { type: String }  // Descrição/instruções da atividade
 });
 
 const aulaSchema = new mongoose.Schema({

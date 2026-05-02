@@ -257,7 +257,7 @@ const cursoInicial = {
     titulo: '', 
     aulas: [{ 
       titulo: '', duracao: null, descricao: '',
-      materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '' }] 
+      materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '', descricao: '' }] 
     }] 
   }]
 };
@@ -396,20 +396,20 @@ const executarRemocaoCurso = async () => {
 const adicionarModulo = () => { 
   curso.value.modulos.push({ 
     titulo: '', 
-    aulas: [{ titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '' }] }] 
+    aulas: [{ titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Vídeo da Aula', tipo: 'video', url: '', descricao: '' }] }] 
   }); 
 };
 const removerModulo = (idx) => { curso.value.modulos.splice(idx, 1); };
 
 const adicionarAula = (mIdx) => { 
   curso.value.modulos[mIdx].aulas.push({ 
-    titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Atividade 1', tipo: 'video', url: '' }] 
+    titulo: '', duracao: null, descricao: '', materiais: [{ titulo: 'Atividade 1', tipo: 'video', url: '', descricao: '' }] 
   }); 
 };
 const removerAula = (mIdx, aIdx) => { curso.value.modulos[mIdx].aulas.splice(aIdx, 1); };
 
 const adicionarMaterial = (mIdx, aIdx) => {
-  curso.value.modulos[mIdx].aulas[aIdx].materiais.push({ titulo: '', tipo: 'video', url: '' });
+  curso.value.modulos[mIdx].aulas[aIdx].materiais.push({ titulo: '', tipo: 'video', url: '', descricao: '' });
 };
 const removerMaterial = (mIdx, aIdx, matIdx) => {
   curso.value.modulos[mIdx].aulas[aIdx].materiais.splice(matIdx, 1);
