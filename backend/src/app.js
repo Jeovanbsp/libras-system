@@ -81,9 +81,16 @@ connectDB().catch(err => console.error("Erro na conexão inicial do Mongo:", err
 // ==========================================
 // 4. SERVIR ARQUIVOS ESTÁTICOS
 // ==========================================
+// Detectar o diretório base para uploads (funciona em desenvolvimento e produção)
+const uploadsDir = path.join(__dirname, '../uploads');
+const rootDir = process.cwd();
 app.use('/uploads/materiais', express.static(path.join(__dirname, '../uploads/materiais')));
 app.use('/uploads/certificados', express.static(path.join(__dirname, '../uploads/certificados')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Fallback para produção (Render)
+if (process.env.RENDER) {
+  app.use('/uploads', express.static(path.join(rootDir, 'uploads')));
+}
 
 // ==========================================
 // 5. REGISTRO DE ROTAS DA API

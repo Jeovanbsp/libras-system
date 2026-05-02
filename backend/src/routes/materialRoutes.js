@@ -55,12 +55,19 @@ router.get('/download/:id', async (req, res) => {
     if (!material) {
       return res.status(404).json({ error: "Material não encontrado" });
     }
-    const caminho = path.join(__dirname, '../../uploads/materiais/', material.nomeArquivo);
-    if (!fs.existsSync(caminho)) {
+    // Tenta múltiplos caminhos possíveis
+    const possiblePaths = [
+      path.join(__dirname, '../../uploads/materiais/', material.nomeArquivo),
+      path.join(__dirname, '../uploads/materiais/', material.nomeArquivo),
+      path.join(process.cwd(), 'uploads/materiais/', material.nomeArquivo)
+    ];
+    let caminho = possiblePaths.find(p => fs.existsSync(p));
+    if (!caminho) {
       return res.status(404).json({ error: "Arquivo não encontrado no servidor" });
     }
     res.download(caminho);
   } catch (err) {
+    console.error('Erro download:', err);
     res.status(500).json({ error: "Erro ao baixar arquivo" });
   }
 });
