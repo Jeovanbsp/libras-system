@@ -234,8 +234,39 @@ router.post('/', authMiddleware, async (req, res) => {
     } = req.body;
 
     // Validações básicas
-    if (!empresa || !solicitante || !tematica || !evento || !quantidadeHoras || quantidadeHoras === 0 || !interpretes || !precoTotal || precoTotal === 0 || !mes || !ano) {
-      return res.status(400).json({ error: 'Campos obrigatórios faltando' });
+    const validationErrors = [];
+    if (!empresa) validationErrors.push('empresa');
+    if (!solicitante) validationErrors.push('solicitante');
+    if (!tematica) validationErrors.push('tematica');
+    if (!evento) validationErrors.push('evento');
+    if (!interpretes) validationErrors.push('interpretes');
+    if (!quantidadeHoras || quantidadeHoras === 0) validationErrors.push('quantidadeHoras');
+    if (!precoTotal || precoTotal === 0) validationErrors.push('precoTotal');
+    if (!mes) validationErrors.push('mes');
+    if (!ano) validationErrors.push('ano');
+    
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Campos obrigatórios faltando', 
+        campos: validationErrors 
+      });
+    }
+
+    // Validar empresa (enum)
+    if (!['SINDAUTO', 'BOTICÁRIO', 'OUTRA'].includes(empresa)) {
+      return res.status(400).json({ 
+        error: 'Empresa inválida. Use: SINDAUTO, BOTICÁRIO ou OUTRA',
+        campo: 'empresa'
+      });
+    }
+
+    // Validar mês (enum)
+    const mesesValidos = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    if (!mesesValidos.includes(mes)) {
+      return res.status(400).json({ 
+        error: 'Mês inválido',
+        campo: 'mes'
+      });
     }
 
     const novoEvento = new Financeiro({
@@ -298,6 +329,17 @@ router.put('/:id', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao atualizar evento:', error);
+    // Format Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const campos = Object.keys(error.errors || {}).map(camp => ({
+        campo: camp,
+        mensagem: error.errors[camp].message
+      }));
+      return res.status(400).json({ 
+        error: 'Erro de validação', 
+        detalhes: campos
+      });
+    }
     res.status(400).json({ error: 'Erro ao atualizar evento', details: error.message });
   }
 });

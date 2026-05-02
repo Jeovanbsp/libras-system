@@ -896,7 +896,13 @@ const salvarEvento = async () => {
     fecharModal();
   } catch (error) {
     console.error('Erro ao salvar:', error);
-    alert('Erro ao salvar evento: ' + error.response?.data?.error || error.message);
+    const campos = error.response?.data?.campos;
+    const erroTipo = error.response?.data?.error;
+    if (campos && campos.length > 0) {
+      alert('Erro ao salvar: Campos obrigatórios faltando: ' + campos.join(', '));
+    } else {
+      alert('Erro ao salvar evento: ' + erroTipo || error.message);
+    }
   }
 };
 
