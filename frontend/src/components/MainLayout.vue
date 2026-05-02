@@ -37,6 +37,9 @@
           <li :class="{ active: $route.path === '/admin/profissionais' }" @click="navegar('/admin/profissionais')">
             <HandMetal :size="20" class="nav-icon" /> Profissionais
           </li>
+          <li v-if="userRole === 'professor'" :class="{ active: $route.path === '/professor/cursos' }" @click="navegar('/professor/cursos')">
+            <GraduationCap :size="20" class="nav-icon" /> Professores
+          </li>
           <li :class="{ active: $route.path === '/admin/usuarios' }" @click="navegar('/admin/usuarios')">
             <Users :size="20" class="nav-icon" /> Cadastro
           </li>
