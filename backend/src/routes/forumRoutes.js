@@ -22,12 +22,6 @@ router.get('/topics', auth, async (req, res) => {
       .populate('autor', 'nome role')
       .sort({ fixado: -1, dataCriacao: -1 })
       .lean();
-    
-    // Debug: retorna info do primeiro autor INCLUSIVE no campo extra
-    if (topics.length > 0 && topics[0].autor) {
-      topics[0].autorDebug = topics[0].autor.role;
-      console.log('[DEBUG] autor.role DO BANCO:', topics[0].autor.role);
-    }
     res.json(topics);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao listar tópicos' });
@@ -84,16 +78,26 @@ router.post('/topics', auth, async (req, res) => {
 // Buscar tópico por ID com respostas populadas
 router.get('/topics/:id', auth, async (req, res) => {
   try {
-    const topic = await ForumTopic.findById(req.params.id)
-      .populate('autor', 'nome role')
-      .populate('respostas.autor', 'nome role')
-      .lean();
+    const topic = await ForumTopic.findById(req.params.id).lean();
     if (!topic) return res.status(404).json({ message: 'Tópico não encontrado' });
     
-    // Debug
-    if (topic.respostas && topic.respostas.length > 0) {
-      console.log('[DEBUG] Primeira resposta autor.role:', topic.respostas[0].autor?.role);
+    // Manual populate autor
+    if (topic.autor) {
+      const autor = await User.findById(topic.autor).select('nome role').lean();
+      topic.autor = autor;
     }
+    
+    // Manual populate respostas autores
+    if (topic.respostas && topic.respostas.length > 0) {
+      const autorIds = topic.respostas.map(r => r.autor);
+      const usuarios = await User.find({ _id: { $in: autorIds } }).select('nome role').lean();
+      const usuariosMap = {};
+      usuarios.forEach(u => { usuariosMap[u._id] = u; });
+      topic.respostas.forEach(r => {
+        r.autor = usuariosMap[r.autor] || null;
+      });
+    }
+    
     res.json(topic);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao buscar tópico' });
