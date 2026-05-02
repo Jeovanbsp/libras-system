@@ -155,7 +155,7 @@ router.get('/relatorio/empresa/:empresa', authMiddleware, async (req, res) => {
 });
 
 // GET: Listar eventos simples (para seletor de orçamento)
-router.get('/lista-simples', authMiddleware, async (req, res) => {
+router.get('/lista-simples', async (req, res) => {
   try {
     const eventos = await Financeiro.find()
       .select('empresa solicitante email contato tematica evento tipoEvento dataInicial horaInicio quantidadeHoras precoTotal')
