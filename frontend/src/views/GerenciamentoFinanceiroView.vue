@@ -123,6 +123,7 @@
                 <th>Pago Intérp.</th>
                 <th>Caixa</th>
                 <th>Data</th>
+                <th>Status</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -146,6 +147,11 @@
                 <td class="valor">R$ {{ formatarValor(evento.pagosInterpretes) }}</td>
                 <td class="valor caixa">R$ {{ formatarValor(evento.caixaEmpresa) }}</td>
                 <td class="data">{{ formatarData(evento.dataInicial) }}</td>
+                <td class="status">
+                  <span :class="'badge-status ' + evento.status" @click="alternarStatus(evento._id, evento.status)">
+                    {{ evento.status === 'pago' ? '✓ Pago' : evento.status === 'cancelado' ? '✕ Cancelado' : 'Pendente' }}
+                  </span>
+                </td>
                 <td class="acoes">
                   <button @click="gerarOrcamento(evento)" class="btn-orcamento" title="Gerar Orçamento">
                     <FileText :size="16" />
@@ -159,7 +165,7 @@
                 </td>
               </tr>
               <tr v-if="eventosFiltrados.length === 0" class="no-data">
-                <td colspan="15" style="text-align: center; padding: 40px; color: #94a3b8;">
+                <td colspan="16" style="text-align: center; padding: 40px; color: #94a3b8;">
                   Nenhum evento encontrado para os filtros selecionados
                 </td>
               </tr>
@@ -785,6 +791,24 @@ const deletarEvento = async (id) => {
   }
 };
 
+// Alternar status do pagamento
+const alternarStatus = async (id, statusAtual) => {
+  // Ciclo: pendente -> pago -> cancelado -> pendente
+  let novoStatus = 'pendente';
+  if (statusAtual === 'pendente') novoStatus = 'pago';
+  else if (statusAtual === 'pago') novoStatus = 'cancelado';
+  
+  if (confirm(`Alterar status para "${novoStatus === 'pago' ? 'Pago' : novoStatus === 'cancelado' ? 'Cancelado' : 'Pendente'}"?`)) {
+    try {
+      await api.patch(`/financeiro/${id}`, { status: novoStatus });
+      await carregarEventos();
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      alert('Erro ao alterar status');
+    }
+  }
+};
+
 const fecharModal = () => {
   mostrarModal.value = false;
   modoEdicao.value = false;
@@ -903,6 +927,14 @@ onMounted(async () => {
 .btn-orcamento:hover { background: #dbeafe; color: #004aad; }
 .btn-edit:hover { background: #dbeafe; color: #0284c7; }
 .btn-delete:hover { background: #fee2e2; color: #dc2626; }
+
+.status { text-align: center; }
+.badge-status { 
+  display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: 0.2s;
+}
+.badge-status.pendente { background: #fef3c7; color: #b45309; }
+.badge-status.pago { background: #d1fae5; color: #047857; }
+.badge-status.cancelado { background: #fee2e2; color: #b91c1c; }
 
 .financial-summary { margin-top: 24px; }
 .summary-title { margin: 0 0 20px 0; font-size: 1.2rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 8px; }
