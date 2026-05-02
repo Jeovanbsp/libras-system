@@ -40,7 +40,6 @@ router.get('/users', auth, async (req, res) => {
 
 // Criar novo tópico (admin, admin_restrito, professor)
 router.post('/topics', auth, async (req, res) => {
-  console.log('[DEBUG] POST /topics - req.user:', req.user);
   // Verificar se é admin ou professor
   if (!['admin', 'admin_restrito', 'professor'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Apenas administradores e professores podem criar tópicos no fórum.' });
@@ -107,7 +106,6 @@ router.delete('/topics/:id', auth, async (req, res) => {
 
 // Adicionar resposta
 router.post('/topics/:id/replies', auth, async (req, res) => {
-  console.log('[DEBUG] POST reply - req.user:', req.user);
   try {
     const { texto } = req.body;
     const mencoes = extrairMencoes(texto);

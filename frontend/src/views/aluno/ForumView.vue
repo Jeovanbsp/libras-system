@@ -396,9 +396,10 @@ const realcarMencoes = (texto) => {
 };
 
 const formatarRole = (role) => {
-  const result = (role === 'admin' || role === 'admin_restrito') ? 'Admin' : (role === 'professor' ? 'Professor' : 'Aluno');
-  console.log('[DEBUG', new Date().toISOString(), '] formatarRole:', role, '->', result);
-  return result;
+  const r = (role || '').trim().toLowerCase();
+  if (r === 'admin' || r === 'admin_restrito') return 'Admin';
+  if (r === 'professor') return 'Professor';
+  return 'Aluno';
 };
 
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '';
