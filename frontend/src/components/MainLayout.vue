@@ -37,8 +37,11 @@
           <li :class="{ active: $route.path === '/admin/profissionais' }" @click="navegar('/admin/profissionais')">
             <HandMetal :size="20" class="nav-icon" /> Profissionais
           </li>
+          <li :class="{ active: $route.path === '/admin/instrutores' }" @click="navegar('/admin/instrutores')">
+            <GraduationCap :size="20" class="nav-icon" /> Professores
+          </li>
           <li :class="{ active: $route.path === '/admin/usuarios' }" @click="navegar('/admin/usuarios')">
-            <Users :size="20" class="nav-icon" /> Alunos
+            <Users :size="20" class="nav-icon" /> Cadastro
           </li>
           <li :class="{ active: $route.path === '/admin/b2b' }" @click="navegar('/admin/b2b')">
             <Building2 :size="20" class="nav-icon" /> Clientes B2B
@@ -113,7 +116,7 @@ import { useRouter } from 'vue-router';
 import { 
   LayoutDashboard, BookOpen, HandMetal, Users, Building2,
   CalendarPlus, BadgeDollarSign, FileText, Package, LogOut,
-  Menu as MenuIcon, X, MessageSquare, ClipboardList, KeyRound
+  Menu as MenuIcon, X, MessageSquare, ClipboardList, KeyRound, GraduationCap
 } from 'lucide-vue-next';
 import AdminNotification from './AdminNotification.vue';
 

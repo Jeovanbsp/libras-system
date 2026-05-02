@@ -84,6 +84,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
+    path: '/admin/instrutores',
+    name: 'Instrutores',
+    component: () => import('../views/InstrutoresView.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
     path: '/admin/cursos',
     name: 'AdminCursos',
     component: () => import('../views/CursosView.vue'),
