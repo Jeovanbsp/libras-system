@@ -46,6 +46,7 @@
                   <Video v-if="mat.tipo === 'video'" :size="20" class="text-brand-color" />
                   <FileText v-else-if="mat.tipo === 'pdf'" :size="20" class="text-brand-color" />
                   <LinkIcon v-else-if="mat.tipo === 'link'" :size="20" class="text-brand-color" />
+                  <Pencil v-else-if="mat.tipo === 'atividade'" :size="20" class="text-brand-color" />
                   <AlignLeft v-else :size="20" class="text-brand-color" />
                   <h3>{{ mat.titulo || `Atividade ${idx + 1}` }}</h3>
                 </div>
@@ -54,6 +55,11 @@
                   <CheckCircle2 :size="18" />
                   {{ estaConcluido(mat._id) ? 'Concluído' : 'Marcar como Feito' }}
                 </button>
+              </div>
+
+              <!-- Descrição da Atividade -->
+              <div v-if="mat.descricao" class="material-desc">
+                {{ mat.descricao }}
               </div>
 
               <div class="material-body">
@@ -190,7 +196,7 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { 
   CheckCircle2, Circle, ListVideo, MessageCircle, FileText, Download, Trophy, 
-  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Paperclip, Send, X, Trash2, AlertCircle
+  BookOpen, MessageSquare, Video, Link as LinkIcon, AlignLeft, ExternalLink, Paperclip, Send, X, Trash2, AlertCircle, Pencil
 } from 'lucide-vue-next';
 import StudentLayout from '../../components/StudentLayout.vue';
 import api from '../../services/api';
@@ -405,6 +411,7 @@ onMounted(carregarDadosDoCurso);
 .lesson-header h2 { font-size: 1.5rem; color: #0f172a; margin: 0; }
 .lesson-desc { color: #64748b; line-height: 1.6; }
 .material-card { border-left: 5px solid #004aad; }
+.material-desc { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px; color: #475569; font-size: 0.9rem; line-height: 1.5; border-left: 3px solid #94a3b8; }
 .material-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .material-title-box { display: flex; align-items: center; gap: 10px; }
 .material-title-box h3 { font-size: 1.1rem; margin: 0; color: #1e293b; }
