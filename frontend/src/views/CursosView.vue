@@ -2,7 +2,7 @@
   <MainLayout pageTitle="Gestão de Cursos" pageDescription="Configure conteúdo, preços, materiais e libere acessos para alunos.">
     <div class="layout-split">
       
-      <div class="glass-card side-form">
+      <div class="glass-card side-form" :style="{ display: isProfessor ? 'none' : 'block' }">
         <h3 class="form-title">
           <component :is="editandoId ? FileEdit : PlusCircle" :size="20" class="text-brand-color" /> 
           {{ editandoId ? 'Editar Conteúdo' : 'Novo Curso' }}
@@ -41,14 +41,14 @@
           </div>
 
           <div class="form-row mt-4">
-            <div>
+            <div v-if="!isProfessor">
               <label>Tipo de Acesso</label>
               <select v-model="curso.gratuito" class="custom-select">
                 <option :value="true">Gratuito</option>
                 <option :value="false">Pago</option>
               </select>
             </div>
-            <div v-if="!curso.gratuito">
+            <div v-if="!isProfessor && !curso.gratuito">
               <label>Valor (R$)</label>
               <input v-model.number="curso.valor" type="number" step="0.01" placeholder="0,00" />
             </div>
@@ -140,7 +140,7 @@
       <div class="cursos-grid">
         <div v-for="c in cursos" :key="c._id" class="glass-card curso-card">
           <div class="curso-badge">{{ c.nivel ? c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) : 'Curso' }}</div>
-          <div :class="['price-badge', c.gratuito ? 'free' : 'paid']">
+          <div v-if="!isProfessor" :class="['price-badge', c.gratuito ? 'free' : 'paid']">
             {{ c.gratuito ? 'Grátis' : 'R$ ' + (c.valor || 0).toFixed(2).replace('.', ',') }}
           </div>
           <h4>{{ c.titulo }}</h4>
@@ -156,11 +156,11 @@
               <Pencil :size="16" />
             </button>
             
-            <button @click="abrirModalLiberacao(c)" class="btn-action-outline lib" title="Liberar para Aluno">
+            <button v-if="!isProfessor" @click="abrirModalLiberacao(c)" class="btn-action-outline lib" title="Liberar para Aluno">
               <UserPlus :size="16" />
             </button>
 
-            <button @click="confirmarRemocaoCurso(c)" class="btn-action-outline del" title="Excluir">
+            <button v-if="!isProfessor" @click="confirmarRemocaoCurso(c)" class="btn-action-outline del" title="Excluir">
               <Trash2 :size="16" />
             </button>
           </div>

@@ -32,7 +32,26 @@ exports.buscarCursoPorId = async (req, res) => {
 
 exports.editarCurso = async (req, res) => {
   try {
-    const curso = await Curso.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const userRole = req.user?.role;
+    const dados = req.body;
+    
+    // Professor só pode editar módulos e aulas
+    if (userRole === 'professor') {
+      // Remover campos que professor não pode editar
+      delete dados.titulo;
+      delete dados.descricao;
+      delete dados.gratuito;
+      delete dados.valor;
+      delete dados.nivel;
+      delete dados.cargaHoraria;
+      delete dados.imagem;
+      delete dados.categoria;
+      if (!dados.modulos) {
+        return res.status(403).json({ error: "Professor só pode editar módulos e aulas." });
+      }
+    }
+    
+    const curso = await Curso.findByIdAndUpdate(req.params.id, dados, { new: true });
     res.json(curso);
   } catch (err) {
     res.status(500).json({ error: "Erro ao editar." });
@@ -41,6 +60,10 @@ exports.editarCurso = async (req, res) => {
 
 exports.removerCurso = async (req, res) => {
   try {
+    const userRole = req.user?.role;
+    if (userRole === 'professor') {
+      return res.status(403).json({ error: "Professor não pode excluir cursos." });
+    }
     await Curso.findByIdAndDelete(req.params.id);
     res.json({ msg: "Removido!" });
   } catch (err) {

@@ -4,6 +4,11 @@ const AuditLog = require('../models/AuditLog');
 
 exports.liberarCursoManual = async (req, res) => {
   try {
+    const userRole = req.user?.role;
+    if (userRole === 'professor') {
+      return res.status(403).json({ message: "Professor não pode liberar cursos." });
+    }
+    
     const { alunoId, cursoId } = req.body;
 
     const aluno = await User.findById(alunoId);
