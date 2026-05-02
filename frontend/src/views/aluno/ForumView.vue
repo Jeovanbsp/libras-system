@@ -384,10 +384,9 @@ const realcarMencoes = (texto) => {
 };
 
 const formatarRole = (role) => {
-  console.log('[DEBUG] formatarRole called with role:', role);
-  if (role === 'admin' || role === 'admin_restrito') return 'Admin';
-  if (role === 'professor') return 'Professor';
-  return 'Aluno';
+  const result = (role === 'admin' || role === 'admin_restrito') ? 'Admin' : (role === 'professor' ? 'Professor' : 'Aluno');
+  console.log('[DEBUG', new Date().toISOString(), '] formatarRole:', role, '->', result);
+  return result;
 };
 
 const formatarData = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '';
@@ -433,10 +432,12 @@ onMounted(() => { carregarTopicos(); carregarUsuarios(); });
 .no-replies { font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; }
 .reply-card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; transition: 0.2s; }
 .reply-card.admin, .reply-card.admin_restrito { border-left: 3px solid #004aad; background: #f8fbff; }
+.reply-card.professor { border-left: 3px solid #d97706; background: #fffbeb; }
 .reply-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .reply-author { display: flex; align-items: center; gap: 10px; }
 .reply-avatar { width: 32px; height: 32px; border-radius: 10px; background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
 .reply-avatar.admin, .reply-avatar.admin_restrito { background: #004aad; color: white; }
+.reply-avatar.professor { background: #d97706; color: white; }
 .reply-name { font-weight: 700; font-size: 0.85rem; color: #1e293b; display: block; }
 .reply-actions { display: flex; align-items: center; gap: 6px; }
 .reply-date { font-size: 0.72rem; color: #94a3b8; }
