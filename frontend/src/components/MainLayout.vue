@@ -23,7 +23,7 @@
 
       <nav class="sidebar-nav">
         <ul>
-          <li :class="{ active: $route.path === '/admin/dashboard' || $route.path === '/professor/cursos' }" @click="navegar('/admin/dashboard')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/dashboard' || $route.path === '/professor/cursos' }" @click="navegar('/admin/dashboard')">
             <LayoutDashboard :size="20" class="nav-icon" /> Dashboard
           </li>
           <li :class="{ active: $route.path === '/admin/cursos' || $route.path === '/professor/cursos' }" @click="navegar(userRole === 'professor' ? '/professor/cursos' : '/admin/cursos')">
