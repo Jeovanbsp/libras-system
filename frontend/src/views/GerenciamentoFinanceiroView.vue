@@ -570,6 +570,8 @@ const breakdownPorMes = computed(() => {
   const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   
   eventos.value.forEach(evento => {
+    if (!evento.mes || !evento.ano) return; // Skip events without mes/ano
+    
     const mesEvento = evento.mes;
     const anoEvento = evento.ano;
     const key = `${mesEvento}-${anoEvento}`;
