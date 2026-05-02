@@ -93,6 +93,7 @@
                 <select v-model="form.statusPagamento" class="modern-select status-select">
                   <option value="Pendente">Pendente</option>
                   <option value="Pago">Pago</option>
+                  <option value="Cancelado">Cancelado</option>
                 </select>
               </div>
             </div>
@@ -332,28 +333,34 @@ const remover = async (id) => {
 
 // Editar serviço - preenche o formulário
 const editar = (servico) => {
+  // Verificar se cliente é string ou objeto
+  let clienteId = servico.cliente;
+  if (typeof servico.cliente === 'object' && servico.cliente !== null) {
+    clienteId = servico.cliente._id || servico.cliente;
+  }
+  
   form.value = {
-    cliente: servico.cliente,
-    solicitante: servico.solicitante,
+    cliente: clienteId || '',
+    solicitante: servico.solicitante || '',
     interpretes: servico.interpretes || [],
-    dataEvento: servico.dataEvento ? servico.dataEvento.split('T')[0] : '',
-    dataFim: servico.dataFim ? servico.dataFim.split('T')[0] : '',
-    horaInicio: servico.horaInicio,
-    horaTermino: servico.horaTermino,
-    quantidadeHoras: servico.quantidadeHoras,
-    tipoEvento: servico.tipoEvento,
-    modalidade: servico.modalidade,
+    dataEvento: servico.dataEvento ? (typeof servico.dataEvento === 'string' ? servico.dataEvento.split('T')[0] : '') : '',
+    dataFim: servico.dataFim ? (typeof servico.dataFim === 'string' ? servico.dataFim.split('T')[0] : '') : '',
+    horaInicio: servico.horaInicio || '',
+    horaTermino: servico.horaTermino || '',
+    quantidadeHoras: servico.quantidadeHoras || null,
+    tipoEvento: servico.tipoEvento || 'Conferência',
+    modalidade: servico.modalidade || 'Presencial',
     statusPagamento: servico.statusPagamento || 'Pendente',
     valorLogistica: servico.valorLogistica || 0,
     impostos: servico.impostos || 0,
     valorInterpretes: servico.valorInterpretes || 0,
     precoTotal: servico.precoTotal || 0,
-    CaixaEmpresa: servico.caixaEmpresa || 0,
+    caixaEmpresa: servico.caixaEmpresa || 0,
     observacoes: servico.observacoes || '',
     _id: servico._id
   };
-  // Mudar título do formulário
-  document.querySelector('.form-title')?.insertAdjacentHTML('afterend', '<p class="editando">Editando serviço</p>');
+  // Scroll para o formulário
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   alert('Dados carregados! Faça as alterações e clique em "Lançar Serviço" para atualizar.');
 };
 
@@ -362,6 +369,117 @@ const formatarData = (dataIso) => {
   const data = new Date(dataIso);
   data.setMinutes(data.getMinutes() + data.getTimezoneOffset());
   return data.toLocaleDateString('pt-BR');
+};
+
+// Gerar PDF de um serviço específico
+const gerarPDF = async (servico) => {
+  try {
+    // Buscar dados do cliente
+    let razaoSocial = 'Cliente';
+    let cnpj = '';
+    if (servico.cliente) {
+      const clienteId = typeof servico.cliente === 'object' ? servico.cliente._id : servico.cliente;
+      try {
+        const resCli = await api.get(`/b2b/${clienteId}`);
+        razaoSocial = resCli.data.razaoSocial || 'Cliente';
+        cnpj = resCli.data.cnpj || '';
+      } catch (e) { console.log('Cliente não encontrado'); }
+    }
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    let y = margin;
+    
+    // Cabeçalho
+    doc.setFillColor(0, 74, 173);
+    doc.rect(0, 0, pageWidth, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LIBRAS SALVADOR', margin, 15);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Comprovante de Serviço', margin, 23);
+    
+    y = 40;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    
+    // Dados do serviço
+    doc.setFontSize(11);
+    doc.text('CLIENTE:', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(razaoSocial, margin + 25, y);
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.text('CNPJ:', margin, y);
+    doc.text(cnpj || 'Não informado', margin + 18, y);
+    y += 10;
+    
+    doc.text('DATA:', margin, y);
+    doc.text(formatarData(servico.dataEvento), margin + 20, y);
+    y += 7;
+    doc.text('HORÁRIO:', margin, y);
+    doc.text(`${servico.horaInicio || ''} às ${servico.horaTermino || ''}`, margin + 25, y);
+    y += 7;
+    doc.text('QTD HORAS:', margin, y);
+    doc.text(String(servico.quantidadeHoras || 0), margin + 32, y);
+    y += 10;
+    
+    doc.text('TIPO:', margin, y);
+    doc.text(servico.tipoEvento || '', margin + 18, y);
+    y += 7;
+    doc.text('MODALIDADE:', margin, y);
+    doc.text(servico.modalidade || '', margin + 35, y);
+    y += 15;
+    
+    // Valores
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, y, pageWidth - 2*margin, 50, 'F');
+    y += 10;
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VALORES', margin + 5, y);
+    y += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    
+    doc.text('Valor Total:', margin, y);
+    doc.text(`R$ ${(servico.precoTotal || 0).toFixed(2)}`, margin + 35, y);
+    y += 8;
+    doc.text('Transporte/Logística:', margin, y);
+    doc.text(`R$ ${(servico.valorLogistica || 0).toFixed(2)}`, margin + 55, y);
+    y += 8;
+    doc.text('Intérpretes:', margin, y);
+    doc.text(`R$ ${(servico.valorInterpretes || 0).toFixed(2)}`, margin + 35, y);
+    y += 8;
+    doc.text('Impostos:', margin, y);
+    doc.text(`R$ ${(servico.impostos || 0).toFixed(2)}`, margin + 25, y);
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Caixa Empresa:', margin, y);
+    doc.text(`R$ ${(servico.caixaEmpresa || 0).toFixed(2)}`, margin + 42, y);
+    
+    y += 20;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Status:', margin, y);
+    doc.text(servico.statusPagamento || 'Pendente', margin + 20, y);
+    y += 15;
+    
+    if (servico.observacoes) {
+      doc.text('Observações:', margin, y);
+      y += 7;
+      doc.setFontSize(10);
+      doc.text(servico.observacoes, margin, y, { maxWidth: pageWidth - 2*margin });
+    }
+    
+    doc.save(`Servico_${servico._id}_${new Date().toISOString().split('T')[0]}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao gerar PDF');
+  }
 };
 
 const gerarRelatorioPDF = () => {

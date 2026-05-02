@@ -48,7 +48,7 @@ const servicoConfirmadoSchema = new mongoose.Schema({
   caixaEmpresa: { type: Number, default: 0 },
   statusPagamento: { 
     type: String, 
-    enum: ['Pendente', 'Pago'], 
+    enum: ['Pendente', 'Pago', 'Cancelado'], 
     default: 'Pendente' 
   },
   
