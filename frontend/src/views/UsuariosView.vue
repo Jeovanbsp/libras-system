@@ -440,11 +440,6 @@ const carregarUsuarios = async () => {
   try {
     const res = await api.get('/usuarios', { params: filtros.value });
     usuarios.value = res.data;
-    // Debug: mostrar se tem certificados
-    const comCertificados = usuarios.value.filter(u => u.certificados && u.certificados.length > 0);
-    if (comCertificados.length > 0) {
-      console.log('Usuários com certificados:', comCertificados.length);
-    }
   } catch (error) {
     console.error('Erro ao carregar usuários');
   }
@@ -580,8 +575,6 @@ const salvarEdicao = async () => {
     dados.combo = editForm.value.combo || false;
     dados.turma = editForm.value.turma || '';
     
-    console.log('Salvando dados:', dados);
-    
     await api.put(`/usuarios/${userParaEditar.value._id}`, dados);
     
     // Upload do certificado se existir
@@ -599,7 +592,6 @@ const salvarEdicao = async () => {
     carregarUsuarios();
     setTimeout(() => fecharModalEdicao(), 1500);
   } catch (error) {
-    console.log('Erro na API:', error.response?.data || error.message);
     editFeedback.value = error.response?.data?.error || error.response?.data?.msg || 'Erro ao atualizar usuário.';
     editFeedbackTipo.value = 'error';
   }
@@ -728,7 +720,6 @@ const uploadCertificado = async (alunoId) => {
   const res = await api.post(`/certificados/${alunoId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
-  console.log('Upload resultado:', res.data);
   certificadoFile.value = null;
   nomeCertificado.value = '';
   // Recarregar dados do usuário

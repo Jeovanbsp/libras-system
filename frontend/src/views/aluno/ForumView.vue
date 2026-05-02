@@ -285,18 +285,6 @@ const carregarTopicos = async () => {
   try {
     const res = await api.get('/forum/topics');
     topicos.value = res.data;
-    // Debug: log primeiro topico e suas respostas
-    if (topicos.value.length > 0) {
-      const first = topicos.value[0];
-      console.log('[DEBUG] Primeiro tópico:', { 
-        titulo: first.titulo, 
-        autor: first.autor,
-        respostasCount: first.respostas?.length 
-      });
-      if (first.respostas?.length > 0) {
-        console.log('[DEBUG] Primeira resposta:', first.respostas[0]);
-      }
-    }
   } catch { toast.error('Erro ao carregar fórum'); }
   finally { loading.value = false; }
 };
