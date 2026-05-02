@@ -68,7 +68,7 @@
           <span class="card-value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
         </div>
 
-        <div class="summary-card card-green">
+        <div class="summary-card card-green" @click="abrirModalValoresAlunos" style="cursor: pointer;">
           <CheckCircle :size="28" />
           <span class="card-label">Pago</span>
           <span class="card-value">R$ {{ formatarValor(totalPago) }}</span>
@@ -404,6 +404,37 @@
       </div>
     </div>
 
+    <!-- MODAL VALORES PAGOS POR ALUNOS -->
+    <div v-if="totalPagoModal" class="modal-overlay" @click.self="totalPagoModal = false">
+      <div class="modal-content glass-card">
+        <div class="modal-header">
+          <h2>Valores Pago por Alunos</h2>
+          <button class="close-btn" @click="totalPagoModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <table class="data-table" v-if="alunosValores.length">
+            <thead>
+              <tr>
+                <th>Aluno</th>
+                <th>Modalidade</th>
+                <th>Valor Total</th>
+                <th>Valor Pago</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="aluno in alunosValores" :key="aluno._id">
+                <td>{{ aluno.nome }}</td>
+                <td>{{ aluno.modalidade || '-' }}</td>
+                <td>R$ {{ formatarValor(aluno.valorTotalCurso || 0) }}</td>
+                <td class="valor-destaque">R$ {{ formatarValor(aluno.valorPago) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else class="no-data">Nenhum valor pago encontrado.</p>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
@@ -421,12 +452,22 @@ import {
 const router = useRouter();
 const userRole = ref(localStorage.getItem('userRole') || 'aluno');
 const totalPago = ref(0);
+const totalPagoModal = ref(false);
+const alunosValores = ref([]);
 
 const carregarTotalPago = async () => {
   try {
     const res = await api.get('/users/total-pago');
     totalPago.value = res.data.total || 0;
   } catch { totalPago.value = 0; }
+};
+
+const abrirModalValoresAlunos = async () => {
+  try {
+    const res = await api.get('/users?role=aluno&fields=nome,email,valorPago,modalidade,valorTotalCurso');
+    alunosValores.value = res.data.filter(a => a.valorPago > 0);
+  } catch {}
+  totalPagoModal.value = true;
 };
 
 if (userRole.value === 'admin_restrito') {
@@ -1040,4 +1081,8 @@ onMounted(async () => {
   .main-table th, .main-table td { padding: 4px; }
   .modal-content { max-width: 98%; max-height: 98vh; }
 }
+
+.modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+.valor-destaque { color: #059669; font-weight: bold; }
+.no-data { text-align: center; padding: 30px; color: #64748b; }
 </style>    
