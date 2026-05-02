@@ -156,7 +156,7 @@
               </div>
               <div class="item-actions">
                 <span v-if="user.turma" class="turma-badge">{{ user.turma }}</span>
-                <span :class="['role-badge', user.role === 'aluno' ? 'role-aluno' : 'role-admin']">
+                <span :class="['role-badge', 'role-' + user.role]">
                   {{ getRoleLabel(user.role) }}
                 </span>
                 
@@ -754,6 +754,8 @@ onMounted(carregarUsuarios);
 .item-actions { display: flex; align-items: center; gap: 15px; }
 .role-badge { font-weight: 800; font-size: 0.7rem; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; }
 .role-admin { color: #6d28d9; background: #f5f3ff; }
+.role-admin_restrito { color: #059669; background: #ecfdf5; }
+.role-professor { color: #dc2626; background: #fef2f2; }
 .role-aluno { color: #004aad; background: #eff6ff; }
 .turma-badge { background: #f8fafc; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
