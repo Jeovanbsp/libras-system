@@ -34,21 +34,21 @@
             <MessageSquare :size="20" class="nav-icon" /> Fórum dos Alunos
           </li>
 
-          <li :class="{ active: $route.path === '/admin/profissionais' }" @click="navegar('/admin/profissionais')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/profissionais' }" @click="navegar('/admin/profissionais')">
             <HandMetal :size="20" class="nav-icon" /> Profissionais
           </li>
-          <li :class="{ active: $route.path === '/admin/usuarios' }" @click="navegar('/admin/usuarios')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/usuarios' }" @click="navegar('/admin/usuarios')">
             <Users :size="20" class="nav-icon" /> Cadastro
           </li>
-          <li :class="{ active: $route.path === '/admin/b2b' }" @click="navegar('/admin/b2b')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/b2b' }" @click="navegar('/admin/b2b')">
             <Building2 :size="20" class="nav-icon" /> Clientes B2B
           </li>
           
-          <li :class="{ active: $route.path === '/admin/servicos' }" @click="navegar('/admin/servicos')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/servicos' }" @click="navegar('/admin/servicos')">
             <CalendarPlus :size="20" class="nav-icon" /> Serviços / Eventos
           </li>
 
-          <li :class="{ active: $route.path === '/admin/estoque' }" @click="navegar('/admin/estoque')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/estoque' }" @click="navegar('/admin/estoque')">
             <Package :size="20" class="nav-icon" /> Controlo de Stock
           </li>
 
@@ -60,7 +60,7 @@
             <BadgeDollarSign :size="20" class="nav-icon" /> Financeiro
           </li>
 
-          <li :class="{ active: $route.path === '/admin/materiais' }" @click="navegar('/admin/materiais')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/materiais' }" @click="navegar('/admin/materiais')">
             <FileText :size="20" class="nav-icon" /> Apostilas
           </li>
 
@@ -68,7 +68,7 @@
             <ClipboardList :size="20" class="nav-icon" /> Logs de Auditoria
           </li>
           
-          <li :class="{ active: $route.path === '/admin/solicitacoes-senha' }" @click="navegar('/admin/solicitacoes-senha')">
+          <li v-if="userRole !== 'professor'" :class="{ active: $route.path === '/admin/solicitacoes-senha' }" @click="navegar('/admin/solicitacoes-senha')">
             <KeyRound :size="20" class="nav-icon" /> Solicitações de Senha
           </li>
         </ul>
