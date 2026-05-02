@@ -17,7 +17,7 @@
         <div class="filters-grid">
           <div class="filter-group">
             <label>Mês</label>
-            <select v-model="filtroMes" @change="aplicarFiltros">
+            <select v-model="filtroMes" @change="carregarEventos">
               <option value="">Todos os meses</option>
               <option value="janeiro">Janeiro</option>
               <option value="fevereiro">Fevereiro</option>
@@ -36,12 +36,12 @@
           
           <div class="filter-group">
             <label>Ano</label>
-            <input v-model.number="filtroAno" type="number" placeholder="2026" @change="aplicarFiltros" />
+            <input v-model.number="filtroAno" type="number" placeholder="Todos" @change="carregarEventos" />
           </div>
           
           <div class="filter-group">
             <label>Empresa</label>
-            <select v-model="filtroEmpresa" @change="aplicarFiltros">
+            <select v-model="filtroEmpresa" @change="carregarEventos">
               <option value="">Todas as empresas</option>
               <option v-for="empresa in empresasDisponiveis" :key="empresa._id" :value="empresa.nome">
                 {{ empresa.nome }}
@@ -62,7 +62,7 @@
 
       <!-- CARDS DE RESUMO -->
       <div class="summary-cards-grid">
-        <div class="summary-card card-blue">
+        <div class="summary-card card-blue" @click="abrirModalDetalhado" style="cursor: pointer;">
           <DollarSign :size="28" />
           <span class="card-label">Preço Total</span>
           <span class="card-value">R$ {{ formatarValor(somaPrecoTotal) }}</span>
@@ -435,6 +435,54 @@
       </div>
     </div>
 
+    <!-- MODAL DETALHADO POR MÊS -->
+    <div v-if="mostrarModalDetalhado" class="modal-overlay" @click.self="mostrarModalDetalhado = false">
+      <div class="modal-content glass-card" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2>Detalhamento Financeiro por Mês</h2>
+          <button class="close-btn" @click="mostrarModalDetalhado = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mês/Ano</th>
+                <th>Eventos</th>
+                <th>Horas</th>
+                <th>Preço Total</th>
+                <th>Transporte</th>
+                <th>Impostos</th>
+                <th>Pago Intérpretes</th>
+                <th>Caixa Empresa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in breakdownPorMes" :key="item.mes + '-' + item.ano">
+                <td class="mes-cell">{{ item.mes.charAt(0).toUpperCase() + item.mes.slice(1) }} {{ item.ano }}</td>
+                <td>{{ item.quantidadeEventos }}</td>
+                <td>{{ item.horas }}h</td>
+                <td class="valor-destaque">R$ {{ formatarValor(item.precoTotal) }}</td>
+                <td>R$ {{ formatarValor(item.transporte) }}</td>
+                <td>R$ {{ formatarValor(item.impostos) }}</td>
+                <td>R$ {{ formatarValor(item.pagosInterpretes) }}</td>
+                <td class="valor-caixa">R$ {{ formatarValor(item.caixaEmpresa) }}</td>
+              </tr>
+              <tr class="total-row">
+                <td><strong>TOTAL</strong></td>
+                <td><strong>{{ breakdownPorMes.reduce((s, i) => s + i.quantidadeEventos, 0) }}</strong></td>
+                <td><strong>{{ breakdownPorMes.reduce((s, i) => s + i.horas, 0) }}h</strong></td>
+                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.precoTotal, 0)) }}</strong></td>
+                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.transporte, 0)) }}</strong></td>
+                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.impostos, 0)) }}</strong></td>
+                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.pagosInterpretes, 0)) }}</strong></td>
+                <td><strong>R$ {{ formatarValor(breakdownPorMes.reduce((s, i) => s + i.caixaEmpresa, 0)) }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </MainLayout>
 </template>
 
@@ -481,11 +529,12 @@ if (userRole.value === 'admin_restrito') {
 const eventos = ref([]);
 const empresasDisponiveis = ref([]);
 const filtroMes = ref('');
-const filtroAno = ref(new Date().getFullYear());
+const filtroAno = ref('');
 const filtroEmpresa = ref('');
 const mostrarModal = ref(false);
 const modoEdicao = ref(false);
 const idEdicao = ref(null);
+const mostrarModalDetalhado = ref(false);
 
 const formulario = ref({
   empresa: '', cnpj: '', solicitante: '', email: '', contato: '', tematica: '', evento: '',
@@ -515,6 +564,51 @@ const somaImpostos = computed(() => eventosFiltrados.value.reduce((s, e) => s + 
 const somaInterpretes = computed(() => eventosFiltrados.value.reduce((s, e) => s + (e.pagosInterpretes || 0), 0));
 const somaCaixa = computed(() => eventosFiltrados.value.reduce((s, e) => s + (e.caixaEmpresa || 0), 0));
 
+// Breakdown por mês
+const breakdownPorMes = computed(() => {
+  const resultados = {};
+  const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  
+  eventos.value.forEach(evento => {
+    const mesEvento = evento.mes;
+    const anoEvento = evento.ano;
+    const key = `${mesEvento}-${anoEvento}`;
+    
+    if (!resultados[key]) {
+      resultados[key] = {
+        mes: mesEvento,
+        ano: anoEvento,
+        precoTotal: 0,
+        transporte: 0,
+        impostos: 0,
+        pagosInterpretes: 0,
+        caixaEmpresa: 0,
+        horas: 0,
+        quantidadeEventos: 0
+      };
+    }
+    
+    resultados[key].precoTotal += evento.precoTotal || 0;
+    resultados[key].transporte += evento.transporte || 0;
+    resultados[key].impostos += evento.impostos || 0;
+    resultados[key].pagosInterpretes += evento.pagosInterpretes || 0;
+    resultados[key].caixaEmpresa += evento.caixaEmpresa || 0;
+    resultados[key].horas += evento.quantidadeHoras || 0;
+    resultados[key].quantidadeEventos += 1;
+  });
+  
+  return Object.values(resultados).sort((a, b) => {
+    const mesesA = meses.indexOf(a.mes);
+    const mesesB = meses.indexOf(b.mes);
+    if (mesesA !== mesesB) return mesesA - mesesB;
+    return b.ano - a.ano;
+  });
+});
+
+const abrirModalDetalhado = () => {
+  mostrarModalDetalhado.value = true;
+};
+
 const mesAnoSelecionado = computed(() => {
   const meses = {
     'janeiro': 'Janeiro', 'fevereiro': 'Fevereiro', 'março': 'Março', 'abril': 'Abril',
@@ -536,8 +630,9 @@ const formatarData = (data) => {
 const aplicarFiltros = () => {};
 const resetarFiltros = () => {
   filtroMes.value = '';
-  filtroAno.value = new Date().getFullYear();
+  filtroAno.value = '';
   filtroEmpresa.value = '';
+  carregarEventos();
 };
 
 // Gerar Orçamento PDF do evento
@@ -1098,5 +1193,9 @@ onMounted(async () => {
 
 .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
 .valor-destaque { color: #059669; font-weight: bold; }
+.valor-caixa { color: #004aad; font-weight: bold; }
+.mes-cell { text-transform: capitalize; font-weight: 600; }
+.total-row { background: #f1f5f9; font-weight: bold; }
+.total-row td { border-top: 2px solid #94a3b8; }
 .no-data { text-align: center; padding: 30px; color: #64748b; }
 </style>    
