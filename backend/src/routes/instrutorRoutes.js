@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Instrutor = require('../models/Instrutor');
 
-// Listar todos
+// Listar todos - com cursos populados
 router.get('/', async (req, res) => {
   try {
-    const instrutores = await Instrutor.find().sort({ nome: 1 });
+    const instrutores = await Instrutor.find().populate('cursos').sort({ nome: 1 });
     res.json(instrutores);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

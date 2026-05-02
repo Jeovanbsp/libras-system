@@ -8,6 +8,8 @@ const instrutorSchema = new mongoose.Schema({
   cpf: { type: String },
   biografia: { type: String },
   ativo: { type: Boolean, default: true },
+  // Cursos que o professor pode gerenciar
+  cursos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Curso' }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Instrutor', instrutorSchema);
