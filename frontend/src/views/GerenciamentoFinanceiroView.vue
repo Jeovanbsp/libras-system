@@ -314,6 +314,14 @@
                 <input v-model="formulario.pagoEm" type="date" />
               </div>
               <div class="form-group">
+                <label>Status do Pagamento</label>
+                <select v-model="formulario.status">
+                  <option value="pendente">Pendente</option>
+                  <option value="pago">Pago</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div class="form-group">
                 <label>Mês</label>
                 <select v-model="formulario.mes">
                   <option value="janeiro">Janeiro</option>
@@ -427,7 +435,9 @@ const formulario = ref({
   impostos: 0, pagosInterpretes: 0, caixaEmpresa: 0, mes: 'janeiro',
   ano: new Date().getFullYear(), observacao: '', previsaoPagamento: '', pagoEm: '', outros: '',
   // Novos campos para orçamento
-  prazoEntrega: '', politicaCancelamento: '', requisitos: '', dadosBancarios: '', formaPagamento: '', parcelamento: ''
+  prazoEntrega: '', politicaCancelamento: '', requisitos: '', dadosBancarios: '', formaPagamento: '', parcelamento: '',
+  // Status do pagamento
+  status: 'pendente'
 });
 
 const eventosFiltrados = computed(() => {
