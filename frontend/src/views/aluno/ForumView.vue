@@ -384,6 +384,7 @@ const realcarMencoes = (texto) => {
 };
 
 const formatarRole = (role) => {
+  console.log('[DEBUG] formatarRole called with role:', role);
   if (role === 'admin' || role === 'admin_restrito') return 'Admin';
   if (role === 'professor') return 'Professor';
   return 'Aluno';
