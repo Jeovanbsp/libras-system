@@ -800,7 +800,7 @@ const alternarStatus = async (id, statusAtual) => {
   
   if (confirm(`Alterar status para "${novoStatus === 'pago' ? 'Pago' : novoStatus === 'cancelado' ? 'Cancelado' : 'Pendente'}"?`)) {
     try {
-      await api.patch(`/financeiro/${id}`, { status: novoStatus });
+      await api.put(`/financeiro/${id}`, { status: novoStatus });
       await carregarEventos();
     } catch (error) {
       console.error('Erro ao alterar status:', error);
