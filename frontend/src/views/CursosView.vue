@@ -2,7 +2,7 @@
   <MainLayout pageTitle="Gestão de Cursos" pageDescription="Configure conteúdo, preços, materiais e libere acessos para alunos.">
     <div class="layout-split">
       
-      <div class="glass-card side-form" v-if="!isProfessor">
+      <div class="glass-card side-form">
         <h3 class="form-title">
           <component :is="editandoId ? FileEdit : PlusCircle" :size="20" class="text-brand-color" /> 
           {{ editandoId ? 'Editar Conteúdo' : 'Novo Curso' }}
@@ -126,7 +126,7 @@
             </div>
           </div>
 
-          <div class="form-actions" v-if="!isProfessor">
+          <div class="form-actions">
             <button type="submit" class="btn-primary">
               <Save :size="18" /> {{ editandoId ? 'Salvar Alterações' : 'Cadastrar Curso' }}
             </button>
@@ -137,7 +137,7 @@
         </form>
       </div>
 
-      <div :class="isProfessor ? 'cursos-prof' : 'cursos-grid'">
+      <div class="cursos-grid">
         <div v-for="c in cursos" :key="c._id" class="glass-card curso-card">
           <div class="curso-badge">{{ c.nivel ? c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) : 'Curso' }}</div>
           <div :class="['price-badge', c.gratuito ? 'free' : 'paid']">

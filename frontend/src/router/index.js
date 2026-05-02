@@ -99,7 +99,7 @@ const routes = [
     path: '/admin/forum',
     name: 'AdminForum',
     component: AdminForunsView,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: ['admin', 'professor'] }
   },
   {
     path: '/admin/usuarios',
@@ -190,7 +190,13 @@ router.beforeEach((to, from, next) => {
   
   // Verificar permissões de role (admin/aluno/professor)
   if (to.meta.role) {
-    if (to.meta.role === 'admin') {
+    // Se role for array, verificar se userRole está no array
+    if (Array.isArray(to.meta.role)) {
+      if (!to.meta.role.includes(userRole)) {
+        return next('/aluno/login');
+      }
+    }
+    else if (to.meta.role === 'admin') {
       // Admin: permitir 'admin' e 'admin_restrito'
       if (userRole !== 'admin' && userRole !== 'admin_restrito') {
         return next('/aluno/dashboard');
