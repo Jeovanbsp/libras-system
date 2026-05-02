@@ -132,6 +132,8 @@ const handleLogin = async () => {
 
     if (user.role === 'admin' || user.role === 'admin_restrito') {
       router.push('/admin/dashboard');
+    } else if (user.role === 'professor') {
+      router.push('/admin/cursos'); // Professor vai para cursos
     } else {
       router.push('/aluno/dashboard');
     }

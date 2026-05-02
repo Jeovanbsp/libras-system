@@ -93,7 +93,7 @@ const routes = [
     path: '/professor/cursos',
     name: 'ProfessorCursos',
     component: () => import('../views/ProfessorCursosView.vue'),
-    meta: { requiresAuth: true, role: 'instrutor' }
+    meta: { requiresAuth: true, role: 'professor' }
   },
   {
     path: '/admin/cursos',
@@ -174,13 +174,6 @@ const routes = [
     name: 'SolicitacoesSenha',
     component: () => import('../views/SolicitacoesSenhaView.vue'),
     meta: { requiresAuth: true, role: 'admin' }
-  },
-  // ROTA DO PROFESSOR (apenas para editar cursos)
-  {
-    path: '/professor/cursos',
-    name: 'ProfessorCursos',
-    component: () => import('../views/CursosView.vue'),
-    meta: { requiresAuth: true, role: 'professor' }
   }
 ];
 
