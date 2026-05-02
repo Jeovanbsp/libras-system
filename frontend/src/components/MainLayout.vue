@@ -23,10 +23,10 @@
 
       <nav class="sidebar-nav">
         <ul>
-          <li :class="{ active: $route.path === '/admin/dashboard' }" @click="navegar('/admin/dashboard')">
+          <li :class="{ active: $route.path === '/admin/dashboard' || $route.path === '/professor/cursos' }" @click="navegar('/admin/dashboard')">
             <LayoutDashboard :size="20" class="nav-icon" /> Dashboard
           </li>
-          <li :class="{ active: $route.path === '/admin/cursos' }" @click="navegar('/admin/cursos')">
+          <li :class="{ active: $route.path === '/admin/cursos' || $route.path === '/professor/cursos' }" @click="navegar(userRole === 'professor' ? '/professor/cursos' : '/admin/cursos')">
             <BookOpen :size="20" class="nav-icon" /> Cursos
           </li>
           

@@ -2,7 +2,7 @@
   <MainLayout pageTitle="Gestão de Cursos" pageDescription="Configure conteúdo, preços, materiais e libere acessos para alunos.">
     <div class="layout-split">
       
-      <div class="glass-card side-form">
+      <div class="glass-card side-form" v-if="!isProfessor">
         <h3 class="form-title">
           <component :is="editandoId ? FileEdit : PlusCircle" :size="20" class="text-brand-color" /> 
           {{ editandoId ? 'Editar Conteúdo' : 'Novo Curso' }}
@@ -126,7 +126,7 @@
             </div>
           </div>
 
-          <div class="form-actions">
+          <div class="form-actions" v-if="!isProfessor">
             <button type="submit" class="btn-primary">
               <Save :size="18" /> {{ editandoId ? 'Salvar Alterações' : 'Cadastrar Curso' }}
             </button>
@@ -137,7 +137,7 @@
         </form>
       </div>
 
-      <div class="cursos-grid">
+      <div :class="isProfessor ? 'cursos-prof' : 'cursos-grid'">
         <div v-for="c in cursos" :key="c._id" class="glass-card curso-card">
           <div class="curso-badge">{{ c.nivel ? c.nivel.charAt(0).toUpperCase() + c.nivel.slice(1) : 'Curso' }}</div>
           <div :class="['price-badge', c.gratuito ? 'free' : 'paid']">
@@ -210,12 +210,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { 
   PlusCircle, Plus, Trash2, X, Library, Clock, Pencil, Save, FileEdit, FileUp, UserPlus, CheckCircle2, AlertCircle, AlertTriangle 
 } from 'lucide-vue-next';
 import MainLayout from '../components/MainLayout.vue';
 import api from '../services/api';
+
+const userRole = localStorage.getItem('userRole');
+const isProfessor = computed(() => userRole === 'professor');
+const isAdmin = computed(() => userRole === 'admin' || userRole === 'admin_restrito');
 
 const cursos = ref([]);
 const alunos = ref([]);
@@ -516,4 +520,9 @@ onMounted(() => {
   .material-row { flex-direction: column; align-items: stretch;}
   .btn-icon-del-micro { align-self: flex-end;}
 }
+
+/* ESTILO PARA PROFESSOR */
+.cursos-prof { display: flex; flex-direction: column; gap: 16px; padding: 0 20px 40px 20px; }
+.cursos-prof .curso-card { cursor: pointer; }
+.cursos-prof .price-badge, .cursos-prof .curso-badge { display: none; }
 </style>
