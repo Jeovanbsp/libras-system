@@ -934,10 +934,13 @@ onMounted(async () => {
 .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; color: white; font-weight: 700; font-size: 0.75rem; }
 
 .acoes { text-align: center; }
-.btn-edit, .btn-delete, .btn-orcamento { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; color: #64748b; }
-.btn-orcamento:hover { background: #dbeafe; color: #004aad; }
-.btn-edit:hover { background: #dbeafe; color: #0284c7; }
-.btn-delete:hover { background: #fee2e2; color: #dc2626; }
+.btn-edit, .btn-delete, .btn-orcamento { 
+  background: #f1f5f9; border: none; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; 
+  display: inline-flex; align-items: center; justify-content: center; color: #475569; margin: 2px;
+}
+.btn-orcamento:hover { background: #bfdbfe; color: #004aad; }
+.btn-edit:hover { background: #bfdbfe; color: #0284c7; }
+.btn-delete:hover { background: #fecaca; color: #dc2626; }
 
 .status { text-align: center; }
 .badge-status { 
